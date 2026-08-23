@@ -272,24 +272,46 @@ Ten arenas, procedurally built each match from a themed definition. Foundry is f
 **Payout formula, evaluated at the end of every trial:**
 
 ```
-subtotal = 40                       (turning up)
-         + kills      × 60
-         + headshots  × 25
-         + damageDealt ÷ 20         (overkill does not count)
-         + placement bonus
+subtotal = 90                       (turning up — the floor a bad match still pays)
+         + kills      × 38
+         + headshots  × 14
+         + damageDealt ÷ 32         (overkill does not count)
+         + placement × contribution
 
-placement = 500 (win) | 260 (2nd) | 170 (3rd) | 100 (4th) | 40 (else)
+placement    = 300 (win) | 150 (2nd) | 100 (3rd) | 60 (4th) | 40 (else)
+contribution = 0.55 + 0.45 × min(1, kills / 3)
 
 coins = round( subtotal
              × skillMultiplier      (0.6 – 2.4)
              × fieldMultiplier      (0.7 + bots × 0.06)
-             × streakMultiplier )   (1 + 0.1 per consecutive win, capped 1.5)
+             × streakMultiplier     (1 + 0.1 per consecutive win, capped 1.5)
+             × catchUp )            (1.25 at level 1, decaying to 1.0 by level 4)
       + multi-kill bonus            (15 × the size of each multi-kill)
-      + medals                      (110 – 200 each)
-      + daily challenges            (150 – 300 each)
+      + medals                      (80 – 150 each)
+      + daily challenges            (120 – 240 each)
       + 400 the first time you win in each arena
-      × 2 on your first win of the day
+      + up to 500 doubling your first win of the day
 ```
+
+Every rate lives in one `PAY` object referenced by both the arithmetic and the itemised
+results screen. They used to be written out twice, and had drifted: the screen printed
+`× 60` per kill while the maths paid 38, so the lines did not add up to the total under them.
+
+**Contribution.** Placement used to pay flat, so hiding while the bots killed each other
+paid exactly as much as winning a firefight. Just over half of it is now earned by fighting:
+three kills unlocks the whole bonus. Measured effect at Regular difficulty — losing with two
+or more kills (930) now pays almost as much as winning passively (965).
+
+**Catch-up, not a handicap.** Level 1 earns ×1.25, decaying to nothing by level 4. Friends
+join this game weeks apart and arriving late should not feel hopeless. It is deliberately a
+bonus for the new rather than a penalty for the experienced: identical arithmetic, and one
+of them reads as a welcome while the other reads as being taxed for playing. It is kept
+small because at ×1.35 a brand new player out-earned a level 6 one, which inverts the curve.
+
+**Starting balance is 250 coins** — below the price of every weapon, pet and arena in the
+shop, so the first gun is always earned. It was 1,500, which unlocked 26 items including a
+tier-4 rifle before the player had fired a shot. The only thing 250 buys is a pair of Combat
+Shades (220), which makes the opening decision a real one: look good now, or shoot sooner.
 
 The results screen itemises every line so the player can see exactly where the money came from.
 
@@ -333,8 +355,19 @@ XP is separate from coins and cannot be spent, which is the point — it keeps m
 after you own everything.
 
 ```
-xp = kills × 40 + headshots × 15 + damage ÷ 40 + (win ? 250 : 60) + medals × 30
+xp = 55
+   + kills × 22 + headshots × 7 + damage ÷ 70
+   + (win ? 110 : 0)
+   + medals × 18
+   + (kills > 0 ? 35 : 0)
 ```
+
+Deliberately flatter than the coin curve. **Coins say how well you played; rank says how much
+you have played.** Tie both to the same thing and rank is just a second wallet, and the least
+confident kid in the group never leaves level 1.
+
+Measured at Regular difficulty, best case against worst case: coins spread **4.7:1**,
+XP spread **3.2:1**. The gap is the point.
 
 Ten ranks: Scrap Rookie (0) → Block Runner (600) → Trench Regular (1,600) → Deck Hunter (3,200)
 → Ironside (5,600) → Arena Veteran (9,000) → Cinder Champion (13,500) → Rail Master (19,500)
@@ -360,9 +393,15 @@ again after you own the expensive ones — which is the failure mode a pure coin
 | Cosmetics (hair, outfits, accessories) | 37,480 |
 | **Everything** | **146,930** |
 
-Starting balance is 1,500 coins. A competent player earns roughly 1,300–2,500 coins per match against
-Regular bots depending on medals and challenges, which puts full completion around 70–90 matches and a
-genuinely usable loadout (good gun + melee + pet + a second arena) inside about 10.
+Starting balance is 250 coins. A strong player averages roughly 1,250 a match against Regular bots
+with dailies included. Simulated ladder for that player at four matches a day: the three cheapest
+weapons after the first win, AK-47 on day 1, LMG day 2, Minigun day 4, Longshot Rail day 5,
+Tesla Arc day 7, and the Obsidian Reaper at **match 41, day 11**. Pets, arenas and cosmetics are
+another ~95,000 beyond that. A typical player will be two to three times slower on the tail.
+
+The day-1 burst is intentional: the first-win-in-arena bonus, the daily double and the level-1
+catch-up all land on the same match, so the opening session pays out three cheap weapons at once.
+That is onboarding generosity, not a leak — those are the three lowest-priced items in the shop.
 
 ---
 

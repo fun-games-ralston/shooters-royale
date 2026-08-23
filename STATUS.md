@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 0.8 · **Date:** 23 August 2026 · **File:** `index.html` (~206 KB, ~3,700 lines)
+**Version:** 0.9 · **Date:** 23 August 2026 · **File:** `index.html` (~207 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,44 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 0.9 — the economy
+
+Measured before changing anything. A match against Regular bots paid ~1,150, so the 1,500
+starting balance was worth **more than a full match, handed over before you play**. It unlocked
+26 items including the tier-4 Trident BR outright.
+
+| | Before | After |
+| --- | --- | --- |
+| Starting coins | 1,500 | **250** (below every weapon, pet and arena) |
+| Per kill | 60 | 38 |
+| Per headshot | 25 | 14 |
+| Damage | ÷20 | ÷32 |
+| Win placement | 500 flat | 300 × contribution |
+| Medals (each) | 110–200 | 80–150, two thresholds raised |
+| Daily double cap | 1,400 | 500 |
+| Average / match | ~1,640 | ~1,250 |
+| Every weapon owned | match 26, day 7 | **match 41, day 11** |
+
+**Contribution gate.** Placement paid flat, so hiding while the bots killed each other paid the
+same as winning a firefight. Just over half of it is now earned by fighting — three kills unlocks
+the full bonus. Measured at Regular: losing with 2+ kills (930) now pays nearly as much as winning
+passively (965), which is the intended message.
+
+**Level affects earnings once, gently.** Level 1 gets ×1.25, gone by level 4. A bonus for the new,
+not a penalty for the experienced — the same arithmetic, but one reads as a welcome. Kept small
+after a first attempt at ×1.35 made a brand new player out-earn a level 6 one.
+
+**XP decoupled from coins.** They were driven by the same terms, so rank was a second wallet.
+XP is now much flatter: coins say how well you played, rank says how much you have played. Measured
+best-case against worst-case at Regular — coins spread 4.7:1, XP spread 3.2:1. The least confident
+kid still climbs ranks by turning up.
+
+**Bug found doing it:** the itemised results screen hardcoded its own copy of every rate, and had
+drifted from the maths — it printed `× 60` per kill while the formula paid 38, so the lines did not
+sum to the total shown beneath them. All rates now come from one `PAY` object used by both.
 
 ---
 
