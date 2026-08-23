@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 0.6 · **Date:** 23 August 2026 · **File:** `index.html` (~204 KB, ~3,700 lines)
+**Version:** 0.7 · **Date:** 23 August 2026 · **File:** `index.html` (~205 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,31 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 0.7 — the main menu
+
+Playtest feedback: everything below the Deploy button was hard to read, the level was invisible,
+joining the club was buried at the bottom, and the leaderboard was a screen you had to go and find.
+
+Rebuilt on the layout this genre already agreed on, rather than a new idea:
+
+- **Profile card pinned top-left** — level badge, name, rank, XP bar, lifetime record.
+- **Standings rail on the left** — top five, a `···` break, then your own row, footer reading
+  `YOU ARE #7 OF 24`. Always on the title screen, tap for the full board.
+- **Daily challenges rail on the right.**
+- **A radial scrim** over the arena behind the menu. Contrast against a lit, moving 3D background
+  cannot be fixed by picking better text colours; the background has to be knocked back.
+- **Training range removed from the main menu**, kept under Match setup → Mode. New players should
+  press Deploy and be in a fight. The kid who wants to test-fire the Reaper before spending 15,000
+  coins will go and find it.
+
+Menu is now four buttons: Deploy, Armory, Match setup, How to play.
+
+Two bugs found while building it: `#scr-title>*{position:relative}` silently overrode the profile
+card's `position:absolute` (ID selector beats class), so the card rendered centre-top instead of
+pinned; and the wordmark at `7.2vw` crowded both rails, so it runs smaller when the rails are shown.
 
 ---
 

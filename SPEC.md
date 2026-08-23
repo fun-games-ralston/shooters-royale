@@ -439,8 +439,26 @@ Capes flare when sprinting, wings spread on jump, the halo spins faster the more
 
 **Screens:** Title → Match Setup → Armory → How to Play, plus in-match Pause and Results overlays.
 
-**Title** carries the rank chip (name, XP bar, XP to next rank), lifetime stats, and today's three
-daily challenges with live progress. A **Training range** button sits directly under Deploy.
+**Title** follows the layout convention this genre settled on years ago (Krunker, Shell Shockers,
+Brawl Stars) rather than inventing one:
+
+- **Profile card pinned top-left** — level badge, fighter name, rank, XP bar and lifetime record.
+  Always visible, one glance, no reading. Clicking it opens the account screen.
+- **Coins top-right.**
+- **Standings rail on the left** — top five, then a `···` break, then *your* row wherever you
+  actually sit, with a footer reading `YOU ARE #7 OF 24`. Clicking opens the full board.
+- **Daily challenges rail on the right**, compact, with progress on each.
+- **Centre column**: wordmark, then Deploy / Armory / Match setup / How to play.
+
+Below 1080px the two rails drop under the centre column and the profile card rejoins the flow.
+
+The title screen also paints a radial scrim over the 3D scene behind it. Menu text over a lit,
+moving arena was the single biggest readability complaint, and no amount of colour tuning fixes
+contrast against a background that changes every frame.
+
+**The training range is no longer a main-menu button.** It lives under Match setup → Mode. A first
+time player should press Deploy and be in a fight; the range matters to the kid who wants to feel
+the Obsidian Reaper before saving fifteen thousand coins for it, and that kid will go looking.
 
 **Match Setup** mirrors the reference screenshot's information architecture but is restructured as a two-column card grid with chip selectors instead of one long list: Arena, Opponents (1–7), Opponent Skill, Time Limit, Mouse Sensitivity, Field of View, Camera, Sound, Nametags, plus a live loadout summary.
 

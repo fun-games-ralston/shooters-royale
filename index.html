@@ -242,24 +242,75 @@ canvas{display:block}
 .xpbar{height:8px;background:#150f22;box-shadow:inset 0 0 0 2px #0a0710;margin-top:6px;border-bottom:none!important}
 .xpbar i{display:block;height:100%;background:linear-gradient(90deg,#a97bff,#c47bff)}
 .statlist .rankrow,.statlist .xpbar,.statlist .medals{border-bottom:none}
-.dailybox{margin-top:16px;width:min(560px,86vw);text-align:left;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em}
-.dailybox h5{font-family:var(--disp);font-size:14px;letter-spacing:.18em;color:var(--gold);margin-bottom:8px}
-.dailyrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px;margin-bottom:5px;
-  background:rgba(16,12,26,.8);box-shadow:inset 0 0 0 2px var(--edge);color:var(--dim)}
-.dailyrow.on{color:var(--leaf);box-shadow:inset 0 0 0 2px rgba(127,212,91,.5)}
-.dailyrow b{color:var(--gold);font-weight:normal;white-space:nowrap}
+.dailyrow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 8px;margin-bottom:5px;
+  background:rgba(22,16,34,.9);box-shadow:inset 0 0 0 1px var(--edge);color:#a79dba;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;line-height:1.4}
+.dailyrow span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dailyrow.on{color:var(--leaf);box-shadow:inset 0 0 0 1px rgba(127,212,91,.55)}
+.dailyrow b{color:var(--gold);font-weight:normal;white-space:nowrap;font-size:10px;padding-left:2px}
 .dailyrow.on b{color:var(--leaf)}
-.rankchip{display:inline-flex;align-items:center;gap:9px;padding:6px 12px;margin:16px 0 4px;
-  background:rgba(16,12,26,.8);box-shadow:inset 0 0 0 2px var(--edge);font-family:var(--mono);
-  font-size:11px;letter-spacing:.14em}
-.rankchip .xpmini{width:80px;height:6px;background:#150f22;box-shadow:inset 0 0 0 1px #0a0710}
-.rankchip .xpmini i{display:block;height:100%;background:#a97bff}
-.accchip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;margin-top:12px;cursor:pointer;
-  background:rgba(16,12,26,.8);box-shadow:inset 0 0 0 2px var(--edge);font-family:var(--mono);
-  font-size:11px;letter-spacing:.14em;color:var(--dim)}
-.accchip:hover{box-shadow:inset 0 0 0 2px var(--gold);color:var(--bone)}
-.accchip b{color:var(--leaf);font-weight:normal}
-.accchip .off{color:var(--gold)}
+/* ---------- title screen: profile card + side rails ---------- */
+/* A scrim so the menu is readable over whatever the arena is doing behind it. */
+#scr-title::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 42%, rgba(11,8,18,.80) 0%, rgba(11,8,18,.62) 42%, rgba(11,8,18,.34) 100%)}
+#scr-title{padding-top:184px}
+.titlebody{position:relative;z-index:1}
+
+.playercard{position:absolute;left:18px;top:16px;width:272px;padding:12px 14px;z-index:5;
+  background:rgba(11,8,18,.94);cursor:pointer}
+.playercard.flat{cursor:default}
+.playercard:not(.flat):hover{box-shadow:inset 0 0 0 2px var(--gold)}
+.pc-top{display:flex;align-items:center;gap:11px}
+.pc-lvl{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--disp);font-size:23px;line-height:1;color:#150f22;background:var(--gold)}
+.pc-lvl.off{background:var(--edge);color:var(--dim)}
+.pc-id{min-width:0;flex:1}
+.pc-name{font-family:var(--disp);font-size:17px;letter-spacing:.07em;color:var(--bone);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-rank{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-xp{height:7px;background:#150f22;box-shadow:inset 0 0 0 1px #0a0710;margin-top:10px}
+.pc-xp i{display:block;height:100%;background:linear-gradient(90deg,#a97bff,#c47bff)}
+.pc-sub{font-family:var(--mono);font-size:9px;letter-spacing:.11em;color:#8e849e;margin-top:5px;text-align:right}
+.pc-stats{display:flex;justify-content:space-between;gap:8px;margin-top:9px;padding-top:9px;
+  border-top:1px solid #2c2439;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
+.pc-stats b{color:var(--bone);font-weight:normal;font-size:12px}
+.pc-cta{margin-top:9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--gold)}
+
+.titlebody{display:flex;align-items:flex-start;justify-content:center;gap:24px;
+  width:100%;max-width:1220px}
+.titlecenter{display:flex;flex-direction:column;align-items:center;flex:0 0 392px}
+/* the wordmark has to share the row with two rails now, so it runs smaller here */
+.titlecenter .gametitle{font-size:clamp(34px,4.6vw,72px)}
+.titlecenter .tagline{letter-spacing:.2em;font-size:11px;white-space:nowrap}
+.tpanel{width:272px;flex:0 0 272px;padding:13px 14px;background:rgba(11,8,18,.94)}
+.tpanel h5{font-family:var(--disp);font-size:13px;letter-spacing:.17em;color:var(--gold);
+  margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tpanel h5 em{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--dim)}
+.tpanel.click{cursor:pointer}
+.tpanel.click:hover{box-shadow:inset 0 0 0 2px var(--gold)}
+.tp-note{font-family:var(--mono);font-size:10.5px;line-height:1.85;color:var(--dim);letter-spacing:.04em}
+.tp-foot{margin-top:9px;padding-top:8px;border-top:1px solid #2c2439;
+  font-family:var(--mono);font-size:9px;letter-spacing:.13em;color:#6b6280;text-align:center}
+
+.mb-row{display:grid;grid-template-columns:18px 1fr 30px;gap:8px;align-items:center;padding:5px 5px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--bone)}
+.mb-row .r{color:#6b6280;text-align:right;font-size:10px}
+.mb-row .r.top{color:var(--gold)}
+.mb-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb-row .v{text-align:right;color:var(--gold)}
+.mb-row.me{background:rgba(242,177,52,.16);box-shadow:inset 0 0 0 1px rgba(242,177,52,.5);color:#fff}
+.mb-gap{text-align:center;color:#4a4358;font-family:var(--mono);font-size:11px;letter-spacing:.3em;padding:1px 0}
+
+@media (max-width:1080px){
+  #scr-title{padding-top:24px}
+  .titlebody{flex-wrap:wrap;gap:16px}
+  .titlecenter .gametitle{font-size:clamp(38px,7.2vw,104px)}
+  .titlecenter .tagline{white-space:normal}
+  .titlecenter{order:1;flex:1 1 100%}
+  .tpanel{order:2;flex:1 1 250px;width:auto;max-width:330px}
+  .playercard{position:static;width:min(330px,92vw);margin:0 auto 14px}
+}
 /* leaderboard */
 .lbhead,.lbrow{display:grid;grid-template-columns:44px 1fr 62px 62px 62px 74px;gap:8px;align-items:center;
   padding:9px 10px;font-family:var(--mono);font-size:12px;letter-spacing:.08em}
@@ -352,22 +403,21 @@ canvas{display:block}
 
   <!-- TITLE -->
   <div class="screen" id="scr-title">
-    <div id="titleWrap">
-      <h1 class="gametitle">Shooter's<span>Royale</span></h1>
-      <div class="tagline">One life · Eight fighters · Last block standing</div>
+    <div class="playercard blk" id="playerCard"></div>
+    <div class="titlebody">
+      <aside class="tpanel blk" id="miniBoard"></aside>
+      <div class="titlecenter">
+        <h1 class="gametitle">Shooter's<span>Royale</span></h1>
+        <div class="tagline">One life · Eight fighters · Last block standing</div>
+        <div class="menu-col">
+          <button class="btn primary" id="btnPlay">Deploy</button>
+          <button class="btn" id="btnShop">Armory</button>
+          <button class="btn" id="btnSetup">Match setup</button>
+          <button class="btn ghost" id="btnHelp">How to play</button>
+        </div>
+      </div>
+      <aside class="tpanel blk" id="dailyBox"></aside>
     </div>
-    <div class="menu-col">
-      <button class="btn primary" id="btnPlay">Deploy</button>
-      <button class="btn" id="btnTrain">Training range</button>
-      <button class="btn" id="btnBoard">Leaderboard</button>
-      <button class="btn" id="btnShop">Armory</button>
-      <button class="btn" id="btnSetup">Match setup</button>
-      <button class="btn ghost" id="btnHelp">How to play</button>
-    </div>
-    <div class="accchip" id="accChip"></div>
-    <div class="rankchip" id="rankChip"></div>
-    <div class="tagline" style="margin-top:14px" id="titleStats">MATCHES 0 · WINS 0 · KILLS 0</div>
-    <div class="dailybox" id="dailyBox"></div>
   </div>
 
   <!-- SETUP -->
@@ -446,6 +496,7 @@ canvas{display:block}
             <div><kbd>F</kbd> Eat &nbsp; <kbd>Q</kbd> Swap food</div>
             <div><kbd>V</kbd> First / third person &nbsp; <kbd>Tab</kbd> Scores</div>
             <div><kbd>T</kbd> Next weapon — <b style="color:var(--gold)">training range only</b></div>
+            <div style="margin-top:10px;color:var(--dim)">The <b style="color:var(--bone)">training range</b> is under <b style="color:var(--bone)">Match setup → Mode</b>. Nothing can hurt you there and you can test-fire every weapon in the game for free.</div>
             <div><kbd>Esc</kbd> Release cursor &amp; pause</div>
           </div>
         </div>
@@ -3050,6 +3101,7 @@ function endMatch(win){
     '<div class="xpbar"><i style="width:'+rBarPct+'%"></i></div>'+
     '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum rank')+'</span></div>';
   cloudSubmit(res, arena.id, S.cfg.time*60-G.left);
+  miniBoardT=0;
   $('#ovResult').classList.remove('hidden');
   $('#hud').classList.add('hidden');
   refreshCoins();
@@ -3239,44 +3291,100 @@ function show(id){
   if(id==='scr-shop') renderShop(shopTab);
   if(id==='scr-board') renderBoard();
   if(id==='scr-account') renderAccount();
+  if(id==='scr-title') renderMiniBoard();
 }
 function refreshCoins(){
   $('#coinval').textContent=S.coins.toLocaleString();
-  $('#titleStats').textContent='MATCHES '+S.stats.matches+' · WINS '+S.stats.wins+' · KILLS '+S.stats.kills+
-    ' · BEST '+S.stats.best+(S.stats.bestStreak?' · TOP MULTI-KILL '+S.stats.bestStreak:'');
-  renderRankChip(); renderDaily(); renderAccChip();
-}
-function renderRankChip(){
-  const el=$('#rankChip'); if(!el) return;
-  const r=rankOf(S.xp||0);
-  const pct = r.next ? clamp((S.xp-RANKS[r.tier].xp)/(r.next.xp-RANKS[r.tier].xp),0,1)*100 : 100;
-  el.innerHTML='<span style="color:'+r.col+'">'+r.name.toUpperCase()+'</span>'+
-    '<span class="xpmini"><i style="width:'+pct+'%"></i></span>'+
-    '<span style="color:#6b6280">'+(r.next?(r.next.xp-S.xp)+' XP TO '+r.next.name.toUpperCase():'MAX RANK')+'</span>';
+  renderPlayerCard(); renderDaily();
 }
 function renderDaily(){
   const el=$('#dailyBox'); if(!el) return;
   const D=dailySet();
+  const done=D.ids.filter(id=>D.done[id]).length;
   const rows=D.ids.map(id=>{
     const c=CHALLENGES.find(x=>x.id===id); if(!c) return '';
-    const done=!!D.done[id], pr=Math.min(c.goal,D.prog[id]||0);
-    return '<div class="dailyrow'+(done?' on':'')+'"><span>'+(done?'\u2714 ':'\u25AB ')+c.txt+'</span>'+
-      '<b>'+(done?'CLAIMED':pr+'/'+c.goal)+' \u00B7 '+c.coins+' \u2B25</b></div>';
+    const ok=!!D.done[id], pr=Math.min(c.goal,D.prog[id]||0);
+    return '<div class="dailyrow'+(ok?' on':'')+'"><span>'+(ok?'\u2714 ':'')+c.txt+'</span>'+
+      '<b>'+(ok?'DONE':pr+'/'+c.goal)+' \u00B7 '+c.coins+'\u2B25</b></div>';
   }).join('');
-  const allDone=D.ids.every(id=>D.done[id]);
-  el.innerHTML='<h5>DAILY CHALLENGES'+(allDone?' \u2014 ALL CLEAR, BACK TOMORROW':'')+'</h5>'+rows+
-    (D.firstWin?'':'<div class="dailyrow"><span>\u25AB First win of the day pays DOUBLE</span><b>\u00D72</b></div>');
+  el.className='tpanel blk';
+  el.innerHTML='<h5>DAILY <em>'+done+'/'+D.ids.length+' DONE</em></h5>'+rows+
+    (D.firstWin?'<div class="tp-foot">DAILY DOUBLE ALREADY CLAIMED</div>'
+              :'<div class="dailyrow" style="color:var(--gold)"><span>First win today pays DOUBLE</span><b>\u00D72</b></div>')+
+    '<div class="tp-foot">RESETS AT MIDNIGHT</div>';
 }
 /* =====================================================================
    account + leaderboard screens
    ===================================================================== */
-function renderAccChip(){
-  const el=$('#accChip'); if(!el) return;
-  if(!NET.on()){ el.innerHTML='<span class="off">▫</span> PLAYING OFFLINE · NO LEADERBOARD SET UP'; el.style.cursor='default'; return; }
-  el.style.cursor='pointer';
-  el.innerHTML = ACC
-    ? '<span>▸</span> <b>'+ACC.handle+'</b> · '+ACC.club.toUpperCase()+' · TAP TO SWITCH'
-    : '<span class="off">▫</span> NOT SIGNED IN · TAP TO JOIN THE CLUB';
+/* Profile card, pinned top-left the way every game in this genre does it:
+   level badge, name, rank, XP bar, lifetime record. One glance, no reading. */
+function renderPlayerCard(){
+  const el=$('#playerCard'); if(!el) return;
+  const r=rankOf(S.xp||0), lvl=r.tier+1;
+  const pct = r.next ? clamp((S.xp-RANKS[r.tier].xp)/(r.next.xp-RANKS[r.tier].xp),0,1)*100 : 100;
+  const named = !!ACC;
+  const name = named ? ACC.handle : (NET.on()?'NOT SIGNED IN':'GUEST');
+  el.className='playercard blk'+(NET.on()?'':' flat');
+  el.innerHTML=
+    '<div class="pc-top">'+
+      '<div class="pc-lvl'+(named?'':' off')+'">'+lvl+'</div>'+
+      '<div class="pc-id">'+
+        '<div class="pc-name">'+esc(name)+'</div>'+
+        '<div class="pc-rank" style="color:'+r.col+'">'+esc(r.name.toUpperCase())+
+          (named?' <span style="color:#6b6280">· '+esc(ACC.club.toUpperCase())+'</span>':'')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="pc-xp"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="pc-sub">'+(r.next?((r.next.xp-S.xp).toLocaleString()+' XP TO LEVEL '+(lvl+1)):'MAX LEVEL')+'</div>'+
+    '<div class="pc-stats">'+
+      '<span>TRIALS<br><b>'+S.stats.matches+'</b></span>'+
+      '<span>WINS<br><b>'+S.stats.wins+'</b></span>'+
+      '<span>KILLS<br><b>'+S.stats.kills+'</b></span>'+
+      '<span>BEST<br><b>'+S.stats.best+'</b></span>'+
+    '</div>'+
+    (named?'':'<div class="pc-cta">'+(NET.on()?'▸ TAP TO JOIN THE CLUB':'▫ LEADERBOARD NOT SET UP')+'</div>');
+}
+
+/* Compact standings rail: the top five, then you, wherever you actually are. */
+let miniBoardT=0;
+async function renderMiniBoard(force){
+  const el=$('#miniBoard'); if(!el) return;
+  const club=(ACC&&ACC.club)||CLOUD.club;
+  if(!NET.on()){
+    el.className='tpanel blk';
+    el.innerHTML='<h5>LEADERBOARD</h5><div class="tp-note">Not switched on in this copy of the game. '+
+      'Everything else works and saves on this computer.</div>';
+    return;
+  }
+  el.className='tpanel blk click';
+  el.onclick=()=>{AU.ui();show('scr-board');};
+  const now=Date.now();
+  if(!force && now-miniBoardT<15000 && el.dataset.filled==='1') return;
+  if(el.dataset.filled!=='1') el.innerHTML='<h5>LEADERBOARD <em>'+esc(club.toUpperCase())+'</em></h5><div class="tp-note">Loading…</div>';
+  const b=await NET.call('sr_board',{p_club:club,p_limit:100});
+  miniBoardT=Date.now();
+  const head='<h5>LEADERBOARD <em>'+esc(club.toUpperCase())+'</em></h5>';
+  if(!b||!b.ok){ el.innerHTML=head+'<div class="tp-note">'+esc(netMsg(b?b.error:'NO_NETWORK'))+'</div>'; return; }
+  const rows=b.rows||[];
+  if(!rows.length){
+    el.innerHTML=head+'<div class="tp-note">Nobody has finished a trial yet.<br>Be the first one on the board.</div>';
+    el.dataset.filled='1'; return;
+  }
+  const me=ACC?ACC.handle:null;
+  const line=r=>'<div class="mb-row'+(r.handle===me?' me':'')+'">'+
+      '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
+      '<span class="n">'+esc(r.handle)+'</span>'+
+      '<span class="v">'+r.wins+'</span></div>';
+  let html=head+'<div class="mb-row" style="color:#6b6280;font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
+    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:#6b6280">WINS</span></div>';
+  html+=rows.slice(0,5).map(line).join('');
+  const mine=me?rows.find(r=>r.handle===me):null;
+  if(mine && mine.rank>5){ html+='<div class="mb-gap">···</div>'+line(mine); }
+  html+='<div class="tp-foot">'+(me
+      ? (mine?'YOU ARE #'+mine.rank+' OF '+rows.length:'PLAY A TRIAL TO GET RANKED')
+      : 'JOIN THE CLUB TO GET ON THE BOARD')+' · TAP FOR FULL BOARD</div>';
+  el.innerHTML=html;
+  el.dataset.filled='1';
 }
 
 let accMode='join';
@@ -3298,7 +3406,7 @@ function renderAccount(){
       '<button class="btn ghost" id="accOut">Sign out</button></div>'+ accPrivacy();
     $('#accBoard').onclick=()=>{AU.ui();show('scr-board');};
     $('#accOut').onclick=()=>{ storeAcc(null); AU.ui(); toast('Signed out — this computer is offline now');
-      renderAccount(); refreshCoins(); };
+      miniBoardT=0; renderAccount(); refreshCoins(); };
     return;
   }
   const joining = accMode==='join';
@@ -3361,7 +3469,7 @@ async function accSubmit(joining){
   if(!NET.on()) return;
   NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
 
-  AU.ding(); refreshCoins(); buildMenuScene();
+  AU.ding(); miniBoardT=0; refreshCoins(); buildMenuScene();
   toast(joining ? ('Welcome, '+r.handle) : ('Signed in as '+r.handle+' — progress from '+took));
   show('scr-board');
 }
@@ -3744,9 +3852,7 @@ function startMatch(){
 }
 function wireUI(){
   $('#btnPlay').onclick=()=>{AU.ui();S.cfg.mode='trial';startMatch();};
-  $('#btnTrain').onclick=()=>{AU.ui();S.cfg.mode='training';saveState();startMatch();};
-  $('#btnBoard').onclick=()=>{AU.ui();show('scr-board');};
-  $('#accChip').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
+  $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
