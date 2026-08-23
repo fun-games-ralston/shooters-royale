@@ -532,13 +532,38 @@ Six `security definer` functions are the entire API surface:
 | `sr_login(handle, pin)` | Returns the stored save so progress follows a kid to any computer |
 | `sr_submit(handle, pin, …match…, save)` | Records one finished trial and updates the totals |
 | `sr_save(handle, pin, save)` | Pushes progress up without finishing a trial (after shopping) |
-| `sr_board(club, limit)` | Public ranking. Never returns a PIN hash |
+| `sr_board(club, limit)` | Public ranking, by difficulty beaten. Never returns a PIN hash |
 | `sr_recent(club, limit)` | A live "just now" feed of finished trials |
 
 An internal `sr_auth` helper does PIN verification and lockout, and is explicitly
 revoked from `anon`. It returns a status string rather than raising, because a
 raised exception in Postgres rolls back the transaction — including the
 failed-attempt counter that the lockout depends on.
+
+### Ranking by difficulty
+
+> **Your place on the board is the hardest difficulty you have ever won on. Ties are broken by
+> how many wins you have at that level.**
+
+That is the whole rule, and it is deliberately one sentence a sixth grader can repeat.
+
+It exists because paying more coins for harder tiers cannot work: on a hard tier you perform worse
+at everything, so any reward tied to performance shrinks along with you, and any reward that does
+not shrink can be farmed by loading Nightmare and walking into a wall. **Standing is not a rate**,
+so it cannot be farmed at all. Verified against a seeded database: a player with **530 Rookie wins
+ranks below** one with three Veteran wins, who ranks below one with a single Nightmare win.
+
+Two alternatives were considered and rejected. *Locking high-level players out of easy tiers* breaks
+playing beside a lower-level friend and punishes improvement — the reward for getting good should
+not be that an option is taken away. *Easy wins stop counting once you are high level* creates a
+cliff where your wins counted last week and silently stop this week, and a beginner can still farm.
+
+`mixed` lobbies draw bots from Rookie through Elite, so they count as Regular — worth something,
+not the top. Difficulty comes from `matches.skill`, which was validated server-side on submit, so
+the board reads real history rather than anything the client could invent.
+
+Delivered as `supabase-rank-by-tier.sql`: **no schema change**, one function replaced. If it is
+never run, the game falls back to the old most-wins board with no errors and no missing UI.
 
 **Anti-cheat.** The game is client-side JavaScript, so a kid with DevTools can
 edit their own numbers, and that is not fixable in a game of this shape. What the

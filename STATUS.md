@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.2 · **Date:** 23 August 2026 · **File:** `index.html` (~209 KB, ~3,700 lines)
+**Version:** 1.3 · **Date:** 23 August 2026 · **File:** `index.html` (~210 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,44 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.3 — the leaderboard ranks by difficulty
+
+> **Your place on the board is the hardest difficulty you have ever won on. Ties are broken by how
+> many wins you have at that level.**
+
+One sentence, printed under the board and in How to Play.
+
+This is the answer to a problem coins could never solve. On a hard tier you perform worse at
+everything, so any reward tied to performance shrinks along with you, and any reward that does not
+shrink can be farmed by loading Nightmare and walking into a wall. **Standing is not a rate**, so it
+cannot be farmed at all.
+
+Verified against a seeded database — a player with **530 Rookie wins ranks below** one with three
+Veteran wins, who ranks below one with a single Nightmare win:
+
+| # | Fighter | Beat | Wins at that level | Total wins |
+| --- | --- | --- | --- | --- |
+| 1 | ONESHOT | NIGHTMARE | 1 | 1 |
+| 2 | CLIMBER | VETERAN | 3 | 13 |
+| 3 | GRINDER | ROOKIE | 530 | 530 |
+| 4 | NEWBIE | UNRANKED | 0 | 0 |
+
+**Two alternatives rejected.** *Locking high-level players out of easy tiers* breaks playing beside
+a lower-level friend and punishes improvement — the reward for getting good should not be that an
+option is taken away. *Easy wins stop counting once you are high level* creates a cliff where your
+wins counted last week and silently stop this week, and a beginner can still farm.
+
+**Delivery: `supabase-rank-by-tier.sql`, no schema change**, one function replaced. Board rows are
+colour-banded by tier and the rail carries a legend. If the SQL is never run the client falls back
+to the old most-wins board with no errors and no missing UI — verified by stripping the tier fields
+from live responses.
+
+**Bug caught in testing:** `create or replace function` cannot change a function's return type, so
+pasting the file as first written would have failed in the SQL editor. It now drops `sr_board`
+first, which touches no data.
 
 ---
 

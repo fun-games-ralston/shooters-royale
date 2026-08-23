@@ -331,6 +331,13 @@ canvas{display:block}
 .lbrow .v{text-align:right;color:var(--dim)}
 .lbrow .v.k{color:var(--gold)}
 .lbempty{padding:26px 10px;color:var(--dim);font-family:var(--mono);font-size:12px;line-height:2}
+.lbhead.t,.lbrow.t{grid-template-columns:44px 1fr 86px 60px 60px 60px 70px}
+.lbrow.t .tier{font-size:10px;letter-spacing:.1em}
+.lbrule{margin-top:14px;padding-top:12px;border-top:1px solid #2c2439;font-family:var(--mono);
+  font-size:11px;line-height:1.9;color:var(--text2);letter-spacing:.02em}
+.mb-legend{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.1em;color:var(--dim);margin-bottom:7px}
+.mb-legend i{width:11px;height:5px;display:inline-block}
 .feed{margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.06em;line-height:2.1}
 .feed h5{font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--gold);margin-bottom:6px}
 .feed b{color:var(--bone);font-weight:normal}
@@ -522,6 +529,7 @@ canvas{display:block}
             <div>Your <b style="color:var(--gold)">first win each day pays double</b>. Three <b style="color:var(--leaf)">daily challenges</b> reset every morning.</div>
             <div>Kills within five seconds of each other stack into <b style="color:var(--gold)">DOUBLE KILL → TRIPLE KILL</b> and pay a bonus.</div>
             <div>Every weapon tracks its own <b style="color:var(--ench)">mastery</b>. Ten kills earns a bronze charm on the gun, 150 earns diamond.</div>
+            <div>On the leaderboard, your place is the <b style="color:var(--gold)">hardest difficulty you have ever won on</b>. Ties go to whoever has the most wins at that level. Playing Rookie a hundred times will not move you up — beating Veteran once moves you a whole band.</div>
             <div>Bots fight each other too. Let them.</div>
             <div>Use cover and the upper decks. Open ground kills.</div>
             <div>Every weapon fires its own effect — <b style="color:var(--ench)">rail beams, forked lightning, rockets, void blasts</b>.</div>
@@ -3495,18 +3503,23 @@ async function renderMiniBoard(force){
     el.dataset.filled='1'; return;
   }
   const me=ACC?ACC.handle:null;
+  const tiered=rows.some(r=>r.best_tier_name!==undefined);
   const line=r=>'<div class="mb-row'+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
-      '<span class="n">'+esc(r.handle)+'</span>'+
-      '<span class="v">'+r.wins+'</span></div>';
-  let html=head+'<div class="mb-row" style="color:var(--dim);font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
+      '<span class="n"'+(tiered?' style="color:'+tierCol(r.best_tier_name)+'"':'')+'>'+esc(r.handle)+'</span>'+
+      '<span class="v">'+(tiered&&r.tier_wins!==undefined?r.tier_wins:r.wins)+'</span></div>';
+  let html=head+(tiered?'<div class="mb-legend">HARDEST BEATEN '+
+      ['NIGHTMARE','ELITE','VETERAN','REGULAR','ROOKIE'].map(t=>'<i style="background:'+tierCol(t)+'"></i>').join('')+
+      '</div>':'')+
+    '<div class="mb-row" style="color:var(--dim);font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
     '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">WINS</span></div>';
   html+=rows.slice(0,5).map(line).join('');
   const mine=me?rows.find(r=>r.handle===me):null;
   if(mine && mine.rank>5){ html+='<div class="mb-gap">···</div>'+line(mine); }
   // has to fit one line inside a 278px rail, so this stays short
   html+='<div class="tp-foot">'+(me
-      ? (mine?'YOU ARE #'+mine.rank+' OF '+rows.length+' · FULL BOARD ▸':'PLAY A TRIAL TO GET RANKED')
+      ? (mine?('#'+mine.rank+' OF '+rows.length+(mine.best_tier_name?' · '+mine.best_tier_name:'')+' · FULL BOARD ▸')
+             :'PLAY A TRIAL TO GET RANKED')
       : 'JOIN THE CLUB TO GET RANKED')+'</div>';
   el.innerHTML=html;
   el.dataset.filled='1';
@@ -3624,17 +3637,25 @@ async function renderBoard(){
     return;
   }
   const me=ACC?ACC.handle:null;
-  let html='<div class="lbhead"><span>#</span><span>FIGHTER</span><span class="v">WINS</span>'+
-           '<span class="v">KILLS</span><span class="v">BEST</span><span class="v">TRIALS</span></div>';
+  const tiered=rows.some(r=>r.best_tier_name!==undefined);
+  let html='<div class="lbhead'+(tiered?' t':'')+'"><span>#</span><span>FIGHTER</span>'+
+    (tiered?'<span>BEAT</span><span class="v">WINS</span>':'<span class="v">WINS</span>')+
+    '<span class="v">KILLS</span><span class="v">BEST</span><span class="v">TRIALS</span></div>';
   rows.forEach(r=>{
-    html+='<div class="lbrow'+(r.handle===me?' me':'')+'">'+
+    const tn=r.best_tier_name;
+    html+='<div class="lbrow'+(tiered?' t':'')+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
       '<span class="n">'+esc(r.handle)+'</span>'+
-      '<span class="v k">'+r.wins+'</span>'+
+      (tiered?'<span class="tier" style="color:'+tierCol(tn)+'">'+esc(tn||'UNRANKED')+'</span>'+
+              '<span class="v k">'+(r.tier_wins!==undefined?r.tier_wins:r.wins)+'</span>'
+             :'<span class="v k">'+r.wins+'</span>')+
       '<span class="v">'+r.kills+'</span>'+
       '<span class="v">'+r.best_kills+'</span>'+
       '<span class="v">'+r.matches+'</span></div>';
   });
+  if(tiered) html+='<div class="lbrule">Your place is the hardest difficulty you have ever won on. '+
+    'Ties go to whoever has the most wins at that level. Playing Rookie a hundred times will not move you up \u2014 '+
+    'beating Veteran once moves you a whole band.</div>';
   if(f&&f.ok&&f.rows&&f.rows.length){
     html+='<div class="feed"><h5>JUST NOW</h5>'+f.rows.map(m=>
       '<div><b>'+esc(m.handle)+'</b> '+(m.won?'<span class="w">won</span>':'went down')+' in '+
@@ -3647,6 +3668,11 @@ async function renderBoard(){
   const j=$('#lbJoin'); if(j) j.onclick=()=>{AU.ui();show('scr-account');};
 }
 function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* The board banks into colour groups by difficulty, so the ladder is visible
+   before you read a single number. An undefined tier means the ranking SQL has
+   not been run yet, in which case everything renders exactly as it did before. */
+const TIER_COL={NIGHTMARE:'#e0553a',ELITE:'#c47bff',VETERAN:'#f2b134',REGULAR:'#7fd45b',ROOKIE:'#9fd8ff',UNRANKED:'#6b6280'};
+function tierCol(n){ return TIER_COL[n]||'var(--bone)'; }
 
 /* ---------------- setup ---------------- */
 function slider(label,hint,min,max,step,val,fmt,cb){

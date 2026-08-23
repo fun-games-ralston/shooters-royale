@@ -43,6 +43,20 @@ write them directly. Everything goes through the six checked functions.
 
 ---
 
+## Optional: rank the board by difficulty
+
+By default the board sorts by total wins, which means the fastest way up it is to grind the easiest
+setting. To fix that, paste **`supabase-rank-by-tier.sql`** into the SQL Editor and run it. The rule
+becomes:
+
+> Your place on the board is the hardest difficulty you have ever won on. Ties are broken by how
+> many wins you have at that level.
+
+No new tables, no new columns, nothing deleted — it replaces one function. Every match already
+played still counts. If you never run it, the game works exactly as it does now.
+
+---
+
 ## 3. Publish it (already done)
 
 The game lives at **https://github.com/fun-games-ralston/shooters-royale** and GitHub
