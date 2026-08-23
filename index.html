@@ -1094,11 +1094,11 @@ const AR = {}; ARENAS.forEach(a=>AR[a.id]=a);
              a bot is easy to hit.
    heal    — the health it starts looking for food at.                                */
 const SKILLS = {
- rookie:   {name:'Rookie',   acc:.24,react:.85,fire:.55,move:.72, focus:1.6, think:.55,memory:0.5,strafe:.40,heal:55},
- regular:  {name:'Regular',  acc:.42,react:.55,fire:.75,move:.86, focus:1.25,think:.35,memory:1.2,strafe:.65,heal:75},
- veteran:  {name:'Veteran',  acc:.58,react:.36,fire:.9, move:.96, focus:1.0, think:.25,memory:2.2,strafe:.85,heal:90},
- elite:    {name:'Elite',    acc:.72,react:.24,fire:1.0,move:1.04,focus:.95, think:.18,memory:2.7,strafe:.95, heal:95},
- nightmare:{name:'Nightmare',acc:.84,react:.18,fire:1.1,move:1.10,focus:.88, think:.14,memory:3.2,strafe:1.05,heal:105},
+ rookie:   {name:'Rookie',   acc:.24,react:.85,fire:.55,move:.72, focus:1.6, think:.55,memory:0.5,strafe:.40,heal:55, reward:1.0},
+ regular:  {name:'Regular',  acc:.42,react:.55,fire:.75,move:.86, focus:1.25,think:.35,memory:1.2,strafe:.65,heal:75, reward:1.1},
+ veteran:  {name:'Veteran',  acc:.58,react:.36,fire:.9, move:.96, focus:1.0, think:.25,memory:2.2,strafe:.85,heal:90, reward:1.4},
+ elite:    {name:'Elite',    acc:.72,react:.24,fire:1.0,move:1.04,focus:.95, think:.18,memory:2.7,strafe:.95, heal:95, reward:1.7},
+ nightmare:{name:'Nightmare',acc:.84,react:.18,fire:1.1,move:1.10,focus:.88, think:.14,memory:3.2,strafe:1.05,heal:105,reward:2.1},
  mixed:{name:'Mixed',mixed:true},
 };
 const BOT_NAMES = ['Grit','Hollow','Mox','Vex','Piston','Cinder','Rook','Juno','Slag','Wren','Bramble','Kilo',
@@ -2082,12 +2082,37 @@ function spawnMatch(){
   // bots
   const n=S.cfg.bots, names=BOT_NAMES.slice();
   for(let i=names.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;const t=names[i];names[i]=names[j];names[j]=t;}
-  const pool=WEAPONS.filter(w=>w.id!=='knife'&&w.id!=='reaper');
+  /* Bots used to be handed a weapon from a 3-wide band of the cost-ordered list.
+     That list is ordered by price, and price buys specialisation rather than
+     all-round quality, so the top of it is entirely heavy weapons: a Nightmare
+     lobby was seven bots carrying the three slowest guns in the game, two of them
+     firing at 55 RPM. Nobody ever closed the distance and every fight felt the same.
+
+     Roles instead. Every lobby gets a spread of jobs, and difficulty decides how
+     good the weapon is *within* each job. Nightmare now fields a Tesla rusher, an
+     AK at mid, a Rail on an angle and a Bazooka for area — strong and varied. */
+  const ROLE_GUNS = {                      // weakest to strongest within each job
+    rush : ['bat','smg','scatter','claws','tesla'],
+    mid  : ['sidearm','burstr','ak47'],
+    range: ['sidearm','burstr','ak47','sniper'],
+    heavy: ['scatter','lmg','minigun','bazooka'],
+  };
+  const ROLE_BAG = ['rush','mid','rush','heavy','mid','range','rush','mid','heavy','range','rush','mid'];
+  const TIER_IX = {rookie:0,regular:1,veteran:2,elite:3,nightmare:4};
+  const bag = ROLE_BAG.slice();
+  for(let i=bag.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=bag[i]; bag[i]=bag[j]; bag[j]=t; }
   for(let i=0;i<n;i++){
     let sk=S.cfg.skill; if(sk==='mixed') sk=pick(['rookie','regular','regular','veteran','elite']);
     const K=SKILLS[sk];
-    const tier=Math.min(pool.length-1,Math.max(1,Math.round((K.acc)*pool.length)));
-    const wep=pool[clamp(tier-2+((Math.random()*3)|0),0,pool.length-1)].id;
+    const role=bag[i%bag.length];
+    const list=ROLE_GUNS[role];
+    // TIER_IX.rookie is 0, so this cannot be `|| 1` — that is falsy and was quietly
+    // handing Rookie lobbies Regular's weapons, Miniguns included.
+    const ti = TIER_IX[sk]===undefined ? 1 : TIER_IX[sk];
+    const base = Math.round(ti/4 * (list.length-1));
+    // one step of wobble either way, so a tier is a band rather than a uniform
+    const ix=clamp(base + ((Math.random()*3)|0) - 1, 0, list.length-1);
+    const wep=list[ix];
     const cfg={hair:pick(HAIRS).id,outfit:pick(OUTFITS).id,acc:pick(ACCS).id};
     const b=makeEnt({name:names[i%names.length],wep,cfg,skill:sk,K});
     const s2=spawns.pop()||{x:rnd(-20,20),z:rnd(-20,20),y:0};
@@ -3095,7 +3120,12 @@ function endMatch(win){
   // economy already felt too loose. Coins are not the competitive axis here — the
   // leaderboard is, and it is untouched by how many coins anyone holds — so joining
   // late costs you unlock time, not standing.
-  const sub = PAY.turnUp + kills*PAY.kill + hs*PAY.head + dmgCoin + survivalCoin;
+  /* Harder tiers pay less on their own, because you kill less and die more. This
+     puts some of it back — but only on kills and on fighters outlasted, the two
+     things you cannot fake by loading Nightmare and walking into a wall. */
+  const reward = (SKILLS[S.cfg.skill]&&SKILLS[S.cfg.skill].reward) || 1;
+  const tierBonus = Math.round((kills*PAY.kill + survivalCoin) * (reward-1));
+  const sub = PAY.turnUp + kills*PAY.kill + hs*PAY.head + dmgCoin + survivalCoin + tierBonus;
   let coins=Math.round(sub*streakMul) + (firstWin?PAY.firstArena:0) + (G.streakCoins||0);
 
   // medals — small, readable goals that reward playing well rather than just winning
@@ -3167,6 +3197,7 @@ function endMatch(win){
       row('Outlasted '+plural(outlasted,'fighter')+(win?' \u2014 last one standing':''),'+'+survivalCoin)+
       (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks all of that, and the full XP',
           '\u00D7'+contribution.toFixed(2)):'')+
+      (tierBonus?row(SKILLS[S.cfg.skill].name.toUpperCase()+' opponents','+'+tierBonus):'')+
       (G.streakCoins?row('Multi-kill bonus','+'+G.streakCoins):'')+
       (medalCoins?row(earned.length+' medal'+(earned.length===1?'':'s'),'+'+medalCoins):'')+
       (chCoins?row(chDone.length+' daily challenge'+(chDone.length===1?'':'s'),'+'+chCoins):'')+

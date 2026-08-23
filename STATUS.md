@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.1 · **Date:** 23 August 2026 · **File:** `index.html` (~208 KB, ~3,700 lines)
+**Version:** 1.2 · **Date:** 23 August 2026 · **File:** `index.html` (~209 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,49 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.2 — bot weapons by role, and a difficulty reward
+
+**A Nightmare lobby was seven bots carrying the three slowest guns in the game.** Bots drew from a
+3-wide band of the cost-ordered weapon list, and that list is ordered by price — price buys
+specialisation, not all-round quality, so the top of it is all heavy weapons. Minigun (0.78 move),
+Bazooka (0.84), Longshot Rail (0.92), two of them firing at 55 RPM. Nothing ever closed the
+distance and every fight played out the same way.
+
+Bots are now assigned a **role**, and difficulty decides how good the weapon is within that role:
+
+| Role | Weakest → strongest |
+| --- | --- |
+| rush | Slugger Bat · Whisper SMG · Scattergun · Leech Claws · Tesla Arc |
+| mid | M9 Sidearm · Trident BR · AK-47 |
+| range | M9 Sidearm · Trident BR · AK-47 · Longshot Rail |
+| heavy | Scattergun · Bulwark LMG · Cyclone Minigun · Bazooka |
+
+| | Rookie | Regular | Veteran | Elite | Nightmare |
+| --- | --- | --- | --- | --- | --- |
+| Average POWER | 2.2 | 3.1 | 4.0 | 5.1 | 6.2 |
+| Average move speed | 1.09 | 1.05 | 1.01 | 1.00 | **0.97** (was 0.85) |
+| Bots that move fast | 94% | 69% | 57% | 44% | 38% |
+
+Nightmare now fields a Tesla rusher (21% of bots), an AK at mid, a Rail holding an angle and a
+Bazooka for area. The Tesla Arc was also previously **unreachable** — Nightmare's band topped out
+one index below it — so bots never carried it at all.
+
+**Difficulty reward.** A per-tier multiplier (×1.0 → ×2.1) applied to kills and fighters-outlasted
+only, never to the turn-up fee, damage, medals or challenges. Those two are the things you cannot
+fake by loading Nightmare and walking into a wall, which rules out a flat participation bonus. It
+appears on the results screen as one additive line, `VETERAN opponents +144`.
+
+It narrows the gap without closing it, and closing it is not really possible: on a hard tier you
+perform worse at everything, so any performance-linked bonus scales down with you, and anything that
+does not scale down is farmable by dying on purpose. Rookie still pays about 2.7× Nightmare.
+
+**Two bugs found building this.** `TIER_IX[sk] || 1` — Rookie's index is **0, which is falsy**, so
+every Rookie lobby was being handed Regular's weapons, Miniguns included. And padding the role lists
+with duplicate entries to shape the curve over-weighted the Trident BR to 24–30% at low tiers;
+replaced with a proper index mapping.
 
 ---
 

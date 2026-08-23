@@ -252,16 +252,27 @@ Ten arenas, procedurally built each match from a themed definition. Foundry is f
 
 ## 9. Bots
 
-Measured against a strong simulated player, seven opponents, twelve matches each:
+Measured against a strong simulated player, seven opponents, fourteen matches each:
 
-| Skill | Win rate | Your kills | Damage taken | Coins |
-| --- | --- | --- | --- | --- |
-| Rookie | 92% | 3.6 | 26 | 675 |
-| Regular | 75% | 3.6 | 95 | 609 |
-| Veteran | 50% | 2.5 | 144 | 454 |
-| Elite | 33% | 2.3 | 154 | 409 |
-| Nightmare | 8% | 1.1 | 193 | 246 |
-| Mixed | per bot | — | — | — |
+| Skill | Win rate | Your kills | Damage taken | Coins | Reward |
+| --- | --- | --- | --- | --- | --- |
+| Rookie | 86% | 5.4 | 49 | 860 | ×1.0 |
+| Regular | 86% | 4.3 | 79 | 722 | ×1.1 |
+| Veteran | 43% | 2.8 | 171 | 526 | ×1.4 |
+| Elite | 21% | 1.4 | 181 | 341 | ×1.7 |
+| Nightmare | 7% | 1.2 | 195 | 313 | ×2.1 |
+| Mixed | per bot | — | — | — | — |
+
+**The difficulty reward** multiplies kills and fighters-outlasted only — never the turn-up fee,
+damage, medals or challenges. Those two are the things you cannot fake by loading Nightmare and
+walking into a wall, which is what makes a flat participation bonus unusable here. It shows on the
+results screen as one additive line, `VETERAN opponents +144`.
+
+It narrows the gap without closing it, and closing it fully is not possible: on Nightmare you
+perform worse at everything, so any performance-linked bonus scales down with you, and any bonus
+that does not scale down is farmable by dying on purpose. Rookie still pays about 2.7× Nightmare.
+Choosing a hard tier is a choice about challenge, not the optimal coin strategy — the two
+Veteran-or-harder daily challenges and the step-up nudge are what pull players upward instead.
 
 Nightmare is meant to be brutal, not impossible. A first pass with every dial at maximum at once
 produced a **0% win rate over ten matches**, which is a wall rather than a challenge; `focus`,
@@ -288,14 +299,39 @@ decisions as a Rookie one.
 Bots still strafe and approach to their weapon's preferred range, jump when stuck, and are capped
 at 46 m engagement (110 m for the Rail and Reaper).
 
-**Bot weapons follow the same definitions the player's do.** They are drawn from a tier band scaled
-by `acc`, and they run through the identical `fire()` path, so falloff, spray bloom, burst fire,
-heat and overheating, shell-by-shell reloading, spin-up and knockback all apply to bots exactly as
-they do to you. Verified: a Tesla bot builds 5.5 heat a shot and locks out for 2.2 s at 100; an AK
-bot's cone blooms and recovers; a Trident bot queues all three rounds off one trigger pull; a
-Scattergun bot reloads one shell at a time.
+**Bot weapons are assigned by role, not by price.** Until 1.1 a bot drew from a 3-wide band of the
+cost-ordered weapon list. That list is ordered by price, and price buys *specialisation* rather than
+all-round quality, so the top of it is entirely heavy weapons — a Nightmare lobby was seven bots
+carrying the three slowest guns in the game, two of them firing at 55 RPM. Nothing ever closed the
+distance and every fight felt identical.
 
-Measured average weapon POWER carried per tier: **2.3 · 3.6 · 4.6 · 5.9 · 7.0**.
+Each bot now gets a job, and difficulty decides how good its weapon is *within* that job:
+
+| Role | Weakest → strongest |
+| --- | --- |
+| `rush` | Slugger Bat · Whisper SMG · Scattergun · Leech Claws · Tesla Arc |
+| `mid` | M9 Sidearm · Trident BR · AK-47 |
+| `range` | M9 Sidearm · Trident BR · AK-47 · Longshot Rail |
+| `heavy` | Scattergun · Bulwark LMG · Cyclone Minigun · Bazooka |
+
+Roles are dealt from a shuffled bag weighted roughly 33% rush, 33% mid, 17% range, 17% heavy, and
+the tier index wobbles ±1 so a difficulty is a band rather than a uniform. The Obsidian Reaper is
+excluded from bots entirely.
+
+| | Rookie | Regular | Veteran | Elite | Nightmare |
+| --- | --- | --- | --- | --- | --- |
+| Average POWER | 2.2 | 3.1 | 4.0 | 5.1 | 6.2 |
+| Average move speed | 1.09 | 1.05 | 1.01 | 1.00 | 0.97 |
+| Bots that move fast | 94% | 69% | 57% | 44% | 38% |
+
+Under the old scheme Nightmare averaged 0.85 move speed with no close-range threat at all. It now
+fields a Tesla rusher, an AK at mid, a Rail holding an angle and a Bazooka for area.
+
+**Everything runs through the identical `fire()` path**, so falloff, spray bloom, burst fire, heat
+and overheating, shell-by-shell reloading, spin-up and knockback apply to bots exactly as they do to
+you. Verified: a Tesla bot builds 5.5 heat a shot and locks out for 2.2 s at 100; an AK bot's cone
+blooms and recovers; a Trident bot queues all three rounds off one trigger pull; a Scattergun bot
+reloads one shell at a time.
 
 ---
 
