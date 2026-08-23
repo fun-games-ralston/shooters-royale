@@ -252,16 +252,50 @@ Ten arenas, procedurally built each match from a themed definition. Foundry is f
 
 ## 9. Bots
 
-| Skill | Accuracy | Reaction | Fire discipline | Move | Aggro | Coin multiplier |
-| --- | --- | --- | --- | --- | --- | --- |
-| Rookie | 0.24 | 0.85 s | 0.55 | 0.72× | 0.50 | ×0.6 |
-| Regular | 0.42 | 0.55 s | 0.75 | 0.86× | 0.70 | ×1.0 |
-| Veteran | 0.58 | 0.36 s | 0.90 | 0.96× | 0.85 | ×1.4 |
-| Elite | 0.72 | 0.24 s | 1.00 | 1.04× | 0.95 | ×1.8 |
-| Nightmare | 0.86 | 0.15 s | 1.10 | 1.12× | 1.00 | ×2.4 |
-| Mixed | per bot | — | — | — | — | ×1.25 |
+Measured against a strong simulated player, seven opponents, twelve matches each:
 
-**Behaviour.** Bots pick targets on a think timer, with a **1.25× bias toward each other rather than the player** — they fight one another, which is what makes a 7-bot lobby survivable. They strafe and approach to their weapon's preferred range, jump when stuck, heal when hurt, and use burst discipline on automatic weapons (2 + round(fire × 5) shots, then a 0.55–1.5 s pause). Engagement is capped at 46 m, or 110 m for the Rail and Reaper. Aim error scales with distance and target speed.
+| Skill | Win rate | Your kills | Damage taken | Coins |
+| --- | --- | --- | --- | --- |
+| Rookie | 92% | 3.6 | 26 | 675 |
+| Regular | 75% | 3.6 | 95 | 609 |
+| Veteran | 50% | 2.5 | 144 | 454 |
+| Elite | 33% | 2.3 | 154 | 409 |
+| Nightmare | 8% | 1.1 | 193 | 246 |
+| Mixed | per bot | — | — | — |
+
+Nightmare is meant to be brutal, not impossible. A first pass with every dial at maximum at once
+produced a **0% win rate over ten matches**, which is a wall rather than a challenge; `focus`,
+`memory`, `strafe` and `heal` were all pulled back until a strong player could take roughly one
+match in twelve.
+
+**Behaviour.** Difficulty changes how bots *think*, not just how straight they shoot. Until 0.9 the
+tiers only varied accuracy, reaction time, burst discipline and foot speed — an `aggro` value was
+declared for every tier and never read by anything, so a Nightmare bot made exactly the same
+decisions as a Rookie one.
+
+| Field | Rookie → Nightmare | What it does |
+| --- | --- | --- |
+| `acc` | 0.24 → 0.84 | Aim error, scaled by distance and target speed |
+| `react` | 0.85 → 0.18 s | Delay before firing on a new target |
+| `fire` | 0.55 → 1.1 | Burst length on automatics, then a 0.55–1.5 s pause |
+| `move` | 0.72 → 1.10× | Foot speed |
+| `focus` | 1.6 → 0.88 | How the player is weighted against other bots when picking a target. Above 1 means "mostly brawl with each other", which is what stops a beginner being swarmed by seven bots at once |
+| `think` | 0.55 → 0.14 s | Seconds between decisions. Low tiers commit to bad choices for longer |
+| `memory` | 0.5 → 3.2 s | How long a bot chases a target it can no longer see. Bots used to walk to a target's exact position through walls at every tier; a Rookie now loses you almost immediately |
+| `strafe` | 0.40 → 1.05 | Sidestep strength while engaged — the single biggest factor in how hard a bot is to hit |
+| `heal` | 55 → 105 HP | The health it starts looking for food at |
+
+Bots still strafe and approach to their weapon's preferred range, jump when stuck, and are capped
+at 46 m engagement (110 m for the Rail and Reaper).
+
+**Bot weapons follow the same definitions the player's do.** They are drawn from a tier band scaled
+by `acc`, and they run through the identical `fire()` path, so falloff, spray bloom, burst fire,
+heat and overheating, shell-by-shell reloading, spin-up and knockback all apply to bots exactly as
+they do to you. Verified: a Tesla bot builds 5.5 heat a shot and locks out for 2.2 s at 100; an AK
+bot's cone blooms and recovers; a Trident bot queues all three rounds off one trigger pull; a
+Scattergun bot reloads one shell at a time.
+
+Measured average weapon POWER carried per tier: **2.3 · 3.6 · 4.6 · 5.9 · 7.0**.
 
 ---
 
@@ -361,10 +395,15 @@ after you own everything.
 ```
 xp = 55
    + kills × 22 + headshots × 7 + damage ÷ 70
-   + (win ? 110 : 0)
+   + (win ? 110 × contribution : 0)
    + medals × 18
    + (kills > 0 ? 35 : 0)
 ```
+
+The win bonus runs through the **same contribution curve the coins do**. It used to be flat,
+which meant surviving while the bots wiped each other out earned the same rank progress as
+carrying the match. The participation terms above it stay ungated on purpose — that is what
+keeps a struggling player climbing at all.
 
 Deliberately flatter than the coin curve. **Coins say how well you played; rank says how much
 you have played.** Tie both to the same thing and rank is just a second wallet, and the least

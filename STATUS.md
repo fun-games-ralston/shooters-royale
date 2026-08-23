@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.0 · **Date:** 23 August 2026 · **File:** `index.html` (~207 KB, ~3,700 lines)
+**Version:** 1.1 · **Date:** 23 August 2026 · **File:** `index.html` (~208 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,48 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.1 — XP contribution gate, and difficulty that changes how bots think
+
+**The XP win bonus ignored contribution while the coins did not.** Coins ran the survival payment
+through a contribution curve in 1.0, but XP still handed out a flat 110 for winning — so surviving
+while the bots wiped each other out earned the same rank progress as carrying the match. Both
+systems now use the same curve. The participation terms stay ungated on purpose; that is what keeps
+a struggling player climbing at all. Measured on Rookie: a 3+ kill win gives 405 XP, a sub-3 kill
+win 306, a loss 241.
+
+**`aggro` was declared for every difficulty tier and never read by anything.** Difficulty changed
+accuracy, reaction time, burst discipline and foot speed — nothing about decision-making. A
+Nightmare bot picked targets, pursued, strafed and healed exactly like a Rookie one. Five real
+behaviour dials now:
+
+| Field | Rookie → Nightmare | Effect |
+| --- | --- | --- |
+| `focus` | 1.6 → 0.88 | Player weighting when picking a target. Above 1 = "mostly brawl with each other", which stops a beginner being swarmed by seven bots |
+| `think` | 0.55 → 0.14 s | Seconds between decisions; low tiers commit to bad choices longer |
+| `memory` | 0.5 → 3.2 s | How long a lost target is chased. Bots previously tracked you through walls at every tier |
+| `strafe` | 0.40 → 1.05 | Sidestep strength — the biggest factor in how hard a bot is to hit |
+| `heal` | 55 → 105 HP | When it goes looking for food |
+
+Result, against a strong simulated player over twelve matches each:
+
+| | Rookie | Regular | Veteran | Elite | Nightmare |
+| --- | --- | --- | --- | --- | --- |
+| Win rate | 92% | 75% | 50% | 33% | **8%** |
+| Damage taken | 26 | 95 | 144 | 154 | 193 |
+
+A first pass with every dial at maximum produced a **0% win rate over ten matches** — a wall, not a
+challenge. `focus`, `memory`, `strafe` and `heal` were pulled back until a strong player takes about
+one match in twelve.
+
+**Bot weapons already followed the design; now confirmed with data.** They are drawn from a tier
+band scaled by accuracy and run through the identical `fire()` path, so every mechanic applies to
+them as it does to the player. Verified directly: a Tesla bot builds 5.5 heat a shot and locks out
+2.2 s at 100, an AK bot's cone blooms and recovers, a Trident bot queues all three rounds off one
+pull, a Scattergun bot reloads shell by shell. Average POWER carried per tier: 2.3 · 3.6 · 4.6 ·
+5.9 · 7.0.
 
 ---
 

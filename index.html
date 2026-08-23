@@ -1081,12 +1081,24 @@ const ARENAS = [
 ];
 const AR = {}; ARENAS.forEach(a=>AR[a.id]=a);
 
+/* Difficulty used to change only how straight a bot shot and how fast it walked.
+   `aggro` was declared for every tier and never read by anything.
+
+   acc/react/fire/move  — aim quality, reaction delay, burst discipline, foot speed
+   focus   — how the player is weighted against other bots when picking a target.
+             Above 1 means "fight each other, mostly"; below 1 means "hunt the player".
+   think   — seconds between decisions. Low tiers commit to bad choices for longer.
+   memory  — seconds a bot keeps chasing a target it can no longer see. This is also
+             what stops low tiers tracking you through walls.
+   strafe  — how hard it sidesteps while engaged. The single biggest factor in whether
+             a bot is easy to hit.
+   heal    — the health it starts looking for food at.                                */
 const SKILLS = {
- rookie:{name:'Rookie',acc:.24,react:.85,fire:.55,move:.72,aggro:.5},
- regular:{name:'Regular',acc:.42,react:.55,fire:.75,move:.86,aggro:.7},
- veteran:{name:'Veteran',acc:.58,react:.36,fire:.9,move:.96,aggro:.85},
- elite:{name:'Elite',acc:.72,react:.24,fire:1.0,move:1.04,aggro:.95},
- nightmare:{name:'Nightmare',acc:.86,react:.15,fire:1.1,move:1.12,aggro:1.0},
+ rookie:   {name:'Rookie',   acc:.24,react:.85,fire:.55,move:.72, focus:1.6, think:.55,memory:0.5,strafe:.40,heal:55},
+ regular:  {name:'Regular',  acc:.42,react:.55,fire:.75,move:.86, focus:1.25,think:.35,memory:1.2,strafe:.65,heal:75},
+ veteran:  {name:'Veteran',  acc:.58,react:.36,fire:.9, move:.96, focus:1.0, think:.25,memory:2.2,strafe:.85,heal:90},
+ elite:    {name:'Elite',    acc:.72,react:.24,fire:1.0,move:1.04,focus:.95, think:.18,memory:2.7,strafe:.95, heal:95},
+ nightmare:{name:'Nightmare',acc:.84,react:.18,fire:1.1,move:1.10,focus:.88, think:.14,memory:3.2,strafe:1.05,heal:105},
  mixed:{name:'Mixed',mixed:true},
 };
 const BOT_NAMES = ['Grit','Hollow','Mox','Vex','Piston','Cinder','Rook','Juno','Slag','Wren','Bramble','Kilo',
@@ -2081,7 +2093,8 @@ function spawnMatch(){
     const s2=spawns.pop()||{x:rnd(-20,20),z:rnd(-20,20),y:0};
     b.pos.x=s2.x; b.pos.z=s2.z; b.pos.y=s2.y+0.2;
     b.M=buildCharacter(cfg); scene.add(b.M.root);
-    b.ai={think:0,target:null,strafe:Math.random()<.5?1:-1,react:0,wx:rnd(-25,25),wz:rnd(-25,25),jump:0,heal:0};
+    b.ai={think:0,target:null,strafe:Math.random()<.5?1:-1,react:0,wx:rnd(-25,25),wz:rnd(-25,25),jump:0,heal:0,
+      seen:-99,lx:undefined,lz:undefined};
     b.food=Math.random()<.7?{steak:1+((Math.random()*2)|0)}:{};
     b.tag=makeTag(b.name);
     b.M.root.add(b.tag);
@@ -2632,15 +2645,18 @@ function botDesired(wp){
 function updateBot(b,dt){
   if(!b.alive) return;
   const K=b.K||SKILLS.regular, wp=W[b.wep], mod=G.world.def.mod||{};
+  const think=K.think||0.35, focus=K.focus||1.25, memory=K.memory||1.2;
   b.ai.think-=dt;
   if(b.ai.think<=0){
-    b.ai.think=0.2+Math.random()*0.25;
+    b.ai.think=think+Math.random()*think*0.6;
     let best=null,bd=1e9;
     for(const o of G.ents){
       if(!o.alive||o===b) continue;
       const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
       const vis=los(b,o);
-      const score=d*(vis?1:2.8)*(o.isPlayer?1.25:1);
+      // focus>1 pushes the player down the list, so low tiers mostly brawl with each
+      // other and a beginner is not swarmed by seven bots at once.
+      const score=d*(vis?1:2.8)*(o.isPlayer?focus:1);
       if(score<bd){bd=score;best=o;}
     }
     if(best!==b.ai.target){ b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0; }
@@ -2648,9 +2664,21 @@ function updateBot(b,dt){
     if(Math.random()<.3) b.ai.strafe*=-1;
     if(Math.random()<.12){ b.ai.wx=rnd(-G.world.H*.8,G.world.H*.8); b.ai.wz=rnd(-G.world.H*.8,G.world.H*.8); }
   }
-  const t=b.ai.target;
+  let t=b.ai.target;
   let tx,tz,vis=false,dist=99;
-  if(t){ dist=Math.hypot(t.pos.x-b.pos.x,t.pos.z-b.pos.z); vis=los(b,t); tx=t.pos.x; tz=t.pos.z; }
+  if(t){
+    vis=los(b,t);
+    // Bots used to walk straight to a target's exact position through walls, at every
+    // difficulty. Now they remember where it was and give up when memory runs out —
+    // a Rookie loses you almost immediately, a Nightmare keeps coming for 4.5 s.
+    if(vis){ b.ai.seen=G.t; b.ai.lx=t.pos.x; b.ai.lz=t.pos.z; }
+    else if(G.t-(b.ai.seen||-99) > memory){ b.ai.target=null; t=null; }
+  }
+  if(t){
+    dist=Math.hypot(t.pos.x-b.pos.x,t.pos.z-b.pos.z);
+    tx = vis ? t.pos.x : (b.ai.lx!==undefined?b.ai.lx:t.pos.x);
+    tz = vis ? t.pos.z : (b.ai.lz!==undefined?b.ai.lz:t.pos.z);
+  }
   else { tx=b.ai.wx; tz=b.ai.wz; }
   // movement
   let dx=tx-b.pos.x, dz=tz-b.pos.z; const dl=Math.hypot(dx,dz)||1; dx/=dl; dz/=dl;
@@ -2658,7 +2686,8 @@ function updateBot(b,dt){
   const want=botDesired(wp);
   if(t&&vis){
     if(dist>want+2){ mx+=dx; mz+=dz; } else if(dist<want-3){ mx-=dx; mz-=dz; }
-    mx+=-dz*b.ai.strafe*0.9; mz+=dx*b.ai.strafe*0.9;
+    const sf=(K.strafe===undefined?0.65:K.strafe);
+    mx+=-dz*b.ai.strafe*sf; mz+=dx*b.ai.strafe*sf;
   } else { mx+=dx; mz+=dz; }
   const ml=Math.hypot(mx,mz)||1; mx/=ml; mz/=ml;
   let speed=5.4*(wp.speed||1)*(mod.speed||1)*K.move*(b.stunT>0?0.45:1);
@@ -2679,7 +2708,7 @@ function updateBot(b,dt){
   if(b.res<=0&&b.ammo<=0&&wp.reserve>0) b.res=wp.reserve;
   // heal
   b.ai.heal-=dt;
-  if(b.hp<80&&(!vis||dist>22)&&b.ai.heal<=0&&b.food&&b.food.steak>0){
+  if(b.hp<(K.heal||75)&&(!vis||dist>22)&&b.ai.heal<=0&&b.food&&b.food.steak>0){
     b.food.steak--; b.hp=Math.min(BASE_HP,b.hp+50); b.ai.heal=6;
   }
   // shoot
@@ -3094,8 +3123,13 @@ function endMatch(win){
   // Deliberately flatter than the coin curve. Coins say how well you played; rank
   // says how much you have played. Tie both to the same thing and rank is just a
   // second wallet, and the least confident kid in the group never leaves level 1.
+  // The win bonus used to be flat, so surviving while the bots wiped each other out
+  // paid the same rank progress as carrying the match. It now runs through the same
+  // contribution curve the coins do, so the two systems agree. The participation
+  // terms above it stay ungated on purpose — that is what keeps a struggling player
+  // climbing ranks at all.
   const xpGain = 55 + kills*22 + hs*7 + Math.floor(res.dmg/70)
-               + (win?110:0) + earned.length*18 + (kills>0?35:0);
+               + (win?Math.round(110*contribution):0) + earned.length*18 + (kills>0?35:0);
   const rBefore=rankOf(S.xp||0); S.xp=(S.xp||0)+xpGain; const rAfter=rankOf(S.xp);
   const rankedUp = rAfter.tier>rBefore.tier;
 
@@ -3131,7 +3165,7 @@ function endMatch(win){
       (hs?row(plural(hs,'headshot')+' \u00D7 '+PAY.head,'+'+(hs*PAY.head)):'')+
       row(res.dmg+' damage \u00F7 '+PAY.dmgDiv,'+'+dmgCoin)+
       row('Outlasted '+plural(outlasted,'fighter')+(win?' \u2014 last one standing':''),'+'+survivalCoin)+
-      (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks all of that',
+      (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks all of that, and the full XP',
           '\u00D7'+contribution.toFixed(2)):'')+
       (G.streakCoins?row('Multi-kill bonus','+'+G.streakCoins):'')+
       (medalCoins?row(earned.length+' medal'+(earned.length===1?'':'s'),'+'+medalCoins):'')+
