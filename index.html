@@ -4,16 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Shooter's Royale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#0d0a14; --stone:#1b1626; --slate:#2c2439; --edge:#3d3352;
   --gold:#f2b134; --ember:#e0553a; --ench:#a97bff; --leaf:#7fd45b;
-  --bone:#ece3d2; --dim:#8e849e;
-  --disp:Impact,"Haettenschweiler","Arial Narrow Bold",Oswald,sans-serif;
-  --mono:"Courier New",ui-monospace,monospace;
-  --body:Verdana,Tahoma,"Segoe UI",sans-serif;
+  --bone:#ece3d2; --dim:#8e849e; --text2:#b9afc6;
+  --disp:Anton,Impact,"Haettenschweiler","Arial Narrow Bold",sans-serif;
+  --mono:"Courier New",Cousine,"Liberation Mono","DejaVu Sans Mono",ui-monospace,monospace;
+  --body:Verdana,"DejaVu Sans",Arimo,Tahoma,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+h1,h2,h3,h4,h5,h6{font-weight:400}
+.gametitle,.btn,.pagehead h2,.card .lab,.navbtn,.item .nm,.pvinfo h4,#mapWrap .mapname,
+#alive,#gname,#gammo,#streak,#hitmark,.dnum,.oc h3,.pc-lvl,.pc-name,.tpanel h5,.lbrow .r,.feed h5{
+  font-synthesis-weight:none}
 html,body{height:100%;overflow:hidden;background:var(--void);color:var(--bone);font-family:var(--body)}
 body{-webkit-font-smoothing:antialiased}
 canvas{display:block}
@@ -135,7 +142,7 @@ canvas{display:block}
 .tag{position:absolute;pointer-events:none;top:0;right:0;font-family:var(--mono);font-size:9px;letter-spacing:.14em;padding:3px 8px;
   background:var(--leaf);color:#0d1a06;text-transform:uppercase}
 .tag.eq{background:var(--ench);color:#120a22}
-.tag.myth{background:var(--ember);color:#fff}
+.tag.myth{background:var(--ember);color:#1a0a06}
 .rar-myth{box-shadow:inset 2px 2px 0 rgba(255,255,255,.09), inset -2px -2px 0 rgba(0,0,0,.55), 0 0 0 2px #e0553a, 0 0 22px rgba(224,85,58,.3)}
 .rar-ench{box-shadow:inset 2px 2px 0 rgba(255,255,255,.09), inset -2px -2px 0 rgba(0,0,0,.55), 0 0 0 2px #a97bff}
 .glint::after{content:"";position:absolute;pointer-events:none;top:-60%;left:-120%;width:60%;height:220%;transform:rotate(20deg);
@@ -153,7 +160,7 @@ canvas{display:block}
 #mapWrap{position:absolute;top:16px;left:16px;padding:8px}
 #minimap{display:block;width:184px;height:184px;background:#0b0812}
 #mapWrap .mapname{font-family:var(--disp);font-size:14px;letter-spacing:.14em;margin-top:7px;color:var(--gold);text-transform:uppercase}
-#mapWrap .maplegend{font-size:9px;color:var(--dim);letter-spacing:.08em;margin-top:2px}
+#mapWrap .maplegend{font-size:10px;color:var(--dim);letter-spacing:.07em;margin-top:3px}
 #topmid{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center;padding:8px 22px}
 #alive{font-family:var(--disp);font-size:26px;letter-spacing:.1em;color:var(--bone)}
 #alive b{color:var(--ember)}
@@ -203,7 +210,8 @@ canvas{display:block}
   font-family:var(--disp)}
 #hurt{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(190,30,20,.62) 100%);transition:opacity .2s}
 #petbar{position:absolute;left:22px;bottom:96px;font-size:11px;color:var(--leaf);letter-spacing:.08em}
-#hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:10.5px;color:#6b6280;letter-spacing:.14em}
+#hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:10.5px;color:var(--dim);
+  letter-spacing:.13em;text-align:center;text-shadow:0 1px 3px #0d0a14,0 0 8px #0d0a14}
 #dmgnums{position:absolute;inset:0;overflow:hidden}
 .dnum{position:absolute;font-family:var(--disp);font-size:20px;color:var(--gold);text-shadow:0 2px 0 #000;
   animation:dfloat .8s ease-out forwards}
@@ -243,8 +251,8 @@ canvas{display:block}
 .xpbar i{display:block;height:100%;background:linear-gradient(90deg,#a97bff,#c47bff)}
 .statlist .rankrow,.statlist .xpbar,.statlist .medals{border-bottom:none}
 .dailyrow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:7px 8px;margin-bottom:5px;
-  background:rgba(22,16,34,.9);box-shadow:inset 0 0 0 1px var(--edge);color:#a79dba;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;line-height:1.4}
+  background:rgba(22,16,34,.9);box-shadow:inset 0 0 0 1px var(--edge);color:var(--text2);
+  font-family:var(--mono);font-size:11px;letter-spacing:.03em;line-height:1.45}
 .dailyrow span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .dailyrow.on{color:var(--leaf);box-shadow:inset 0 0 0 1px rgba(127,212,91,.55)}
 .dailyrow b{color:var(--gold);font-weight:normal;white-space:nowrap;font-size:10px;padding-left:2px}
@@ -253,11 +261,9 @@ canvas{display:block}
 /* A scrim so the menu is readable over whatever the arena is doing behind it. */
 #scr-title::before{content:'';position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 42%, rgba(11,8,18,.80) 0%, rgba(11,8,18,.62) 42%, rgba(11,8,18,.34) 100%)}
-#scr-title{padding-top:184px}
 .titlebody{position:relative;z-index:1}
 
-.playercard{position:absolute;left:18px;top:16px;width:272px;padding:12px 14px;z-index:5;
-  background:rgba(11,8,18,.94);cursor:pointer}
+.playercard{width:100%;padding:13px 15px;background:rgba(11,8,18,.94);cursor:pointer}
 .playercard.flat{cursor:default}
 .playercard:not(.flat):hover{box-shadow:inset 0 0 0 2px var(--gold)}
 .pc-top{display:flex;align-items:center;gap:11px}
@@ -267,49 +273,50 @@ canvas{display:block}
 .pc-id{min-width:0;flex:1}
 .pc-name{font-family:var(--disp);font-size:17px;letter-spacing:.07em;color:var(--bone);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pc-rank{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;margin-top:3px;
+.pc-rank{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;margin-top:3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-xp{height:7px;background:#150f22;box-shadow:inset 0 0 0 1px #0a0710;margin-top:10px}
 .pc-xp i{display:block;height:100%;background:linear-gradient(90deg,#a97bff,#c47bff)}
-.pc-sub{font-family:var(--mono);font-size:9px;letter-spacing:.11em;color:#8e849e;margin-top:5px;text-align:right}
+.pc-sub{font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--dim);margin-top:6px;text-align:right}
 .pc-stats{display:flex;justify-content:space-between;gap:8px;margin-top:9px;padding-top:9px;
-  border-top:1px solid #2c2439;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
+  border-top:1px solid #2c2439;font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--dim)}
 .pc-stats b{color:var(--bone);font-weight:normal;font-size:12px}
-.pc-cta{margin-top:9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--gold)}
+.pc-cta{margin-top:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;color:var(--gold)}
 
-.titlebody{display:flex;align-items:flex-start;justify-content:center;gap:24px;
-  width:100%;max-width:1220px}
-.titlecenter{display:flex;flex-direction:column;align-items:center;flex:0 0 392px}
-/* the wordmark has to share the row with two rails now, so it runs smaller here */
-.titlecenter .gametitle{font-size:clamp(34px,4.6vw,72px)}
-.titlecenter .tagline{letter-spacing:.2em;font-size:11px;white-space:nowrap}
-.tpanel{width:272px;flex:0 0 272px;padding:13px 14px;background:rgba(11,8,18,.94)}
+.titlebody{display:flex;align-items:flex-start;justify-content:center;gap:26px;
+  width:100%;max-width:1240px}
+.lrail{display:flex;flex-direction:column;gap:14px;flex:0 0 278px;width:278px}
+.titlecenter{display:flex;flex-direction:column;align-items:center;flex:0 0 458px}
+/* the wordmark shares its row with two rails, so it runs smaller than on a bare screen */
+.titlecenter .gametitle{font-size:clamp(34px,4.4vw,84px)}
+.titlecenter .tagline{letter-spacing:.18em;font-size:11.5px;white-space:nowrap}
+.tpanel{width:100%;padding:13px 15px;background:rgba(11,8,18,.94)}
+.rrail{flex:0 0 278px;width:278px}
 .tpanel h5{font-family:var(--disp);font-size:13px;letter-spacing:.17em;color:var(--gold);
   margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.tpanel h5 em{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--dim)}
+.tpanel h5 em{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.09em;color:var(--dim)}
 .tpanel.click{cursor:pointer}
 .tpanel.click:hover{box-shadow:inset 0 0 0 2px var(--gold)}
-.tp-note{font-family:var(--mono);font-size:10.5px;line-height:1.85;color:var(--dim);letter-spacing:.04em}
+.tp-note{font-family:var(--mono);font-size:11.5px;line-height:1.75;color:var(--text2);letter-spacing:.03em}
 .tp-foot{margin-top:9px;padding-top:8px;border-top:1px solid #2c2439;
-  font-family:var(--mono);font-size:9px;letter-spacing:.13em;color:#6b6280;text-align:center}
+  font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:var(--dim);text-align:center}
 
 .mb-row{display:grid;grid-template-columns:18px 1fr 30px;gap:8px;align-items:center;padding:5px 5px;
   font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--bone)}
-.mb-row .r{color:#6b6280;text-align:right;font-size:10px}
+.mb-row .r{color:var(--dim);text-align:right;font-size:11px}
 .mb-row .r.top{color:var(--gold)}
 .mb-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mb-row .v{text-align:right;color:var(--gold)}
 .mb-row.me{background:rgba(242,177,52,.16);box-shadow:inset 0 0 0 1px rgba(242,177,52,.5);color:#fff}
 .mb-gap{text-align:center;color:#4a4358;font-family:var(--mono);font-size:11px;letter-spacing:.3em;padding:1px 0}
 
-@media (max-width:1080px){
-  #scr-title{padding-top:24px}
-  .titlebody{flex-wrap:wrap;gap:16px}
+@media (max-width:1180px){
+  .titlebody{flex-wrap:wrap;justify-content:center;gap:16px}
+  .titlecenter{order:1;flex:1 1 100%}
   .titlecenter .gametitle{font-size:clamp(38px,7.2vw,104px)}
   .titlecenter .tagline{white-space:normal}
-  .titlecenter{order:1;flex:1 1 100%}
-  .tpanel{order:2;flex:1 1 250px;width:auto;max-width:330px}
-  .playercard{position:static;width:min(330px,92vw);margin:0 auto 14px}
+  .lrail{order:2;flex:0 1 320px;width:auto}
+  .rrail{order:3;flex:0 1 320px;width:auto;align-self:stretch}
 }
 /* leaderboard */
 .lbhead,.lbrow{display:grid;grid-template-columns:44px 1fr 62px 62px 62px 74px;gap:8px;align-items:center;
@@ -334,12 +341,12 @@ canvas{display:block}
 .fld input{width:100%;padding:11px 12px;background:#100c1a;border:0;box-shadow:inset 0 0 0 2px var(--edge);
   color:var(--bone);font-family:var(--mono);font-size:15px;letter-spacing:.18em;text-transform:uppercase}
 .fld input:focus{outline:0;box-shadow:inset 0 0 0 2px var(--gold)}
-.fld .note{font-family:var(--mono);font-size:10px;color:#6b6280;letter-spacing:.08em;margin-top:5px}
+.fld .note{font-family:var(--mono);font-size:11.5px;color:var(--text2);letter-spacing:.05em;margin-top:6px;line-height:1.6}
 .accmsg{min-height:20px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;margin:4px 0 14px}
 .accmsg.bad{color:var(--ember)} .accmsg.good{color:var(--leaf)}
-.accrow{display:flex;gap:10px}.accrow .btn{flex:1}
+.accrow{display:flex;gap:10px;align-items:stretch}.accrow .btn{flex:1;white-space:nowrap;padding-left:10px;padding-right:10px}
 .privacy{margin-top:18px;padding-top:14px;border-top:1px solid #2c2439;font-family:var(--mono);
-  font-size:10px;line-height:1.9;color:#6b6280;letter-spacing:.05em}
+  font-size:11px;line-height:1.85;color:var(--dim);letter-spacing:.04em}
 .orow{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:6px}
 .orow .btn{flex:1 1 auto;min-width:132px;white-space:nowrap;padding-left:14px;padding-right:14px}
 #loading{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--void);gap:18px}
@@ -403,9 +410,11 @@ canvas{display:block}
 
   <!-- TITLE -->
   <div class="screen" id="scr-title">
-    <div class="playercard blk" id="playerCard"></div>
     <div class="titlebody">
-      <aside class="tpanel blk" id="miniBoard"></aside>
+      <div class="lrail">
+        <div class="playercard blk" id="playerCard"></div>
+        <aside class="tpanel blk" id="miniBoard"></aside>
+      </div>
       <div class="titlecenter">
         <h1 class="gametitle">Shooter's<span>Royale</span></h1>
         <div class="tagline">One life · Eight fighters · Last block standing</div>
@@ -416,7 +425,7 @@ canvas{display:block}
           <button class="btn ghost" id="btnHelp">How to play</button>
         </div>
       </div>
-      <aside class="tpanel blk" id="dailyBox"></aside>
+      <aside class="tpanel blk rrail" id="dailyBox"></aside>
     </div>
   </div>
 
@@ -799,7 +808,7 @@ function rankOf(xp){ let r=RANKS[0],i=0; for(let k=0;k<RANKS.length;k++) if(xp>=
 
 // weapon mastery — kills with a weapon. Cosmetic glow + a coin bonus, never extra damage.
 const MASTERY = [
-  {kills:0,   name:'—',        col:'#6b6280', hex:0x6b6280, glow:0},
+  {kills:0,   name:'—',        col:'var(--dim)', hex:0x6b6280, glow:0},
   {kills:10,  name:'BRONZE',   col:'#c07a3e', hex:0xc07a3e, glow:0.18},
   {kills:30,  name:'SILVER',   col:'#c9d2dd', hex:0xc9d2dd, glow:0.30},
   {kills:75,  name:'GOLD',     col:'#f2b134', hex:0xf2b134, glow:0.45},
@@ -3089,8 +3098,8 @@ function endMatch(win){
       (G.streakCoins?row('Multi-kill bonus','+'+G.streakCoins):'')+
       (medalCoins?row(earned.length+' medal'+(earned.length===1?'':'s'),'+'+medalCoins):'')+
       (chCoins?row(chDone.length+' daily challenge'+(chDone.length===1?'':'s'),'+'+chCoins):'')+
-      row(S.cfg.skill.toUpperCase()+' bots','\u00D7'+skillMul)+
-      row(S.cfg.bots+' opponents','\u00D7'+fieldMul.toFixed(2))+
+      row(S.cfg.skill.toUpperCase()+' opponents','\u00D7'+skillMul)+
+      row(plural(S.cfg.bots,'opponent'),'\u00D7'+fieldMul.toFixed(2))+
       (streakMul>1?row((S.stats.streak-1)+'-win streak','\u00D7'+streakMul.toFixed(2)):'')+
       (firstWin?row('First win in '+arena.name,'+400'):'')+
       (dailyBonus?row('First win of the day \u2014 DOUBLED','+'+dailyBonus):'')+
@@ -3198,7 +3207,7 @@ function toggleScores(on){
   scoreEl.style.display=on?'block':'none';
   if(!on) return;
   const rows=G.ents.slice().sort((a,b)=>(b.kills||0)-(a.kills||0)).map(e=>
-    '<div style="display:flex;justify-content:space-between;padding:4px 0;color:'+(e.alive?'#ece3d2':'#6b6280')+'">'+
+    '<div style="display:flex;justify-content:space-between;padding:4px 0;color:'+(e.alive?'#ece3d2':'var(--dim)')+'">'+
     '<span>'+(e.isPlayer?'★ ':'')+e.name+(e.alive?'':' ☠')+'</span>'+
     '<span style="color:#f2b134">'+(e.kills||0)+' K</span>'+
     '<span style="color:#8e849e">'+W[e.wep].name+'</span></div>').join('');
@@ -3307,7 +3316,7 @@ function renderDaily(){
     return '<div class="dailyrow'+(ok?' on':'')+'"><span>'+(ok?'\u2714 ':'')+c.txt+'</span>'+
       '<b>'+(ok?'DONE':pr+'/'+c.goal)+' \u00B7 '+c.coins+'\u2B25</b></div>';
   }).join('');
-  el.className='tpanel blk';
+  el.classList.remove('click');
   el.innerHTML='<h5>DAILY <em>'+done+'/'+D.ids.length+' DONE</em></h5>'+rows+
     (D.firstWin?'<div class="tp-foot">DAILY DOUBLE ALREADY CLAIMED</div>'
               :'<div class="dailyrow" style="color:var(--gold)"><span>First win today pays DOUBLE</span><b>\u00D72</b></div>')+
@@ -3331,7 +3340,7 @@ function renderPlayerCard(){
       '<div class="pc-id">'+
         '<div class="pc-name">'+esc(name)+'</div>'+
         '<div class="pc-rank" style="color:'+r.col+'">'+esc(r.name.toUpperCase())+
-          (named?' <span style="color:#6b6280">· '+esc(ACC.club.toUpperCase())+'</span>':'')+'</div>'+
+          (named?' <span style="color:var(--dim)">· '+esc(ACC.club.toUpperCase())+'</span>':'')+'</div>'+
       '</div>'+
     '</div>'+
     '<div class="pc-xp"><i style="width:'+pct+'%"></i></div>'+
@@ -3351,12 +3360,12 @@ async function renderMiniBoard(force){
   const el=$('#miniBoard'); if(!el) return;
   const club=(ACC&&ACC.club)||CLOUD.club;
   if(!NET.on()){
-    el.className='tpanel blk';
+    el.classList.remove('click'); el.onclick=null;
     el.innerHTML='<h5>LEADERBOARD</h5><div class="tp-note">Not switched on in this copy of the game. '+
       'Everything else works and saves on this computer.</div>';
     return;
   }
-  el.className='tpanel blk click';
+  el.classList.add('click');
   el.onclick=()=>{AU.ui();show('scr-board');};
   const now=Date.now();
   if(!force && now-miniBoardT<15000 && el.dataset.filled==='1') return;
@@ -3375,14 +3384,15 @@ async function renderMiniBoard(force){
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
       '<span class="n">'+esc(r.handle)+'</span>'+
       '<span class="v">'+r.wins+'</span></div>';
-  let html=head+'<div class="mb-row" style="color:#6b6280;font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
-    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:#6b6280">WINS</span></div>';
+  let html=head+'<div class="mb-row" style="color:var(--dim);font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
+    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">WINS</span></div>';
   html+=rows.slice(0,5).map(line).join('');
   const mine=me?rows.find(r=>r.handle===me):null;
   if(mine && mine.rank>5){ html+='<div class="mb-gap">···</div>'+line(mine); }
+  // has to fit one line inside a 278px rail, so this stays short
   html+='<div class="tp-foot">'+(me
-      ? (mine?'YOU ARE #'+mine.rank+' OF '+rows.length:'PLAY A TRIAL TO GET RANKED')
-      : 'JOIN THE CLUB TO GET ON THE BOARD')+' · TAP FOR FULL BOARD</div>';
+      ? (mine?'YOU ARE #'+mine.rank+' OF '+rows.length+' · FULL BOARD ▸':'PLAY A TRIAL TO GET RANKED')
+      : 'JOIN THE CLUB TO GET RANKED')+'</div>';
   el.innerHTML=html;
   el.dataset.filled='1';
 }
@@ -3423,7 +3433,7 @@ function renderAccount(){
       '<div class="note">Everyone with the same club word shares one leaderboard.</div></div>':'')+
     '<div class="accmsg" id="accMsg"></div>'+
     '<div class="accrow"><button class="btn primary" id="accGo">'+(joining?'Create fighter':'Sign in')+'</button>'+
-    '<button class="btn ghost" id="accSwap">'+(joining?'I already have one':'I am new')+'</button></div>'+
+    '<button class="btn ghost" id="accSwap">'+(joining?'Sign in instead':'Create one instead')+'</button></div>'+
     accPrivacy();
 
   $('#accSwap').onclick=()=>{ accMode = joining?'back':'join'; AU.ui(); renderAccount(); };
@@ -3568,7 +3578,7 @@ function renderSetup(){
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
-  g.appendChild(slider('Time limit','Minutes before the trial ends in a draw',2,15,1,S.cfg.time,v=>v+' min',v=>{S.cfg.time=v;summary();}));
+  g.appendChild(slider('Time limit','Minutes before the trial ends in a draw',2,15,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
   g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
   g.appendChild(slider('Field of view','Wider sees more, feels faster',70,130,1,S.cfg.fov,null,v=>{S.cfg.fov=v;baseFov=v;}));
   g.appendChild(chipCard('Camera','Switch any time with V — third person shows your skins',
@@ -3670,11 +3680,13 @@ function rangeTxt(w){
   if(!w.fall) return 'full damage to '+w.range+' m';
   return 'full power to '+w.fall[0]+' m \u00B7 '+Math.round(w.fall[2]*100)+'% at '+w.fall[1]+' m';
 }
+function plural(n,one,many){ return n+' '+(n===1?one:(many||one+'s')); }
 function masteryTxt(id){
   const m=masteryOf(id);
-  if(!m.kills) return '<span style="color:#6b6280">\u2605 no kills yet</span>';
-  return '<span style="color:'+m.col+'">\u2605 '+(m.tier?m.name:'UNRANKED')+' \u00B7 '+m.kills+' kills'+
-    (m.next?' \u00B7 '+(m.next.kills-m.kills)+' to '+m.next.name:'')+'</span>';
+  if(!m.kills) return '<span style="color:var(--dim)">\u2605 no kills yet</span>';
+  const got = m.tier ? m.name+' \u00B7 '+plural(m.kills,'kill') : plural(m.kills,'kill');
+  return '<span style="color:'+m.col+'">\u2605 '+got+
+    (m.next?' \u00B7 '+(m.next.kills-m.kills)+' more for '+m.next.name:' \u00B7 MAXED')+'</span>';
 }
 function renderShop(tab){
   shopTab=tab;
@@ -3695,8 +3707,8 @@ function renderShop(tab){
       g.appendChild(card({name:w.name,rar:w.rar,tag:eq||eqM||(w.rar==='myth'?'MYTHIC':null),tagCls:(eq||eqM)?'eq':'myth',
         stats:'<b>'+w.cls+'</b> · POWER '+pwBar(w.pw)+'<br>'+(w.dmg>900?'ONE SHOT KILL — ANY BODY PART':w.dmg+' body / '+Math.round(w.dmg*HEAD_MULT)+' head')+
           '<br>'+ammoTxt(w)+'<br>'+rangeTxt(w)+
-          (w.pellets?'<br>'+w.pellets+' pellets per shell':'')+(w.splash?'<br>'+w.splash+' splash · '+w.splashR+'m radius':'')+
-          (w.chain?'<br>chains to '+w.chain+' extra targets':'')+
+          (w.pellets?'<br>'+plural(w.pellets,'pellet')+' per shell':'')+(w.splash?'<br>'+w.splash+' splash · '+w.splashR+'m radius':'')+
+          (w.chain?'<br>chains to '+plural(w.chain,'more fighter')+' nearby':'')+
           (w.burst?'<br>'+w.burst+'-round burst per trigger pull':'')+
           (w.leech?'<br>heals you '+w.leech+' HP every hit':'')+
           (w.knock?'<br>launches whoever you hit':'')+
@@ -3808,7 +3820,7 @@ function pvInfoChar(it){
     kv('Pet',S.eq.pet?PE[S.eq.pet].name:'none')+kv('Slot 1',p.name)+
     kv('Slot 2',S.eq.secondary?W[S.eq.secondary].name:'empty')+
     kv('Slot 3',W[S.eq.melee||'knife'].name)+
-    '<div style="margin-top:10px;color:#6b6280">Third person shows all of this mid-fight. Press V in a match.</div>';
+    '<div style="margin-top:10px;color:var(--dim)">Third person shows all of this mid-fight. Press V in a match.</div>';
 }
 function pvInfoPet(p){
   $('#pvInfo').innerHTML='<h4>'+p.name+'</h4><div>'+p.desc+'</div>'+
@@ -3816,13 +3828,13 @@ function pvInfoPet(p){
     kv('Damage per sec',Math.round(p.dmg/p.cd*10)/10)+kv('Pet health',p.hp)+
     kv('Reach',p.range+'m')+kv('Speed',p.speed)+
     '<h4>Perk</h4><div>'+p.perkTxt+'</div>'+
-    '<div style="margin-top:8px;color:#6b6280">Pets take return fire. Drop one and it stays down for 18 seconds — its perk goes with it.</div>';
+    '<div style="margin-top:8px;color:var(--dim)">Pets take return fire. Drop one and it stays down for 18 seconds — its perk goes with it.</div>';
 }
 function pvInfoFood(f){
   $('#pvInfo').innerHTML= f? ('<h4>'+f.name+'</h4><div>'+f.desc+'</div>'+kv('Heals',f.heal+' HP')+
     (f.abs?kv('Absorption','+'+f.abs):'')+kv('Cost',f.cost+' ⬥')+kv('In your kit',(S.food[f.id]||0)))
     : '<h4>Food</h4><div>Health never comes back on its own. Everything you eat mid-fight has to be bought here first.</div>'+
-      '<div style="margin-top:8px;color:#6b6280">Press F in a match to eat, Q to switch between what you are carrying.</div>';
+      '<div style="margin-top:8px;color:var(--dim)">Press F in a match to eat, Q to switch between what you are carrying.</div>';
 }
 function pvInfoArena(a){
   if(!a) return;

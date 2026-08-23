@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 0.7 · **Date:** 23 August 2026 · **File:** `index.html` (~205 KB, ~3,700 lines)
+**Version:** 0.8 · **Date:** 23 August 2026 · **File:** `index.html` (~206 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,36 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 0.8 — readability, fonts and composition
+
+A design pass driven by three things a playtester actually noticed: helper text was hard to read,
+the layout felt unbalanced, and the fonts needed checking.
+
+**Contrast, measured rather than eyeballed.** A script walked every visible text node on all six
+screens, composited the real background stack, and computed WCAG ratios. One colour, `#6b6280`,
+carried nearly all the helper text at 9–10px and measured **3.1–3.5:1** against a 4.5:1 requirement.
+It is gone, replaced by a proper three-step scale (`--bone` / `--text2` 9.5:1 / `--dim` 5.6:1), and
+no UI text renders below 10px any more. All six screens now return zero failures.
+
+**Fonts would have broken on the target device.** ChromeOS ships Arimo, Tinos, Cousine, Roboto and
+Noto, and none of Impact, Haettenschweiler, Arial Narrow or Oswald. The display stack fell through
+to generic `sans-serif`, meaning the wordmark, every heading, the ammo counter and the kill banners
+rendered as plain Roboto on exactly the school Chromebooks this game is for. Anton now loads from
+Google Fonts with Impact behind it, headings are pinned to weight 400 with `font-synthesis-weight:none`,
+and the mono and body stacks gained metric-compatible ChromeOS fallbacks.
+
+**Composition.** Measurement showed the profile card stranded 372px from the content block with
+282px of dead band above it and 303px below. The card now sits in the left rail directly above the
+standings — "you", then "everyone" — so the three columns read as one composed unit. Dead space is
+symmetric, the rails are equal width, and the wordmark clears both.
+
+Two bugs found doing it: `renderDaily` assigned `className` wholesale and silently wiped the layout
+class the markup had put on the right rail; and the mastery line read "UNRANKED · 1 kills · 9 to
+BRONZE" — wrong plural, and a tier label that contradicted the count next to it. Pluralisation is
+now a helper and applied across opponents, minutes, pellets, chain targets and heat shots.
 
 ---
 

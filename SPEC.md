@@ -498,7 +498,22 @@ Minecraft-Dungeons arcade cabinet. Obsidian and void palette with beveled "block
 --bone  #ece3d2    --dim   #8e849e
 ```
 
-Display type is an Impact-family face, data is Courier New, body is Verdana. Every panel carries the `.blk` bevel (inset light top-left, dark bottom-right). Mythic and legendary shop cards get an "enchantment glint" sweep. A soft CRT scanline overlay sits over everything at 12% opacity.
+Display type is **Anton**, loaded from Google Fonts with `font-display:swap`, falling back to
+Impact and the Haettenschweiler / Arial Narrow family. Data is Courier New (with Cousine and
+DejaVu Sans Mono behind it), body is Verdana (DejaVu Sans, Arimo).
+
+The webfont exists for one reason: the target device is a school Chromebook, and ChromeOS ships
+Arimo, Tinos, Cousine, Roboto and Noto — none of Impact, Haettenschweiler, Arial Narrow or Oswald.
+The display stack was falling all the way through to generic `sans-serif`, so every heading, the
+wordmark, the ammo counter and the kill banners rendered in plain Roboto and the arcade-poster
+identity disappeared on exactly the machines the game was built for. Anton is a single-weight face,
+so headings are pinned to `font-weight:400` with `font-synthesis-weight:none` rather than letting
+the browser smear a fake bold over it.
+
+**Text colour scale.** Three steps, all of which clear WCAG AA against the panel background:
+`--bone #ece3d2` for primary, `--text2 #b9afc6` (9.5:1) for secondary reading copy, `--dim #8e849e`
+(5.6:1) for labels and captions. A fourth value, `#6b6280`, used to carry most of the helper text at
+9–10px and measured **3.1–3.5:1**; it is gone. Nothing in the UI now renders below 10px. Every panel carries the `.blk` bevel (inset light top-left, dark bottom-right). Mythic and legendary shop cards get an "enchantment glint" sweep. A soft CRT scanline overlay sits over everything at 12% opacity.
 
 **Shared model format.** Characters, weapons, and pets are all declared as arrays of box specs `{w, h, d, x, y, z, c, e}` with forward = −z. The same data drives both the Three.js meshes and the 2D canvas shop icons, so an item can never look different in the shop than it does in the arena.
 
