@@ -2,7 +2,7 @@
 
 A 3D browser arena shooter, built by Ethan. One life, 200 HP, last block standing.
 
-**▶ Play: https://reynoldw.github.io/shooters-royale/**
+**▶ Play: https://fun-games-ralston.github.io/shooters-royale/**
 
 Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 

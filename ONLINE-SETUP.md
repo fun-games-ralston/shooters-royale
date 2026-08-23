@@ -45,10 +45,10 @@ write them directly. Everything goes through the six checked functions.
 
 ## 3. Publish it (already done)
 
-The game lives at **https://github.com/reynoldw/shooters-royale** and GitHub
+The game lives at **https://github.com/fun-games-ralston/shooters-royale** and GitHub
 Pages serves it from the `main` branch at:
 
-**https://reynoldw.github.io/shooters-royale/**
+**https://fun-games-ralston.github.io/shooters-royale/**
 
 To push a change after editing `index.html`:
 
