@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 0.9 · **Date:** 23 August 2026 · **File:** `index.html` (~207 KB, ~3,700 lines)
+**Version:** 1.0 · **Date:** 23 August 2026 · **File:** `index.html` (~207 KB, ~3,700 lines)
 
 ---
 
@@ -63,6 +63,55 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.0 — economy simplified, difficulty stays a choice
+
+**Your settings no longer change your pay.** The opponent-skill and lobby-size multipliers are
+gone. Between them they swung earnings about **7×**, which made the difficulty picker an
+arithmetic puzzle and meant two kids could play the same match and take home wildly different
+amounts. The rule is now simply: your settings do not change your pay, your play does.
+
+Lobby size still matters, but honestly rather than as a multiplier — you are paid **20 per
+fighter you outlasted, plus 120 for winning**. Beating seven people pays more than beating one
+because you beat seven people. That framing also closes the farm that removing the multiplier
+would otherwise have opened: a one-opponent win pays 267 against a seven-opponent win's 715.
+
+The level catch-up is gone too. It was making a brand new player's very first match the richest
+one they would play all week — the exact moment the economy already felt loose.
+
+| | 0.9 | 1.0 |
+| --- | --- | --- |
+| Per kill / headshot | 38 / 14 | 25 / 10 |
+| Damage | ÷32 | ÷45 |
+| Skill × lobby multipliers | 0.46× – 3.26× | **removed** |
+| Level catch-up | ×1.25 → 1.0 | **removed** |
+| First win in arena | 400 | 150 |
+| Daily double cap | 500 | 250 |
+| Typical win | ~1,320 | **748** |
+| Average / match | ~1,250 | ~850 |
+| Every weapon owned | match 41, day 11 | **match 61, day 16** |
+
+One win now buys one cheap weapon, which was the goal.
+
+### Difficulty: a toggle, not a curve
+
+Asked whether opponents should scale with level. They should not, and the reason is specific to
+this game: **auto-scaling would invert the leaderboard.** The board ranks total wins and kills,
+so a level 8 player facing Elite bots would win less than a level 2 player facing Rookie and
+slide *down* the board. It would also punish improvement (get better, game gets harder, felt
+experience stays flat) and stop two friends at different levels sharing a setting.
+
+Instead: new players now start on **Rookie against five opponents** instead of Regular against
+seven, three straight wins puts a nudge toward the next tier on the results screen, and two of
+the twelve daily challenges require Veteran or harder.
+
+**Known trade-off, stated plainly.** Without the skill multiplier, harder tiers now pay *less*
+(Nightmare 374 against Regular's 715) because you die more and kill less. Rookie through Veteran
+sit within ~8% of each other so only the extremes lose out, but the honest fix is to move the
+difficulty reward from the wallet to the **scoreboard** — weight leaderboard standing by the tier
+you beat. That needs a database change and has not been done.
 
 ---
 

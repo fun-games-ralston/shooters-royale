@@ -823,21 +823,24 @@ function masteryOf(id){ const k=(S.mastery&&S.mastery[id])||0; let m=MASTERY[0],
 // Payout rates. Referenced by both the maths and the itemised results screen, so
 // the two can never drift apart again.
 const PAY = {
-  turnUp:90,        // just for finishing a trial — the floor a bad match still pays
-  kill:38, head:14, dmgDiv:32,
-  place:[300,150,100,60,40],   // 1st, 2nd, 3rd, 4th, rest
-  floor:0.55,       // share of the placement bonus you get with no kills
-  fullAt:3,         // kills needed for the whole placement bonus
+  turnUp:60,        // just for finishing a trial — the floor a bad match still pays
+  kill:25, head:10, dmgDiv:45,
+  outlast:20,       // per fighter you outlived
+  winBonus:120,     // on top, for being the last one standing
+  floor:0.55,       // share of the survival pay you get with no kills
+  fullAt:3,         // kills needed for all of it
+  firstArena:150,   // one-off, the first time you win in each arena
+  dailyCap:250,     // ceiling on doubling your first win of the day
 };
 
 const MEDALS = [
-  {id:'sharp',   name:'Sharpshooter', coins:80,  test:r=>r.hs>=5,                 txt:'5+ headshots'},
-  {id:'exec',    name:'Executioner',  coins:110, test:r=>r.kills>=6,              txt:'6+ kills'},
-  {id:'untouch', name:'Untouchable',  coins:140, test:r=>r.win&&r.hpLeft>=150,    txt:'won above 150 HP'},
-  {id:'brawler', name:'Brawler',      coins:90,  test:r=>r.meleeKills>=2,         txt:'2+ melee kills'},
-  {id:'variety', name:'Quartermaster',coins:90,  test:r=>r.wepsUsed>=3,           txt:'killed with 3 weapons'},
-  {id:'clutch',  name:'Clutch',       coins:150, test:r=>r.win&&r.lowHp,          txt:'won after dropping below 40 HP'},
-  {id:'streak3', name:'Rampage',      coins:90,  test:r=>r.bestStreak>=3,         txt:'3 kills without dying down'},
+  {id:'sharp',   name:'Sharpshooter', coins:55,  test:r=>r.hs>=5,                 txt:'5+ headshots'},
+  {id:'exec',    name:'Executioner',  coins:75,  test:r=>r.kills>=6,              txt:'6+ kills'},
+  {id:'untouch', name:'Untouchable',  coins:95,  test:r=>r.win&&r.hpLeft>=150,    txt:'won above 150 HP'},
+  {id:'brawler', name:'Brawler',      coins:60,  test:r=>r.meleeKills>=2,         txt:'2+ melee kills'},
+  {id:'variety', name:'Quartermaster',coins:60,  test:r=>r.wepsUsed>=3,           txt:'killed with 3 weapons'},
+  {id:'clutch',  name:'Clutch',       coins:100, test:r=>r.win&&r.lowHp,          txt:'won after dropping below 40 HP'},
+  {id:'streak3', name:'Rampage',      coins:60,  test:r=>r.bestStreak>=3,         txt:'3 kills without dying down'},
 ];
 
 // daily challenges — three a day, re-rolled from the pool by date
@@ -852,7 +855,10 @@ const CHALLENGES = [
   {id:'explode2',txt:'Get 2 kills with splash or lightning',goal:2,coins:210, track:'bigKills'},
   {id:'survive', txt:'Finish top 3 twice',               goal:2,   coins:180, track:'top3'},
   {id:'nofood',  txt:'Win without eating anything',      goal:1,   coins:240, track:'nofoodWin'},
+  {id:'vet1',    txt:'Win against Veteran or harder',     goal:1,   coins:260, track:'hardWin'},
+  {id:'vet3',    txt:'Get 3 kills vs Veteran or harder',  goal:3,   coins:220, track:'hardKills'},
 ];
+const HARD_TIERS = ['veteran','elite','nightmare'];
 function dayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function dailySet(){
   const key=dayKey();
@@ -1094,7 +1100,7 @@ const DEFAULT_STATE = {
   own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
-  cfg:{ arena:'foundry', bots:7, skill:'regular', time:6, sens:150, fov:100, sound:true, nametags:true, cam:'first', mode:'trial' },
+  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:6, sens:150, fov:100, sound:true, nametags:true, cam:'first', mode:'trial' },
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
   mastery: {},
@@ -3032,13 +3038,18 @@ function endMatch(win){
   const kills=G.kills, hs=G.hs;
   const arena=AR[S.cfg.arena];
   const place=win?1:(G.ents.filter(e=>e.alive).length+1);
-  const skillMul={rookie:.6,regular:1,veteran:1.4,elite:1.8,nightmare:2.4,mixed:1.25}[S.cfg.skill]||1;
-  const fieldMul=0.7+S.cfg.bots*0.06;
-  // Placement used to pay flat, so hiding while the bots killed each other paid the
-  // same as winning a firefight. Half of it is now earned by actually fighting.
-  const placeBase = win?PAY.place[0] : place===2?PAY.place[1] : place===3?PAY.place[2] : place===4?PAY.place[3] : PAY.place[4];
+  // No multiplier for opponent skill or lobby size any more. Those are menu settings,
+  // and paying differently for them turned the difficulty picker into an arithmetic
+  // puzzle: the swing between the cheapest and richest combination was about 7x, so
+  // two kids could play the same match and earn wildly different amounts.
+  // The rule is now simply: your settings do not change your pay, your play does.
+  //
+  // Lobby size still matters, but honestly rather than as a multiplier — beating
+  // seven fighters pays more than beating one because you outlasted seven people,
+  // and that is also what stops anyone farming quick wins in a one-bot lobby.
+  const outlasted = Math.max(0, (S.cfg.bots+1) - place);
   const contribution = PAY.floor + (1-PAY.floor)*Math.min(1, kills/PAY.fullAt);
-  const placeCoin = Math.round(placeBase*contribution);
+  const survivalCoin = Math.round((outlasted*PAY.outlast + (win?PAY.winBonus:0)) * contribution);
   const dmgCoin = Math.floor(G.dmgDone/PAY.dmgDiv);
   S.stats.cleared=S.stats.cleared||[];
   const firstWin = win && S.stats.cleared.indexOf(arena.id)<0;
@@ -3050,17 +3061,13 @@ function endMatch(win){
     wepsUsed:Object.keys(G.wepKills||{}).length, bestStreak:G.bestStreak||0,
     lowHp:!!G.lowHp, ate:G.ate||0 };
 
-  // An onboarding boost that decays to nothing by level 4. Deliberately a bonus for
-  // the new rather than a penalty for the experienced: same arithmetic, and one of
-  // them feels like a welcome while the other feels like being taxed for playing.
-  // Kept small, because at 1.35 a brand new player out-earned a level 6 one.
-  const lvl = rankOf(S.xp||0).tier+1;
-  const catchUp = 1 + 0.25*Math.max(0, 4-lvl)/3;
-
-  // 'Turned up' is deliberately the largest fixed term: a kid who loses badly should
-  // still walk away with something, because the alternative is they stop playing.
-  const sub = PAY.turnUp + kills*PAY.kill + hs*PAY.head + dmgCoin + placeCoin;
-  let coins=Math.round(sub*skillMul*fieldMul*streakMul*catchUp) + (firstWin?400:0) + (G.streakCoins||0);
+  // The level catch-up is gone too. It was making a brand new player's very first
+  // match the richest one they would play for a week, which is the exact moment the
+  // economy already felt too loose. Coins are not the competitive axis here — the
+  // leaderboard is, and it is untouched by how many coins anyone holds — so joining
+  // late costs you unlock time, not standing.
+  const sub = PAY.turnUp + kills*PAY.kill + hs*PAY.head + dmgCoin + survivalCoin;
+  let coins=Math.round(sub*streakMul) + (firstWin?PAY.firstArena:0) + (G.streakCoins||0);
 
   // medals — small, readable goals that reward playing well rather than just winning
   const earned=MEDALS.filter(m=>m.test(res));
@@ -3072,7 +3079,7 @@ function endMatch(win){
   // once a day, your first win pays double
   const D=dailySet();
   let dailyBonus=0;
-  if(win&&!D.firstWin){ D.firstWin=true; dailyBonus=Math.min(500,coins); coins+=dailyBonus; }
+  if(win&&!D.firstWin){ D.firstWin=true; dailyBonus=Math.min(PAY.dailyCap,coins); coins+=dailyBonus; }
 
   // weapon mastery — kills logged per weapon, purely for pride and a glow
   const mastUps=[];
@@ -3123,24 +3130,22 @@ function endMatch(win){
       row(plural(kills,'kill')+' \u00D7 '+PAY.kill,'+'+(kills*PAY.kill))+
       (hs?row(plural(hs,'headshot')+' \u00D7 '+PAY.head,'+'+(hs*PAY.head)):'')+
       row(res.dmg+' damage \u00F7 '+PAY.dmgDiv,'+'+dmgCoin)+
-      row(win?'Last one standing':'Placed #'+place,'+'+placeCoin)+
-      (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks the full bonus',
+      row('Outlasted '+plural(outlasted,'fighter')+(win?' \u2014 last one standing':''),'+'+survivalCoin)+
+      (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks all of that',
           '\u00D7'+contribution.toFixed(2)):'')+
       (G.streakCoins?row('Multi-kill bonus','+'+G.streakCoins):'')+
       (medalCoins?row(earned.length+' medal'+(earned.length===1?'':'s'),'+'+medalCoins):'')+
       (chCoins?row(chDone.length+' daily challenge'+(chDone.length===1?'':'s'),'+'+chCoins):'')+
-      row(S.cfg.skill.toUpperCase()+' opponents','\u00D7'+skillMul)+
-      row(plural(S.cfg.bots,'opponent'),'\u00D7'+fieldMul.toFixed(2))+
       (streakMul>1?row((S.stats.streak-1)+'-win streak','\u00D7'+streakMul.toFixed(2)):'')+
-      (catchUp>1?row('Level '+lvl+' catch-up','\u00D7'+catchUp.toFixed(2)):'')+
-      (firstWin?row('First win in '+arena.name,'+400'):'')+
+      (firstWin?row('First win in '+arena.name,'+'+PAY.firstArena):'')+
       (dailyBonus?row('First win of the day \u2014 DOUBLED','+'+dailyBonus):'')+
     '</div>'+
     '<div class="big"><span>Coins earned</span><b>+'+coins+'</b></div>'+
     '<div class="rankrow"><span style="color:'+rAfter.col+'">'+(rankedUp?'RANK UP \u2014 ':'')+rAfter.name+'</span>'+
       '<span>+'+xpGain+' XP</span></div>'+
     '<div class="xpbar"><i style="width:'+rBarPct+'%"></i></div>'+
-    '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum rank')+'</span></div>';
+    '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum rank')+'</span></div>'+
+    stepUpHint();
   cloudSubmit(res, arena.id, S.cfg.time*60-G.left);
   miniBoardT=0;
   $('#ovResult').classList.remove('hidden');
@@ -3150,9 +3155,11 @@ function endMatch(win){
 /* advance today's three challenges and hand back whatever just completed */
 function challengeUpdate(res){
   const D=dailySet(), done=[];
+  const hard = HARD_TIERS.indexOf(S.cfg.skill)>=0;
   const add={ kills:res.kills, hs:res.hs, wins:res.win?1:0, meleeKills:res.meleeKills,
     dmg:res.dmg, matches:1, wepKinds:res.wepsUsed, bigKills:res.bigKills,
-    top3:res.place<=3?1:0, nofoodWin:(res.win&&res.ate===0)?1:0 };
+    top3:res.place<=3?1:0, nofoodWin:(res.win&&res.ate===0)?1:0,
+    hardWin:(hard&&res.win)?1:0, hardKills:hard?res.kills:0 };
   D.ids.forEach(id=>{
     const c=CHALLENGES.find(x=>x.id===id); if(!c||D.done[id]) return;
     const inc=add[c.track]||0; if(!inc) return;
@@ -3163,6 +3170,17 @@ function challengeUpdate(res){
   return done;
 }
 function row(k,v){ return '<div><span>'+k+'</span><b>'+v+'</b></div>'; }
+/* Difficulty stays the player's choice. Three wins in a row just means the game
+   points at the next tier and then gets out of the way. */
+const TIERS=['rookie','regular','veteran','elite','nightmare'];
+function stepUpHint(){
+  const i=TIERS.indexOf(S.cfg.skill);
+  if(i<0||i>=TIERS.length-1) return '';
+  if((S.stats.streak||0)<3) return '';
+  return '<div class="rankrow sub" style="color:var(--gold)"><span>\u25B8 '+
+    S.stats.streak+' wins in a row \u2014 ready for '+SKILLS[TIERS[i+1]].name+
+    ' opponents? Match setup \u2192 Opponent skill</span></div>';
+}
 function quitMatch(){
   G.on=false; G.over=true; G.paused=false;
   $('#ovPause').classList.add('hidden'); $('#ovResult').classList.add('hidden');
