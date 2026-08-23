@@ -95,6 +95,14 @@ one they would play all week — the exact moment the economy already felt loose
 
 One win now buys one cheap weapon, which was the goal.
 
+### Also
+
+**Tyrant Rex shrunk 30%** (scale 1.9 → 1.33). It was 4.56 m tall and 8.07 m long — 2.4× the
+player's height and longer than a bus. It is now 3.19 m tall and 5.65 m long: still 2.2× the
+Razor Raptor in both height and length, and comfortably the largest pet in the game, but it
+reads as a dinosaur rather than as scenery. Pet `scale` is purely cosmetic — it does not touch
+bite range, damage, HP or hitboxes — so nothing about the balance moved.
+
 ### Difficulty: a toggle, not a curve
 
 Asked whether opponents should scale with level. They should not, and the reason is specific to
