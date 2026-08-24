@@ -7,6 +7,10 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 1.9 — 24 Aug 2026
+
+* Fixed: fighters killed during a jump, fall or knockback froze sideways in mid-air. Corpses now fall onto the floor or platform below; bodies that fall into the void disappear.
+
 ## 1.8 — 23 Aug 2026
 
 * Fixed: the Change buttons on Your Fighter looked like purchases and did not change anything — they were gold, the colour used for buying, and all they did was open a tab the left rail already lists.

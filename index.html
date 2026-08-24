@@ -2226,6 +2226,7 @@ function makeEnt(o){
     wep:'sidearm',ammo:0,res:0,reloadT:0,fireT:0,step:0,anim:0,
     regen:0,regenT:0,poison:0,poisonT:0,poisonAcc:0,poisonBy:null,poisonSource:null,speedT:0,speedM:1,hurtT:0,
     heat:0,heatLock:0,bloom:0,stillT:0,stunT:0,burstLeft:0,chargeT:0,lastShotT:-9,
+    corpseSettled:false,
   },o);
   const wp=W[e.wep]; e.ammo=wp.mag; e.res=wp.reserve;
   return e;
@@ -2880,6 +2881,9 @@ function kill(t,killer,part,source){
   if(!t.alive) return;
   const petKill=source==='pet';
   t.alive=false;
+  // Living AI stops on the kill frame. Without a small corpse-only gravity
+  // phase, a fighter killed by a jump or knockback stays suspended forever.
+  t.corpseSettled=false; t.onG=false; t.vel.y=Math.min(0,t.vel.y||0);
   t.M.root.rotation.z=Math.PI/2*(Math.random()<.5?1:-1);
   t.M.root.position.y=t.pos.y+0.3;
   fxDeath(t, !petKill&&killer&&W[killer.wep]?W[killer.wep].fx:null);
@@ -3358,7 +3362,15 @@ function updateCamera(dt){
 function updateModels(dt){
   for(const e of G.ents){
     const M=e.M;
-    if(!e.alive){ M.root.position.set(e.pos.x,e.pos.y+0.28,e.pos.z); continue; }
+    if(!e.alive){
+      if(!e.corpseSettled){
+        moveY(e,dt,(G.world.def.mod&&G.world.def.mod.grav)||1);
+        if(e.onG) e.corpseSettled=true;
+        if(e.pos.y<-18){ e.corpseSettled=true; M.root.visible=false; }
+      }
+      M.root.position.set(e.pos.x,e.pos.y+0.28,e.pos.z);
+      continue;
+    }
     M.root.position.set(e.pos.x,e.pos.y,e.pos.z);
     M.root.rotation.y=e.yaw;
     M.head.rotation.x=clamp(e.pitch,-1,1);
@@ -3523,7 +3535,7 @@ function respawnDummy(e){
   const sp=pick(G.world.spawns);
   e.alive=true; e.hp=BASE_HP; e.abs=0; e.kills=0;
   e.pos.x=sp.x; e.pos.z=sp.z; e.pos.y=sp.y+0.2; e.vel.x=e.vel.y=e.vel.z=0;
-  e.M.root.rotation.z=0; e.M.root.position.y=e.pos.y;
+  e.corpseSettled=false; e.M.root.visible=true; e.M.root.rotation.z=0; e.M.root.position.y=e.pos.y;
   if(e.tag) e.tag.visible=S.cfg.nametags;
   e.ai.target=null; e.ai.react=0;
   fxRing({x:e.pos.x,y:e.pos.y+0.1,z:e.pos.z},0x7fd45b,.3,2.4,.4);

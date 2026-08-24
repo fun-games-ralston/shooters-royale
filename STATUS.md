@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 1.8 · **Date:** 23 August 2026 · **File:** `index.html` (~258 KB, ~4,800 lines)
+**Version:** 1.9 · **Date:** 24 August 2026 · **File:** `index.html` (~258 KB, ~4,800 lines)
 
 ---
 
@@ -67,6 +67,15 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.9 — corpses obey gravity
+
+Death used to stop every entity update immediately. That also stopped gravity, so a fighter killed while
+jumping, falling or being knocked back kept that airborne `y` position while the model rotated sideways.
+Dead fighters now run only vertical collision until they reach the floor or platform below. A corpse that
+falls past the bottom of a void arena is hidden, and Training Range respawns restore the model correctly.
 
 ---
 
