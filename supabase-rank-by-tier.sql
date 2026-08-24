@@ -1,5 +1,5 @@
 -- =====================================================================
---  Shooter's Royale — rank the leaderboard by difficulty
+--  Block Royale — rank the leaderboard by difficulty
 --
 --  HOW TO RUN THIS
 --    Supabase → SQL Editor → New query → paste → Run. Takes a second.

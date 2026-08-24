@@ -1,6 +1,6 @@
-# Shooter's Royale — Build Status
+# Block Royale — Build Status
 
-**Version:** 1.6 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
+**Version:** 1.7 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
 
 ---
 
@@ -67,6 +67,20 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.7 — renamed to Block Royale
+
+The display name only. "Shooter's" was the first word on the page and in the browser tab, it is what
+a parent or a teacher reads before anything else, and it named the least interesting thing about the
+game. **Block Royale** keeps the genre legible to a twelve year old while describing what the game
+actually looks like, and the existing tagline — *One life · Eight fighters · Last block standing* —
+now reinforces it.
+
+The repo, the URL, the `sr_save_v1` and `sr_account_v1` storage keys and every Supabase handle are
+untouched, so no player lost a save or a leaderboard place. The wordmark was resized: BLOCK is a much
+shorter word than SHOOTER'S and had gone small in a column laid out for the old one.
 
 ---
 

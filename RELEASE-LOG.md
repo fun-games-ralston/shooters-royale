@@ -1,4 +1,4 @@
-# Shooter's Royale — Release Log
+# Block Royale — Release Log
 
 **Developer:** Ethan
 **Play:** https://fun-games-ralston.github.io/shooters-royale/
@@ -6,6 +6,11 @@
 Newest first. Each entry is one change: a feature that made the game better, or a problem that got solved.
 
 ---
+
+## 1.7 — 23 Aug 2026
+
+* Changed: the game is called **Block Royale**. "Shooter's" was the first word anyone saw, including parents and teachers, and it described the least interesting thing about the game.
+* The link, your save and the leaderboard are all unchanged — nothing was lost in the rename.
 
 ## 1.6 — 23 Aug 2026
 

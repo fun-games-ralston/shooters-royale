@@ -1,5 +1,5 @@
 -- =====================================================================
---  Shooter's Royale — online leaderboard + cloud save
+--  Block Royale — online leaderboard + cloud save
 --
 --  HOW TO RUN THIS
 --    1. Open your Supabase project (ethan-game)

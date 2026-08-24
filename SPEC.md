@@ -1,4 +1,4 @@
-# Shooter's Royale — Game Design & Technical Specification
+# Block Royale — Game Design & Technical Specification
 
 **Version:** 0.6 · **Date:** 23 August 2026 · **Build:** `index.html` (single file, ~204 KB)
 · `supabase-setup.sql` · `ONLINE-SETUP.md` · `balance-sim.js`

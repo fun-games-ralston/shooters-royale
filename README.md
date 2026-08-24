@@ -1,4 +1,4 @@
-# Shooter's Royale
+# Block Royale
 
 A 3D browser arena shooter, built by Ethan. One life, 200 HP, last block standing.
 
