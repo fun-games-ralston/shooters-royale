@@ -134,6 +134,8 @@ canvas{display:block}
 .btn.cant{background:#2a1622;color:#c08b9a;box-shadow:inset 0 0 0 2px #4d2436}
 .btn.cant:hover{background:#341a2a;color:#e0a8b6}
 .item .fx{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--ench);text-transform:uppercase}
+.item.goes{cursor:pointer}
+.item.goes:hover{box-shadow:inset 0 0 0 2px var(--gold)}
 .item .good{color:var(--leaf);font-size:10.5px;line-height:1.45}
 .item .bad{color:var(--ember);font-size:10.5px;line-height:1.45}
 
@@ -150,7 +152,23 @@ canvas{display:block}
 @keyframes glint{0%{left:-120%}55%{left:150%}100%{left:150%}}
 
 .preview{width:296px;border-left:2px solid #0a0710;background:#151020;display:flex;flex-direction:column}
+/* Inspect mode: one tab in the Armory is a look at yourself rather than a shelf
+   of things to buy, so it gets the whole width instead of a 296px sidebar. */
+.shopmain.inspect .grid{display:none}
+.shopmain.inspect .preview{width:100%;flex:1;border-left:0;flex-direction:row;align-items:stretch}
+.shopmain.inspect .preview{min-height:0}
+/* a canvas is a replaced element: height:auto falls back to its intrinsic 150px,
+   so inspect mode has to give it a definite height to fill */
+.shopmain.inspect .preview #pvCanvas{flex:1 1 auto;width:auto;height:100%;min-width:0;min-height:0}
+.shopmain.inspect .preview .pvinfo{width:340px;flex:0 0 340px;border-left:2px solid #0a0710;
+  display:flex;flex-direction:column;justify-content:center;font-size:12px;line-height:2.1}
+@media (max-width:900px){
+  .shopmain.inspect .preview .pvinfo{width:auto;flex:0 0 auto;border-left:0;border-top:2px solid #0a0710}
+  .shopmain.inspect .preview #pvCanvas{flex:1 1 auto;height:auto;min-height:260px}
+}
 #pvCanvas{width:100%;height:300px;display:block;background:radial-gradient(ellipse at 50% 70%,#2a2140,#100c1a 70%)}
+.pvinfo .jump{color:var(--bone);cursor:pointer;border-bottom:1px dotted var(--edge)}
+.pvinfo .jump:hover{color:var(--gold);border-bottom-color:var(--gold)}
 .pvinfo{padding:14px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.9;letter-spacing:.04em;flex:1;overflow:auto}
 .pvinfo .k{color:var(--bone)}
 .pvinfo h4{font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--gold);margin:10px 0 4px;text-transform:uppercase}
@@ -383,7 +401,12 @@ canvas{display:block}
   font-size:13px;letter-spacing:.1em;background:#1b1626;box-shadow:0 0 0 2px var(--gold);color:var(--gold);opacity:0;transition:opacity .2s}
 .toast.show{opacity:1}
 .toast.bad{box-shadow:0 0 0 2px var(--ember);color:var(--ember)}
-@media (max-width:900px){.preview{display:none}.setgrid{grid-template-columns:1fr}.shopnav{width:132px}}
+@media (max-width:900px){
+  .preview{display:none}
+  /* except in inspect mode, where the preview IS the page */
+  .shopmain.inspect .preview{display:flex;flex-direction:column}
+  .setgrid{grid-template-columns:1fr}.shopnav{width:132px}
+}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
 </style>
 </head>
@@ -3715,8 +3738,10 @@ function pvShow(kind,data){
     if(kind==='fighter'){
       // closer and off-axis, so the weapon in the hands reads as a silhouette
       // instead of pointing straight down the lens
+      // framed for the full-width inspect pane, not the 296px sidebar the other
+      // tabs use — at the old distance the head and feet were cropped
       pvRig.rotation.y=Math.PI-0.55;
-      pvCamera.position.set(0,1.35,3.15); pvCamera.lookAt(0,1.0,0);
+      pvCamera.position.set(0,1.15,4.35); pvCamera.lookAt(0,1.02,0);
     } else {
       pvRig.rotation.y=Math.PI;
       pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
@@ -4052,15 +4077,16 @@ function renderSetup(){
   g.appendChild(chipCard('Nametags','Show names and health above opponents',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.nametags?'on':'off',v=>{S.cfg.nametags=(v==='on');}));
   const lo=document.createElement('div'); lo.className='card blk';
-  const foods=Object.keys(S.food).filter(k=>S.food[k]>0).map(k=>F[k].name+' ×'+S.food[k]).join(', ')||'nothing — you cannot heal without food';
-  lo.innerHTML='<div class="lab">Your loadout</div><div class="hint">See yourself in 3D and change any of it</div>'+
-    '<div style="font-family:var(--mono);font-size:11.5px;line-height:2;color:var(--dim)">'+
-    'SLOT 1 <span style="color:var(--bone)">'+W[S.eq.primary||'sidearm'].name+'</span><br>'+
-    'SLOT 2 <span style="color:var(--bone)">'+(S.eq.secondary?W[S.eq.secondary].name:'— empty —')+'</span><br>'+
-    'SLOT 3 <span style="color:var(--bone)">'+W[S.eq.melee||'knife'].name+'</span><br>'+
-    'PET <span style="color:var(--bone)">'+(S.eq.pet?PE[S.eq.pet].name:'— none —')+'</span><br>'+
-    'FOOD <span style="color:var(--bone)">'+foods+'</span></div>'+
-    '<button class="btn sm primary" style="margin-top:12px" id="btnFighter">View your fighter</button>';
+  const carried=Object.keys(S.food).filter(k=>S.food[k]>0).reduce((a,k)=>a+S.food[k],0);
+  const kit=[W[S.eq.primary||'sidearm'].name,
+             S.eq.secondary?W[S.eq.secondary].name:'no second gun',
+             W[S.eq.melee||'knife'].name,
+             S.eq.pet?PE[S.eq.pet].name:'no pet',
+             carried?plural(carried,'food item'):'NO FOOD — you will not be able to heal'].join(' · ');
+  lo.innerHTML='<div class="lab">Taking in</div><div class="hint">Everything you are carrying</div>'+
+    '<div style="font-family:var(--mono);font-size:11.5px;line-height:1.9;color:'+
+      (carried?'var(--bone)':'var(--ember)')+'">'+esc(kit)+'</div>'+
+    '<button class="btn sm" style="margin-top:12px" id="btnFighter">See your fighter \u25B8</button>';
   g.appendChild(lo);
   $('#btnFighter').onclick=()=>{AU.ui();shopTab='fighter';show('scr-shop');};
   summary();
@@ -4163,33 +4189,15 @@ function renderShop(tab){
     b.className='navbtn'+(t.id===tab?' on':''); b.textContent=t.n;
     b.onclick=()=>{AU.ui();renderShop(t.id);}; nav.appendChild(b); });
   const g=$('#shopGrid'); g.innerHTML='';
+  $('.shopmain').classList.remove('inspect');
   const info=$('#pvInfo');
   if(tab==='fighter'){
+    // No cards and no buttons here. This tab does not buy anything and does not
+    // equip anything — the left rail already goes to all seven categories, so a
+    // grid of "Change" buttons was just a worse second copy of it. What nothing
+    // else in the game does is show you assembled: dressed, armed, turning.
+    $('.shopmain').classList.add('inspect');
     pvShow('fighter',{}); pvInfoFighter();
-    // One card per slot: what is in it, and one tap to go change it.
-    const meleeId=S.eq.melee||'knife';
-    const foods=Object.keys(S.food).filter(k=>S.food[k]>0);
-    const slots=[
-      {lab:'SLOT 1',   name:W[S.eq.primary||'sidearm'].name, sub:W[S.eq.primary||'sidearm'].cls, go:'weapons',
-       paint:cv=>paintGun(cv,W[S.eq.primary||'sidearm'])},
-      {lab:'SLOT 2',   name:S.eq.secondary?W[S.eq.secondary].name:'Empty', sub:S.eq.secondary?W[S.eq.secondary].cls:'no second gun', go:'weapons',
-       paint:cv=>{ if(S.eq.secondary) paintGun(cv,W[S.eq.secondary]); }},
-      {lab:'SLOT 3',   name:W[meleeId].name, sub:'MELEE', go:'weapons', paint:cv=>paintGun(cv,W[meleeId])},
-      {lab:'PET',      name:S.eq.pet?PE[S.eq.pet].name:'None', sub:S.eq.pet?PE[S.eq.pet].perkTxt.split('.')[0]:'nobody watching your back', go:'pet',
-       paint:cv=>{ if(S.eq.pet) paintPet(cv,PE[S.eq.pet]); }},
-      {lab:'HAIR',     name:HA[S.eq.hair].name, sub:'', go:'hair', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'head')},
-      {lab:'OUTFIT',   name:OU[S.eq.outfit].name, sub:'', go:'outfit', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'full')},
-      {lab:'ACCESSORY',name:AC[S.eq.acc].name, sub:'', go:'acc', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'head')},
-      {lab:'FOOD',     name:foods.length?foods.map(k=>F[k].name.split(' ').pop()+' \u00D7'+S.food[k]).join(', '):'Nothing',
-       sub:foods.length?'health never comes back on its own':'you will not be able to heal', go:'food',
-       paint:cv=>{ if(foods.length) paintFood(cv,F[foods[0]]); }},
-    ];
-    slots.forEach(sl=>{
-      g.appendChild(card({name:sl.name, rar:'common', tag:sl.lab, tagCls:'eq',
-        stats:sl.sub?('<span style="color:var(--dim)">'+sl.sub+'</span>'):'&nbsp;',
-        paint:sl.paint, select:()=>{ pvShow('fighter',{}); pvInfoFighter(); },
-        buttons:[{label:'Change',primary:true,fn:()=>{AU.ui();renderShop(sl.go);}}]}));
-    });
   }
   else if(tab==='weapons'){
     const cur=W[S.eq.primary||'sidearm'];
@@ -4311,18 +4319,26 @@ function pvInfoFighter(){
   const p=W[S.eq.primary||'sidearm'], mel=W[S.eq.melee||'knife'];
   const foods=Object.keys(S.food).filter(k=>S.food[k]>0);
   const carried=foods.reduce((a,k)=>a+S.food[k],0);
+  const go=(tab,txt)=>'<span class="jump" data-go="'+tab+'">'+esc(txt)+'</span>';
   $('#pvInfo').innerHTML=
-    '<h4>'+(ACC?esc(ACC.handle):'Your fighter')+'</h4>'+
-    '<div style="color:'+r.col+'">LEVEL '+lvl+' \u00B7 '+r.name.toUpperCase()+'</div>'+
-    kv('Slot 1',p.name)+
-    kv('Slot 2',S.eq.secondary?W[S.eq.secondary].name:'empty')+
-    kv('Slot 3',mel.name)+
-    kv('Pet',S.eq.pet?PE[S.eq.pet].name:'none')+
-    kv('Food carried',carried?plural(carried,'item'):'none')+
+    '<h4 style="font-size:20px">'+(ACC?esc(ACC.handle):'Your fighter')+'</h4>'+
+    '<div style="color:'+r.col+';margin-bottom:6px">LEVEL '+lvl+' \u00B7 '+r.name.toUpperCase()+'</div>'+
+    '<h4>Carrying</h4>'+
+    kv('Slot 1',go('weapons',p.name))+
+    kv('Slot 2',go('weapons',S.eq.secondary?W[S.eq.secondary].name:'empty'))+
+    kv('Slot 3',go('weapons',mel.name))+
+    kv('Pet',go('pet',S.eq.pet?PE[S.eq.pet].name:'none'))+
+    kv('Food',go('food',carried?plural(carried,'item'):'none'))+
     '<h4>Look</h4>'+
-    kv('Hair',HA[S.eq.hair].name)+kv('Outfit',OU[S.eq.outfit].name)+kv('Accessory',AC[S.eq.acc].name)+
-    '<div style="margin-top:10px;color:var(--dim)">This is exactly what drops into the arena. '+
-    'Everything here shows in third person mid-fight — press V in a match.</div>';
+    kv('Hair',go('hair',HA[S.eq.hair].name))+
+    kv('Outfit',go('outfit',OU[S.eq.outfit].name))+
+    kv('Accessory',go('acc',AC[S.eq.acc].name))+
+    '<div style="margin-top:14px;color:var(--dim);line-height:1.8">This is exactly what drops into '+
+    'the arena. Tap anything above to change it, or press V in a match to see yourself fighting.</div>';
+  // the value itself is the link, so there is no button pretending to be a purchase
+  $('#pvInfo').querySelectorAll('.jump').forEach(el=>{
+    el.onclick=()=>{AU.ui();renderShop(el.dataset.go);};
+  });
 }
 function pvInfoChar(it){
   const p=W[S.eq.primary||'sidearm'];

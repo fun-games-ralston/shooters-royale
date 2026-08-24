@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 1.7 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
+**Version:** 1.8 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
 
 ---
 
@@ -67,6 +67,32 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.8 — Your Fighter is an inspect view, not a second nav
+
+The `Change` buttons were wrong twice over. They were **gold — the colour this shop uses for buying
+things** — so they read as *spend coins*. And they did not change anything: they navigated, to the
+same seven categories the left rail already lists one click away and permanently on screen. The grid
+was a second and worse copy of the navigation.
+
+Relabelling would have fixed the wording and left the redundancy, so the grid is gone. Your Fighter
+is now the one thing nothing else in the game does: you at full width, dressed, holding your actual
+slot 1 weapon with its mastery charms, turning. The loadout sits beside it as a list where each
+**value** is the link — tapping *AK-47* opens Weapons, tapping *Frost Wolf* opens Pets. Nothing looks
+like a button that is not one, and nothing looks like a purchase that is not one.
+
+The shopping tabs were already right and are untouched: `Buy — 350 ⬥` when you do not own it,
+`Slot 1` / `Slot 2` / `Equip` when you do.
+
+Match Setup was listing the same five slots a third time. It carries one line now, red when you have
+no food, plus a button through to the fighter view.
+
+**Two bugs found building it.** A canvas is a replaced element, so `height:auto` fell back to its
+intrinsic 150px and the inspect pane collapsed to nothing. And an existing rule hides the preview
+pane below 900px, which hid the entire inspect view on any narrow screen — including the one I was
+testing in.
 
 ---
 

@@ -698,15 +698,28 @@ deletes the one and clamps the other into range.
 The footer used to restate the arena, opponent count, skill and time — every one of which is a chip
 a few centimetres above it. It now carries only the rule of the mode.
 
-### 12.1 Your fighter
+### 12.1 What each Armory page is for
 
-The Armory's first tab is a loadout hub, the closest thing the game has to CS2's inspect view. The
-preview pane shows your character built from the real `buildCharacter` data with your **slot 1 weapon
-in their hands**, mastery charms and all, framed off-axis and slowly turning so the silhouette reads.
-Beside it, one card per slot — Slot 1, Slot 2, Slot 3, Pet, Hair, Outfit, Accessory, Food — each
-showing what is in it and a Change button that jumps straight to the right tab.
+The Armory does two jobs, and keeping them straight is what keeps the labels honest:
 
-It answers "what am I actually taking in there" in one screen, which previously took four.
+* **Shopping** — Weapons, Hair, Outfits, Accessories, Pets, Food, Arenas. Each card is either
+  `Buy — 350 ⬥` if you do not own it, or `Slot 1` / `Slot 2` / `Equip` if you do. Gold means
+  spending coins, everywhere, without exception.
+* **Inspecting** — Your Fighter. It buys nothing and equips nothing. It is the only place that
+  shows you assembled: dressed, armed with your actual slot 1 weapon, mastery charms and all,
+  turning slowly at full width.
+
+Your Fighter began as a grid of eight cards with `Change` buttons and was wrong twice over. The
+buttons were gold, the colour this shop uses for purchases, so they read as *spend coins*. And they
+did not change anything — they navigated, to the same seven categories the left rail already lists
+one click away and permanently on screen, which made the grid a second and worse copy of the nav.
+
+The grid is gone. The loadout now reads as a list beside the model, and each **value** is the link —
+tapping *AK-47* opens Weapons, tapping *Frost Wolf* opens Pets. Nothing looks like a button that
+is not one, and nothing looks like a purchase that is not one.
+
+Match Setup listed the same five slots a third time. It now carries one line — everything you are
+carrying, in order, turning red when you have no food — and a button through to the fighter view.
 
 **Armory** is a left tab rail (Weapons / Hair / Outfits / Accessories / Pets / Food / Arenas), a card grid, and a right-hand preview pane with a rotating 3D model and a stat readout.
 

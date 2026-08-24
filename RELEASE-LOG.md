@@ -7,6 +7,12 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 1.8 — 23 Aug 2026
+
+* Fixed: the Change buttons on Your Fighter looked like purchases and did not change anything — they were gold, the colour used for buying, and all they did was open a tab the left rail already lists.
+* Changed: Your Fighter is now a full-width look at yourself rather than a grid of cards. Tap any item in the list beside you to go and change it.
+* Changed: Match Setup listed your loadout a third time. One line now, turning red when you have no food.
+
 ## 1.7 — 23 Aug 2026
 
 * Changed: the game is called **Block Royale**. "Shooter's" was the first word anyone saw, including parents and teachers, and it described the least interesting thing about the game.
