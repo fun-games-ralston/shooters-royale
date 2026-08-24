@@ -845,7 +845,7 @@ const WEAPONS = [
         {w:.05,h:.05,d:.66,x:.06,y:.06,z:-.68,c:0x22252a},{w:.05,h:.05,d:.66,x:-.06,y:-.05,z:-.68,c:0x22252a},
         {w:.2,h:.2,d:.16,x:0,y:-.02,z:.2,c:0x2a2d33},{w:.09,h:.16,d:.12,x:0,y:-.2,z:.06,c:0x1e2126}]},
 
-{fx:'rail',fxName:'Rail laser beam + scope glare',flash:0x9fe8ff,flashSize:1.8,id:'sniper',pw:7,name:'Longshot Rail',cls:'SNIPER',rar:'ench',cost:5200,dmg:110,rpm:55,mag:4,reserve:20,reload:2.7,
+{fx:'rail',fxName:'Layered rail beam + pulse rings',flash:0x9fe8ff,flashSize:1.8,id:'sniper',pw:7,name:'Longshot Rail',cls:'SNIPER',rar:'ench',cost:5200,dmg:110,rpm:55,mag:4,reserve:20,reload:2.7,
  spread:.25,hipMult:26,auto:false,range:250,speed:.92,recoil:4.5,scope:3.6,tracer:0x9fe8ff,sfx:'thump',
  role:'Two hundred and fifty metres and a 275-damage headshot. One head, one kill, from anywhere.',
  limit:'Four shots, a bolt cycle between each, and hip-firing it is a joke — you have to scope.',
@@ -854,7 +854,7 @@ const WEAPONS = [
         {w:.09,h:.09,d:.36,x:0,y:.15,z:-.36,c:0x14171a},{w:.05,h:.2,d:.1,x:0,y:-.15,z:-.18,c:0x1f2226},
         {w:.08,h:.16,d:.36,x:0,y:-.04,z:.34,c:0x2b4441}]},
 
-{fx:'rocket',fxName:'Rocket trail + double shockwave',flash:0xff6b2c,flashSize:2.2,id:'bazooka',pw:8,name:'Bazooka',cls:'LAUNCHER',rar:'ench',cost:7000,dmg:95,splash:85,splashR:5.6,rpm:55,mag:2,reserve:6,reload:3.2,
+{fx:'rocket',fxName:'Plasma rocket + shock-sphere blast',flash:0xff6b2c,flashSize:2.2,id:'bazooka',pw:8,name:'Bazooka',cls:'LAUNCHER',rar:'ench',cost:7000,dmg:95,splash:85,splashR:5.6,rpm:55,mag:2,reserve:6,reload:3.2,
  spread:.7,auto:false,range:150,speed:.84,recoil:5,proj:true,projSpeed:58,tracer:0xff6b2c,sfx:'launch',
  role:'Two rockets a tube. Hits people behind cover, and firing at your own feet launches you onto a roof.',
  limit:'Eight rockets a life, two per tube, and a 3.2 s reload. The shell takes time to fly — aim at their feet, not their chest.',
@@ -863,7 +863,7 @@ const WEAPONS = [
         {w:.19,h:.19,d:.14,x:0,y:.02,z:.16,c:0x2c3a22},{w:.07,h:.18,d:.1,x:0,y:-.16,z:-.2,c:0x232a1c},
         {w:.06,h:.09,d:.2,x:.02,y:.15,z:-.5,c:0x9aa36f}]},
 
-{fx:'arc',fxName:'Forked lightning + chain jump',flash:0x7df9ff,flashSize:1.4,id:'tesla',pw:9,name:'Tesla Arc',cls:'ENERGY',rar:'ench',cost:8600,dmg:46,chain:2,chainDmg:.55,rpm:300,mag:0,reserve:0,reload:0,
+{fx:'arc',fxName:'Forked lightning + chain halos',flash:0x7df9ff,flashSize:1.4,id:'tesla',pw:9,name:'Tesla Arc',cls:'ENERGY',rar:'ench',cost:8600,dmg:46,chain:2,chainDmg:.55,rpm:300,mag:0,reserve:0,reload:0,
  heat:{per:5.5,cool:32,lock:2.2},spread:.6,auto:true,range:42,speed:1.04,recoil:1,tracer:0x7df9ff,sfx:'zap',
  role:'Never reloads, never runs out, and every bolt jumps to two more fighters nearby.',
  limit:'It overheats. Eighteen shots and the coils lock for 2.2 s. Only 42 m of reach.',
@@ -872,7 +872,7 @@ const WEAPONS = [
         {w:.05,h:.24,d:.05,x:.07,y:.12,z:-.66,c:0x8fe9ff},{w:.05,h:.24,d:.05,x:-.07,y:.12,z:-.66,c:0x8fe9ff},
         {w:.08,h:.22,d:.11,x:0,y:-.17,z:-.06,c:0x1a2c3d},{w:.08,h:.13,d:.28,x:0,y:-.02,z:.26,c:0x16232f}]},
 
-{fx:'void',fxName:'Charged void beam + soul burst',flash:0xc47bff,flashSize:2.4,id:'reaper',pw:10,name:'Obsidian Reaper',cls:'MYTHIC',rar:'myth',cost:15000,dmg:999,rpm:30,mag:1,reserve:2,reload:3.2,
+{fx:'void',fxName:'Spiral void beam + soul vortex',flash:0xc47bff,flashSize:2.4,id:'reaper',pw:10,name:'Obsidian Reaper',cls:'MYTHIC',rar:'myth',cost:15000,dmg:999,rpm:30,mag:1,reserve:2,reload:3.2,
  charge:1.0,chargeSlow:0.5,spread:.25,auto:true,range:260,speed:.9,recoil:6,scope:2.4,tracer:0xc47bff,sfx:'reap',
  role:'Any hit, anywhere on the body, kills instantly. Three guaranteed kills a match.',
  limit:'THREE SHOTS PER MATCH. Hold to charge for a full second first, moving at half speed, glowing purple where everyone can see you.',
@@ -1904,7 +1904,10 @@ function tracer(a,b,color,w){
    ===================================================================== */
 const RINGG = new THREE.RingGeometry(0.82,1,26);
 const DISCG = new THREE.CircleGeometry(1,26);
+const SPHEREG = new THREE.SphereGeometry(1,10,7);
 function fxMat(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o===undefined?1:o,depthWrite:false}); }
+function fxEnergyMat(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o===undefined?1:o,
+  depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}); }
 function fxBox(w,h,d,c,o){ const m=new THREE.Mesh(BOXG,fxMat(c,o)); m.scale.set(w,h,d); return m; }
 function fxAdd(m,o){
   if(G.fxp.length>460){ const old=G.fxp.shift(); scene.remove(old.m); fxKill(old.m); }
@@ -1944,12 +1947,63 @@ function fxRing(pt,color,r0,r1,life,dir){
   m.scale.setScalar(r0);
   fxAdd(m,{life:life,expand:true,r0:r0,r1:r1,o0:.85});
 }
+function fxEnergyRing(pt,color,r0,r1,life,dir,v,op){
+  const alpha=op===undefined?.82:op;
+  const m=new THREE.Mesh(RINGG,fxEnergyMat(color,alpha));
+  m.position.set(pt.x,pt.y,pt.z);
+  if(dir) m.lookAt(pt.x+dir.x,pt.y+dir.y,pt.z+dir.z); else m.rotation.x=-Math.PI/2;
+  m.scale.setScalar(r0);
+  fxAdd(m,{life:life,expand:true,r0:r0,r1:r1,o0:alpha,v:v});
+}
+function fxOrb(pt,color,r0,r1,life,op){
+  const alpha=op===undefined?.7:op;
+  const m=new THREE.Mesh(SPHEREG,fxEnergyMat(color,alpha));
+  m.position.set(pt.x,pt.y,pt.z); m.scale.setScalar(r0);
+  fxAdd(m,{life:life,expand:true,r0:r0,r1:r1,o0:alpha});
+}
 function fxBeam(a,b,color,w,life,op){
   const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,len=Math.hypot(dx,dy,dz)||.01;
   const m=fxBox(w,w,len,color,op===undefined?.95:op);
   m.position.set(a.x+dx/2,a.y+dy/2,a.z+dz/2); m.lookAt(b.x,b.y,b.z);
   fxAdd(m,{life:life,thin:true,o0:op===undefined?.95:op});
   return m;
+}
+function fxEnergyBeam(a,b,color,w,life,op){
+  const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,len=Math.hypot(dx,dy,dz)||.01;
+  const alpha=op===undefined?.75:op;
+  const m=new THREE.Mesh(BOXG,fxEnergyMat(color,alpha));
+  m.scale.set(w,w,len); m.position.set(a.x+dx/2,a.y+dy/2,a.z+dz/2); m.lookAt(b.x,b.y,b.z);
+  fxAdd(m,{life:life,thin:true,o0:alpha});
+  return m;
+}
+function fxPath(a,b){
+  const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,len=Math.hypot(dx,dy,dz)||.01;
+  const d={x:dx/len,y:dy/len,z:dz/len};
+  const up=Math.abs(d.y)<.86?{x:0,y:1,z:0}:{x:1,y:0,z:0};
+  let ux=d.y*up.z-d.z*up.y,uy=d.z*up.x-d.x*up.z,uz=d.x*up.y-d.y*up.x;
+  const ul=Math.hypot(ux,uy,uz)||1; ux/=ul; uy/=ul; uz/=ul;
+  const u={x:ux,y:uy,z:uz};
+  const v={x:d.y*u.z-d.z*u.y,y:d.z*u.x-d.x*u.z,z:d.x*u.y-d.y*u.x};
+  return {d,u,v,len};
+}
+function fxPulseTrain(a,b,color,n,r,life){
+  const q=fxPath(a,b), count=Math.max(2,Math.min(n,Math.floor(q.len/5)+2));
+  for(let i=1;i<=count;i++){
+    const t=i/(count+1), pt={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t};
+    fxEnergyRing(pt,color,r*.42,r,life*(.78+i/count*.22),q.d,
+      {x:q.d.x*7,y:q.d.y*7,z:q.d.z*7},.7);
+  }
+}
+function fxSpiral(a,b,color,r,n,life){
+  const q=fxPath(a,b), count=Math.max(5,Math.min(n,Math.floor(q.len/3)+4));
+  let prev={x:a.x,y:a.y,z:a.z};
+  for(let i=1;i<=count;i++){
+    const t=i/count, ang=i*1.7+G.t*7, rr=r*Math.sin(Math.PI*t);
+    const pt={x:a.x+(b.x-a.x)*t+(q.u.x*Math.cos(ang)+q.v.x*Math.sin(ang))*rr,
+      y:a.y+(b.y-a.y)*t+(q.u.y*Math.cos(ang)+q.v.y*Math.sin(ang))*rr,
+      z:a.z+(b.z-a.z)*t+(q.u.z*Math.cos(ang)+q.v.z*Math.sin(ang))*rr};
+    fxEnergyBeam(prev,pt,color,.045,life,.72); prev=pt;
+  }
 }
 function fxBolt(a,b,color,life,jit){
   let prev=a; const segs=7, dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;
@@ -1960,6 +2014,36 @@ function fxBolt(a,b,color,life,jit){
     if(i%2===0) fxBeam(prev,q,0xffffff,.028,life*.7);
     prev=q;
   }
+}
+function fxForkedBolt(a,b,color,life,jit){
+  fxBolt(a,b,color,life,jit);
+  const q=fxPath(a,b);
+  for(let k=0;k<2;k++){
+    const t=.32+k*.28, side=k?1:-1;
+    const s={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t};
+    const mid={x:s.x+q.d.x*.8+q.u.x*side*rnd(.35,.8)+q.v.x*rnd(-.35,.35),
+      y:s.y+q.d.y*.8+q.u.y*side*rnd(.35,.8)+q.v.y*rnd(-.35,.35),
+      z:s.z+q.d.z*.8+q.u.z*side*rnd(.35,.8)+q.v.z*rnd(-.35,.35)};
+    const tip={x:mid.x+q.d.x*rnd(.6,1.3)+q.u.x*side*rnd(.45,1.0),
+      y:mid.y+q.d.y*rnd(.6,1.3)+q.u.y*side*rnd(.45,1.0),
+      z:mid.z+q.d.z*rnd(.6,1.3)+q.u.z*side*rnd(.45,1.0)};
+    fxEnergyBeam(s,mid,color,.055,life*.8,.65); fxEnergyBeam(mid,tip,0xdffcff,.025,life*.6,.8);
+  }
+}
+function fxRailImpact(pt,dir){
+  fxOrb(pt,0xffffff,.08,.48,.15,.95); fxOrb(pt,0x67d9ff,.2,1.05,.3,.5);
+  fxEnergyRing(pt,0xdff8ff,.12,1.35,.28,dir); fxEnergyRing(pt,0x67d9ff,.16,1.0,.34,{x:0,y:1,z:0});
+  fxSpark(pt,0xdff8ff,10,4.8,1.15); fxLight(pt,0x9fe8ff,4.2,.18);
+}
+function fxArcImpact(pt,dir){
+  fxOrb(pt,0xffffff,.07,.36,.14,.95); fxOrb(pt,0x43dff2,.16,.72,.32,.55);
+  fxEnergyRing(pt,0x7df9ff,.1,.9,.3,dir); fxSpark(pt,0x7df9ff,6,3.4,.9);
+}
+function fxVoidImpact(pt,dir){
+  fxOrb(pt,0xf1dcff,.12,.62,.18,.9); fxOrb(pt,0x7c32c7,.3,1.65,.42,.55);
+  fxEnergyRing(pt,0xc47bff,.16,2.0,.42,dir); fxEnergyRing(pt,0x7c32c7,.24,1.5,.5,{x:0,y:1,z:0});
+  for(let i=0;i<5;i++) fxSmoke({x:pt.x+rnd(-.3,.3),y:pt.y+rnd(-.3,.3),z:pt.z+rnd(-.3,.3)},0x3c1d68,.34,.62,.55);
+  fxSpark(pt,0xd8b4ff,12,4.2,1.25); fxLight(pt,0xc47bff,5.8,.28);
 }
 function fxSpark(pt,color,n,spd,size){
   for(let i=0;i<(n||6);i++){
@@ -2062,12 +2146,18 @@ function fxLeechMotes(from,to){
   }
 }
 function fxCharge(pt,t){
-  // small hot core plus rings that collapse inward as the charge fills
+  // A visible spiral gathers into the muzzle before the Reaper releases it.
   const sz=.05+.07*t;
   const c=fxBox(sz,sz,sz,0xe6ccff,.9);
   c.position.set(pt.x,pt.y,pt.z);
   fxAdd(c,{life:.09,shrink:true,o0:.9,fade:true});
-  if(Math.random()<0.35) fxRing(pt,0xc47bff,.55*(1-t)+.12,.12,.18,{x:0,y:1,z:0});
+  if(Math.random()<0.42) fxEnergyRing(pt,0xc47bff,.64*(1-t)+.14,.12,.2,{x:0,y:1,z:0});
+  if(Math.random()<0.72){
+    const ang=G.t*13, r=.48*(1-t)+.08;
+    const mote=fxBox(.055+.035*t,.055+.035*t,.055+.035*t,0xc47bff,.9);
+    mote.position.set(pt.x+Math.cos(ang)*r,pt.y+Math.sin(ang*1.7)*r*.6,pt.z+Math.sin(ang)*r);
+    fxAdd(mote,{life:.14,shrink:true,o0:.9,v:{x:(pt.x-mote.position.x)*5,y:(pt.y-mote.position.y)*5,z:(pt.z-mote.position.z)*5}});
+  }
   if(Math.random()<0.45) fxSpark(pt,0xa97bff,1,1.6*t+.6,.55);
 }
 function fxHit(pt,head,color){
@@ -2102,17 +2192,19 @@ function shotFx(wp,mp,end,e,aim){
   const c=wp.tracer;
   switch(wp.fx){
     case 'rail':
-      fxBeam(mp,end,c,.09,.34); fxBeam(mp,end,0xffffff,.032,.26);
-      fxRing(mp,c,.2,1.9,.22,aim.d); fxLight(mp,c,3.2,.12);
+      fxEnergyBeam(mp,end,0x58cfff,.24,.48,.22); fxEnergyBeam(mp,end,c,.095,.38,.72);
+      fxEnergyBeam(mp,end,0xffffff,.032,.25,.98); fxPulseTrain(mp,end,c,6,.62,.24);
+      fxEnergyRing(mp,c,.18,2.0,.26,aim.d); fxRailImpact(end,aim.d); fxLight(mp,c,3.8,.15);
       break;
     case 'void':
-      fxBeam(mp,end,0xc47bff,.15,.42,.85); fxBeam(mp,end,0x2b0f52,.28,.3,.4);
-      fxBeam(mp,end,0xffffff,.045,.3);
-      fxRing(mp,0xa97bff,.25,2.6,.32,aim.d); fxLight(mp,0xc47bff,4.5,.2);
-      for(let i=0;i<7;i++) fxSmoke({x:end.x+rnd(-.5,.5),y:end.y+rnd(-.5,.5),z:end.z+rnd(-.5,.5)},0x6a3fb0,.3,.5,.9);
+      fxEnergyBeam(mp,end,0x4c167c,.38,.5,.28); fxEnergyBeam(mp,end,0xc47bff,.16,.46,.72);
+      fxEnergyBeam(mp,end,0xffffff,.045,.3,.95); fxSpiral(mp,end,0xd19aff,.7,14,.42);
+      fxPulseTrain(mp,end,0xa97bff,5,.82,.32);
+      fxEnergyRing(mp,0xa97bff,.22,2.8,.36,aim.d); fxVoidImpact(end,aim.d); fxLight(mp,0xc47bff,5,.24);
       break;
     case 'arc':
-      fxBolt(mp,end,c,.1,.5); fxLight(mp,c,2.4,.09);
+      fxForkedBolt(mp,end,c,.26,.64); fxEnergyBeam(mp,end,0x36d8ee,.16,.3,.28);
+      fxArcImpact(end,aim.d); fxLight(mp,c,3.2,.13);
       break;
     case 'stream':
       tracer(mp,end,c,.075); fxSpark(mp,c,1,2.2,.9);
@@ -2574,8 +2666,10 @@ function chainTo(from,wp,owner,pt){
     if(n>=wp.chain) break;
     if(!o.alive||o===from||o===owner) continue;
     const dd=Math.hypot(o.pos.x-from.pos.x,o.pos.z-from.pos.z,(o.pos.y-from.pos.y));
-    if(dd<9){ fxBolt({x:from.pos.x,y:from.pos.y+1.2,z:from.pos.z},{x:o.pos.x,y:o.pos.y+1.2,z:o.pos.z},0x7df9ff,0.1,0.42);
-      fxRing({x:o.pos.x,y:o.pos.y+1.2,z:o.pos.z},0x7df9ff,.2,1.3,.2,{x:0,y:1,z:0});
+    if(dd<9){ fxBolt({x:from.pos.x,y:from.pos.y+1.2,z:from.pos.z},{x:o.pos.x,y:o.pos.y+1.2,z:o.pos.z},0x7df9ff,0.12,0.42);
+      const halo={x:o.pos.x,y:o.pos.y+1.2,z:o.pos.z};
+      fxOrb(halo,0x43dff2,.1,.52,.2,.48);
+      fxEnergyRing(halo,0x7df9ff,.16,1.35,.26,{x:0,y:1,z:0});
       damage(o,wp.dmg*wp.chainDmg,'BODY',owner,{x:o.pos.x,y:o.pos.y+1.3,z:o.pos.z}); n++; }
   }
 }
@@ -2612,7 +2706,7 @@ function spawnRocket(e,mp,d,wp){
   const fin2=boxMesh(.34,.05,.2,0x2c3a22,0); fin2.position.z=.3; m.add(fin2);
   const fire=boxMesh(.19,.19,.5,0xffd166,1); fire.position.z=.5; m.add(fire);
   m.position.set(mp.x,mp.y,mp.z); scene.add(m);
-  G.projs.push({m,fire,pos:{x:mp.x,y:mp.y,z:mp.z},d,sp:wp.projSpeed,wp,owner:e,life:5,trail:0});
+  G.projs.push({m,fire,pos:{x:mp.x,y:mp.y,z:mp.z},d,sp:wp.projSpeed,wp,owner:e,life:5,trail:0,wake:0});
 }
 function stepProjectiles(dt){
   for(let i=G.projs.length-1;i>=0;i--){
@@ -2631,6 +2725,11 @@ function stepProjectiles(dt){
       fxSpark({x:p.pos.x-p.d.x*.45,y:p.pos.y-p.d.y*.45,z:p.pos.z-p.d.z*.45},0xffa03c,1,1.1,.8);
       fxLight(p.pos,0xff8a3c,.9,.05);
     }
+    p.wake-=dt;
+    if(p.wake<=0){ p.wake=.09;
+      const tail={x:p.pos.x-p.d.x*.75,y:p.pos.y-p.d.y*.75,z:p.pos.z-p.d.z*.75};
+      fxEnergyRing(tail,0xff8a3c,.12,.62,.24,p.d,{x:-p.d.x*2,y:-p.d.y*2,z:-p.d.z*2},.62);
+    }
     let boom=false;
     if(hit&&hit.t<=probe){ damage(hit.e,p.wp.dmg,hit.part.n,p.owner,p.pos); boom=true; }
     else if(wd<probe) boom=true;
@@ -2641,6 +2740,9 @@ function stepProjectiles(dt){
 function explode(pt,wp,owner){
   AU.explode();
   fxLight(pt,0xffb347,7,.28);
+  fxOrb(pt,0xffffff,.12,1.25,.14,.95);
+  fxOrb(pt,0xff8a3c,.45,3.2,.34,.58);
+  fxEnergyRing(pt,0xfff0b0,.25,wp.splashR*1.15,.32,{x:1,y:0,z:0},null,.72);
   fxRing({x:pt.x,y:pt.y+.1,z:pt.z},0xffe08a,.5,wp.splashR*1.9,.42);
   fxRing(pt,0xff8a3c,.4,wp.splashR*1.35,.3,{x:0,y:0,z:1});
   for(let i=0;i<7;i++){

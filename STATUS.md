@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 1.9 · **Date:** 24 August 2026 · **File:** `index.html` (~258 KB, ~4,800 lines)
+**Version:** 2.0 · **Date:** 24 August 2026 · **File:** `index.html` (~264 KB, ~4,900 lines)
 
 ---
 
@@ -28,6 +28,27 @@ a doubled first win each day, and a training range where any weapon in the game 
 **Everything below was verified in a real browser**, which 0.4 never was — with one exception:
 pointer lock could not be exercised through the automation, so someone should confirm mouse capture
 by hand. Details in Verification.
+
+---
+
+## New in 2.0 — signature weapons have a complete visual beat
+
+The showcase guns already had unique colours, but most of their effect arrived on one frame: one beam,
+one ring, gone. They now read as a short sequence without adding post-processing or external assets:
+
+- **Longshot Rail:** a translucent cyan sheath, bright inner beam and white core, with pulse rings moving
+  down the shot and a two-plane impact flare.
+- **Tesla Arc:** a thicker jagged main bolt, two side forks, a brief electrical afterimage and luminous
+  halos on chained targets.
+- **Bazooka:** expanding rings in the rocket wake, then a white core flash, orange shock sphere, ground
+  wave, debris, sparks and smoke.
+- **Obsidian Reaper:** orbiting charge motes collapse into the muzzle, then a layered void beam, corkscrew
+  energy path, travelling rings and a two-plane soul vortex at impact.
+
+Normal bullets remain short-lived tracers, which preserves the rarity ladder and keeps combat readable.
+Every added mesh still goes through the existing 460-effect cap. Training Range browser checks exercised
+all four firing paths; pointer lock remains the one browser-automation limitation, so the visual pass used
+the range's existing weapon cycling with a temporary test-only click allowance that was removed afterward.
 
 ---
 

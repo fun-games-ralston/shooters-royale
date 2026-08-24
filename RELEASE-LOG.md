@@ -7,6 +7,11 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.0 — 24 Aug 2026
+
+* New: the four signature weapons now build an effect instead of flashing once. Longshot Rail fires a white-hot layered beam through moving cyan pulse rings; Tesla Arc leaves readable forked lightning and chain halos; Bazooka rockets drag a plasma wake into a shock-sphere blast; Obsidian Reaper gathers a spiral charge and tears open a purple soul vortex.
+* Changed: ordinary gunfire stays restrained so these weapons remain special. All added effects use the same capped particle pool, so a busy fight cannot keep spawning visual debris forever.
+
 ## 1.9 — 24 Aug 2026
 
 * Fixed: fighters killed during a jump, fall or knockback froze sideways in mid-air. Corpses now fall onto the floor or platform below; bodies that fall into the void disappear.
