@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.5 · **Date:** 23 August 2026 · **File:** `index.html` (~218 KB, ~3,900 lines)
+**Version:** 1.6 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
 
 ---
 
@@ -63,6 +63,33 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.6 — previews face you, and hazards you can actually find
+
+**The fighter preview opened on the back of your head.** Character models point down −z and the
+preview camera sits at +z, so a rig rotation of 0 is the back. Every preview now opens facing the
+camera: the fighter at π−0.55 (angled so the weapon reads), characters and pets at π, and weapons at
+π/2 for a side profile instead of straight down the barrel.
+
+**The Sandpit event was firing and nobody could see it.** Fifteen times a three-minute match, doing
+real damage — but it threw sand-coloured debris and dust across a sand floor under a sand sky. It now
+opens a dark pit and throws brown rock. Two compounding problems, both fixed:
+
+- **Events picked a target uniformly from the living**, so in a seven-bot lobby you met one in eight
+  and mostly watched bots get hit. They now land near the player half the time — measured on Sandpit,
+  9 of 14 events within reach of the player instead of roughly 2.
+- The hazard was **described nowhere**. Arena cards now carry red ⚠ lines, the preview pane has a
+  *What this map does to you* section, the Match Setup arena chip is marked, and a toast names the
+  hazard a second after you land.
+
+**Atrium and Bazaar got events**, since they were the only paid arenas with neither a modifier nor a
+hazard — falling glass and a power surge. Seven of ten arenas now have an event; The Grid, Skyport and
+Void Nexus carry movement modifiers instead. **Foundry stays clean on purpose**: it is free, it is
+where a new player learns the controls, and it is the baseline the other nine are measured against.
+
+Also: Bone Temple's spikes were labelled "Ice spikes" because they share a type with Frostbite's.
 
 ---
 

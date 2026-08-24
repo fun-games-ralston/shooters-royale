@@ -1082,7 +1082,7 @@ const ARENAS = [
  sky:0x05070d,fog:0x07101a,fogD:0.014,ground:0x0b1420,accent:0x3df2c4,wall:0x0f2030,light:0x8ff0ff,
  fx:{type:'spark',n:300,c:0x3df2c4},blurb:'Neon lattice floor. Everyone moves 12% faster in here.',
  mod:{speed:1.12}},
-{id:'atrium',name:'Atrium',cost:1750,size:78,seed:51,
+{id:'atrium',name:'Atrium',cost:1750,size:78,seed:51,event:{type:'meteor',every:[8,13],r:4.2,dmg:26,label:'FALLING GLASS',core:0xdff4ff},
  sky:0xcfd8e0,fog:0xbcc7d2,fogD:0.007,ground:0xd8d3c8,accent:0x7fd45b,wall:0xa8a196,light:0xffffff,
  fx:{type:'leaf',n:150,c:0x7fd45b},blurb:'Marble gallery with planters and a wide mezzanine ring.',
  mod:{}},
@@ -1098,11 +1098,11 @@ const ARENAS = [
  sky:0x87b6d9,fog:0x9ecae8,fogD:0.006,ground:0x8d97a2,accent:0xf2b134,wall:0x6c7682,light:0xffffff,
  fx:{type:'cloud',n:120,c:0xffffff},blurb:'Floating platforms at altitude. Fall off the edge and the trial ends for you.',
  mod:{grav:0.82},void:true},
-{id:'bazaar',name:'Neon Bazaar',cost:5200,size:82,seed:113,
+{id:'bazaar',name:'Neon Bazaar',cost:5200,size:82,seed:113,event:{type:'rift',every:[8,13],r:4.6,dmg:28,label:'POWER SURGE'},
  sky:0x120a20,fog:0x1a0f2e,fogD:0.013,ground:0x2a1c3a,accent:0xff3ea5,wall:0x1f1430,light:0xffa8e0,
  fx:{type:'spark',n:340,c:0xff3ea5},blurb:'Night market stalls and awnings. Cramped, colourful, extremely lethal.',
  mod:{}},
-{id:'bonetemple',name:'Bone Temple',cost:6400,size:80,seed:131,event:{type:'spike',every:[8,13],r:4.2,dmg:26},
+{id:'bonetemple',name:'Bone Temple',cost:6400,size:80,seed:131,event:{type:'spike',every:[8,13],r:4.2,dmg:26,label:'BONE SPIKES'},
  sky:0x1c1a14,fog:0x241f18,fogD:0.015,ground:0x4a4438,accent:0xe8e2d0,wall:0x352f26,light:0xffe9c0,
  fx:{type:'dust',n:220,c:0xd9d2c4},blurb:'Ribcage arches and sunken pits. Three levels of vertical fighting.',
  mod:{}},
@@ -2232,6 +2232,8 @@ function spawnMatch(){
   if(G.training){ G.left=99999; G.grace=1.0; }
   $('#killfeed').innerHTML=''; $('#dmgnums').innerHTML=''; lastHud='';
   $('#mapName').textContent=def.name.toUpperCase();
+  const hz=arenaHazards(def);
+  if(hz.length) setTimeout(()=>{ if(G.on) toast(def.name.toUpperCase()+' — '+hz[hz.length-1]); }, 900);
   updateHUD(); drawMinimap();
 }
 const tagTex={};
@@ -2579,11 +2581,14 @@ function scheduleEvent(){
 }
 function spawnArenaEvent(){
   const ev=G.world.def.event; if(!ev) return;
-  const look=EVENT_LOOK[ev.type]||EVENT_LOOK.meteor;
+  const base=EVENT_LOOK[ev.type]||EVENT_LOOK.meteor;
+  const look=ev.core?Object.assign({},base,{core:ev.core}):base;
   const H=G.world.H-4;
   // land near somebody who is still alive, so it actually matters
+  // Uniformly picking a living fighter meant that in a seven-bot lobby the player
+  // saw one event in eight. A hazard you never meet is not content.
   const alive=G.ents.filter(e=>e.alive);
-  const near=alive.length?pick(alive):G.pl;
+  const near=(G.pl.alive && Math.random()<0.5) ? G.pl : (alive.length?pick(alive):G.pl);
   const x=clamp(near.pos.x+rnd(-11,11), -H, H);
   const z=clamp(near.pos.z+rnd(-11,11), -H, H);
   const y=groundAt(G.world.boxes, x, z, 40);
@@ -2608,7 +2613,7 @@ function spawnArenaEvent(){
   G.events.push({ev, look, x, y, z, t:0, warn:look.warn, ring, drop, blown:false});
   if(Math.hypot(G.pl.pos.x-x,G.pl.pos.z-z)<ev.r+7){
     AU.tone(300,520,.45,.14,'sine');
-    toast(look.name+' INCOMING');
+    toast((ev.label||look.name)+' INCOMING');
   }
 }
 function updateArenaEvents(dt){
@@ -2667,14 +2672,19 @@ function blowEvent(E){
     }
     for(let i=0;i<8;i++) fxSmoke({x:E.x+rnd(-2,2),y:E.y+rnd(0,3),z:E.z+rnd(-2,2)},0x6a3fb0,.5,.9,1.6);
   } else if(ev.type==='quake'){
-    for(let i=0;i<14;i++){
-      const sz=rnd(.4,1.2);
-      const m=fxBox(sz,sz,sz, 0xe8d3a0, .55);
+    // Dark rock and a deep hole, not more sand. The first version threw
+    // sand-coloured debris across a sand floor and was invisible in play.
+    const pit=fxBox(ev.r*1.7, .5, ev.r*1.7, 0x241a10, 0);
+    pit.position.set(E.x, E.y+.05, E.z);
+    fxAdd(pit,{life:1.6,o0:.85,fade:true});
+    for(let i=0;i<16;i++){
+      const sz=rnd(.5,1.4);
+      const m=fxBox(sz,sz,sz, i%3?0x4a3520:0x2a1d12, 0);
       m.position.set(E.x+rnd(-ev.r,ev.r), E.y+.3, E.z+rnd(-ev.r,ev.r));
-      fxAdd(m,{life:rnd(.7,1.2),g:14,fade:true,v:{x:rnd(-3,3),y:rnd(3,7),z:rnd(-3,3)},
+      fxAdd(m,{life:rnd(.8,1.3),g:14,fade:true,v:{x:rnd(-4,4),y:rnd(4,8),z:rnd(-4,4)},
         spin:{x:rnd(-8,8),y:rnd(-8,8),z:rnd(-8,8)}});
     }
-    for(let i=0;i<10;i++) fxSmoke({x:E.x+rnd(-3,3),y:E.y+rnd(0,1.6),z:E.z+rnd(-3,3)},0xbba272,.8,1.1,1.1);
+    for(let i=0;i<14;i++) fxSmoke({x:E.x+rnd(-3,3),y:E.y+rnd(0,2.2),z:E.z+rnd(-3,3)},0x6b5238,1.0,1.3,1.4);
   } else {
     for(let i=0;i<8;i++){
       const sz=rnd(.9,2.2);
@@ -3705,16 +3715,19 @@ function pvShow(kind,data){
     if(kind==='fighter'){
       // closer and off-axis, so the weapon in the hands reads as a silhouette
       // instead of pointing straight down the lens
-      pvRig.rotation.y=-0.6;
+      pvRig.rotation.y=Math.PI-0.55;
       pvCamera.position.set(0,1.35,3.15); pvCamera.lookAt(0,1.0,0);
     } else {
+      pvRig.rotation.y=Math.PI;
       pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
     }
   } else if(kind==='gun'){
     const g=buildGun(data,2.1); g.position.set(0,0,0); pvRig.add(g);
+    pvRig.rotation.y=Math.PI*0.5;          // side profile, not down the barrel
     pvCamera.position.set(0,0.5,3.6); pvCamera.lookAt(0,0,0);
   } else if(kind==='pet'){
     const m=buildPet(data); pvRig.add(m.root);
+    pvRig.rotation.y=Math.PI-0.5;
     pvCamera.position.set(0,1.9,5.4); pvCamera.lookAt(0,1.0,0);
   } else if(kind==='arena'){
     pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
@@ -4025,7 +4038,7 @@ function renderSetup(){
   g.appendChild(chipCard('Mode','Training is a safe range — no damage taken, infinite ammo, and you can try EVERY weapon in the game before you buy it',
     [{id:'trial',name:'Trial (ranked)'},{id:'training',name:'Training range'}],S.cfg.mode||'trial',v=>{S.cfg.mode=v;summary();}));
   g.appendChild(chipCard('Arena','Where the trial runs — unlock more in the armory',
-    ARENAS.map(a=>({id:a.id,name:a.name,locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
+    ARENAS.map(a=>({id:a.id,name:a.name+(a.event?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
     S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();}));
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
@@ -4259,8 +4272,7 @@ function renderShop(tab){
       else btns.push({label:sel?'Selected':'Select',primary:!sel,disabled:sel,fn:()=>{ S.cfg.arena=a.id; saveState(); AU.ui(); buildMenuScene(); renderShop(tab); }});
       g.appendChild(card({name:a.name,rar:a.cost>=9000?'myth':a.cost>=4600?'ench':'common',
         tag:sel?'SELECTED':null,tagCls:'eq',
-        stats:a.blurb+(a.mod&&a.mod.grav?'<br><b>Low gravity</b>':'')+(a.mod&&a.mod.friction?'<br><b>Slippery ice</b>':'')+
-          (a.mod&&a.mod.speed?'<br><b>+12% move speed</b>':'')+(a.hazard?'<br><b>Lava hazard</b>':'')+(a.void?'<br><b>Fall damage is fatal</b>':''),
+        stats:a.blurb+arenaHazards(a).map(h=>'<br><span class="bad">\u26A0 '+h+'</span>').join(''),
         paint:cv=>paintArena(cv,a),
         select:()=>{ pvInfoArena(a); },
         buttons:btns}));
@@ -4336,14 +4348,30 @@ function pvInfoFood(f){
     : '<h4>Food</h4><div>Health never comes back on its own. Everything you eat mid-fight has to be bought here first.</div>'+
       '<div style="margin-top:8px;color:var(--dim)">Press F in a match to eat, Q to switch between what you are carrying.</div>';
 }
+/* What this map does to you, in words. Previously the shop said an arena had
+   lava or low gravity but never mentioned the thing falling out of the sky. */
+function arenaHazards(a){
+  const out=[];
+  if(a.mod&&a.mod.speed) out.push('Everyone moves '+Math.round((a.mod.speed-1)*100)+'% faster');
+  if(a.mod&&a.mod.friction) out.push('Slick ice — you slide past your cover');
+  if(a.mod&&a.mod.grav) out.push('Low gravity — '+Math.round(a.mod.grav*100)+'% weight, higher jumps');
+  if(a.void) out.push('No floor at the edges. Falling is fatal');
+  if(a.hazard) out.push('Lava pools — '+a.hazard.dps+' damage a second');
+  if(a.event){
+    const nm=a.event.label||(EVENT_LOOK[a.event.type]&&EVENT_LOOK[a.event.type].name)||'HAZARD';
+    out.push(nm.charAt(0)+nm.slice(1).toLowerCase()+' every '+a.event.every[0]+'–'+a.event.every[1]+
+      's · '+a.event.dmg+' damage · watch the orange ring');
+  }
+  return out;
+}
 function pvInfoArena(a){
   if(!a) return;
   $('#pvInfo').innerHTML='<h4>'+a.name+'</h4><div>'+a.blurb+'</div>'+
     kv('Size',a.size+' × '+a.size+' blocks')+kv('Levels','ground + upper decks')+
     kv('Unlock',a.cost?a.cost.toLocaleString()+' ⬥':'free')+
-    (a.mod&&a.mod.grav?kv('Gravity',Math.round(a.mod.grav*100)+'%'):'')+
-    (a.mod&&a.mod.friction?kv('Traction','low'):'')+
-    (a.hazard?kv('Hazard','lava — '+a.hazard.dps+' dps'):'');
+    (()=>{ const h=arenaHazards(a); return h.length
+      ? '<h4>What this map does to you</h4><div style="color:var(--ember)">'+h.join('<br>')+'</div>'
+      : '<h4>Clean fight</h4><div style="color:var(--dim)">No hazards. Just the eight of you.</div>'; })();
 }
 function kv(k,v){ return '<div><span class="k">'+k+'</span> · '+v+'</div>'; }
 /* =====================================================================

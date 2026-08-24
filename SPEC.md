@@ -266,10 +266,19 @@ then lands.
 | Arena | Event | Every | Radius | Damage | Extra |
 | --- | --- | --- | --- | --- | --- |
 | Sandpit | Sinkhole | 9–15 s | 5.2 m | 22 | 0.8 s stun |
+| Atrium | Falling glass | 8–13 s | 4.2 m | 26 | falls from the ceiling |
 | Frostbite | Ice spikes | 7–12 s | 4.4 m | 28 | launches you |
 | Emberfall | Meteor | 6–11 s | 5.0 m | 38 | falls from the sky, launches you |
+| Neon Bazaar | Power surge | 8–13 s | 4.6 m | 28 | — |
 | Bone Temple | Bone spikes | 8–13 s | 4.2 m | 26 | launches you |
 | Void Nexus | Void rift | 8–14 s | 4.8 m | 32 | — |
+
+**Every event lands near the player half the time.** Picking uniformly from the living meant that in a
+seven-bot lobby you met one event in eight and mostly watched bots eat them — a hazard you never meet
+is not content.
+
+**Foundry is deliberately the only clean map.** It is free, it is where a new player learns the
+controls, and it is the neutral baseline the other nine are measured against.
 
 Damage is strongest in the middle and falls to about 38% at the rim, so clipping the edge stings and
 standing in it hurts. **Bots are caught by exactly the same code**, which is half the fun to watch.
@@ -279,6 +288,14 @@ hazard nobody can dodge is just a random tax. And the warning marker is **not th
 same hot orange on every map, with the whole danger area shaded rather than just outlined. The first
 version tinted the marker to match the arena, which made Frostbite's pale cyan ring invisible against
 its white floor; one danger colour is also something you learn once instead of five times.
+
+The same trap caught the Sandpit sinkhole, which threw sand-coloured debris and dust across a sand
+floor under a sand sky and was effectively invisible in play even though it was firing fifteen times
+a match. It now opens a dark pit and throws brown rock.
+
+**Hazards are stated everywhere they matter**: on the arena shop card as red ⚠ lines, in the preview
+pane under *What this map does to you*, as a ⚠ on the Match Setup arena chip, and as a toast a second
+after you land. The shop used to mention lava and low gravity but never the thing falling out of the sky.
 
 ---
 
