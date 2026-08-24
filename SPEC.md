@@ -706,17 +706,18 @@ The Armory does two jobs, and keeping them straight is what keeps the labels hon
   `Buy — 350 ⬥` if you do not own it, or `Slot 1` / `Slot 2` / `Equip` if you do. Gold means
   spending coins, everywhere, without exception.
 * **Inspecting** — Your Fighter. It buys nothing and equips nothing. It is the only place that
-  shows you assembled: dressed, armed with your actual slot 1 weapon, mastery charms and all,
-  turning slowly at full width.
+  shows you assembled: dressed, armed with your selected slot 1, 2 or 3 weapon, mastery charms
+  and all, turning slowly at full width. An empty slot 2 shows you unarmed.
 
 Your Fighter began as a grid of eight cards with `Change` buttons and was wrong twice over. The
 buttons were gold, the colour this shop uses for purchases, so they read as *spend coins*. And they
 did not change anything — they navigated, to the same seven categories the left rail already lists
 one click away and permanently on screen, which made the grid a second and worse copy of the nav.
 
-The grid is gone. The loadout now reads as a list beside the model, and each **value** is the link —
-tapping *AK-47* opens Weapons, tapping *Frost Wolf* opens Pets. Nothing looks like a button that
-is not one, and nothing looks like a purchase that is not one.
+The grid is gone. The loadout now reads as a list beside the model. The three **slot labels** select
+which weapon is shown in the fighter's hands, while each **value** is the link — tapping *AK-47*
+opens Weapons, tapping *Frost Wolf* opens Pets. Nothing looks like a button that is not one, and
+nothing looks like a purchase that is not one.
 
 Match Setup listed the same five slots a third time. It now carries one line — everything you are
 carrying, in order, turning red when you have no food — and a button through to the fighter view.

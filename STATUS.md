@@ -78,10 +78,11 @@ same seven categories the left rail already lists one click away and permanently
 was a second and worse copy of the navigation.
 
 Relabelling would have fixed the wording and left the redundancy, so the grid is gone. Your Fighter
-is now the one thing nothing else in the game does: you at full width, dressed, holding your actual
-slot 1 weapon with its mastery charms, turning. The loadout sits beside it as a list where each
-**value** is the link — tapping *AK-47* opens Weapons, tapping *Frost Wolf* opens Pets. Nothing looks
-like a button that is not one, and nothing looks like a purchase that is not one.
+is now the one thing nothing else in the game does: you at full width, dressed, holding the weapon
+from whichever of slots 1, 2 or 3 you select, with its mastery charms, turning. An empty slot 2 shows
+you unarmed. The loadout sits beside it as a list where each **slot label** selects the preview and
+each **value** is the link — tapping *AK-47* opens Weapons, tapping *Frost Wolf* opens Pets. Nothing
+looks like a purchase that is not one.
 
 The shopping tabs were already right and are untouched: `Buy — 350 ⬥` when you do not own it,
 `Slot 1` / `Slot 2` / `Equip` when you do.

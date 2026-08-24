@@ -169,6 +169,10 @@ canvas{display:block}
 #pvCanvas{width:100%;height:300px;display:block;background:radial-gradient(ellipse at 50% 70%,#2a2140,#100c1a 70%)}
 .pvinfo .jump{color:var(--bone);cursor:pointer;border-bottom:1px dotted var(--edge)}
 .pvinfo .jump:hover{color:var(--gold);border-bottom-color:var(--gold)}
+.pvinfo .slotpick{appearance:none;border:0;padding:3px 7px;background:#21192e;color:var(--dim);
+  box-shadow:inset 0 0 0 1px var(--edge);font:inherit;letter-spacing:inherit;text-transform:uppercase;cursor:pointer}
+.pvinfo .slotpick:hover{color:var(--bone);box-shadow:inset 0 0 0 1px var(--bone)}
+.pvinfo .slotpick.on{background:var(--ench);color:#120a22;box-shadow:inset 0 0 0 1px #d7c3ff}
 .pvinfo{padding:14px;font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.9;letter-spacing:.04em;flex:1;overflow:auto}
 .pvinfo .k{color:var(--bone)}
 .pvinfo h4{font-family:var(--disp);font-size:15px;letter-spacing:.14em;color:var(--gold);margin:10px 0 4px;text-transform:uppercase}
@@ -502,7 +506,7 @@ canvas{display:block}
         <div class="shopmain">
           <div class="grid" id="shopGrid"></div>
           <div class="preview">
-            <canvas id="pvCanvas"></canvas>
+            <canvas id="pvCanvas" role="img" aria-label="3D item preview"></canvas>
             <div class="pvinfo" id="pvInfo"></div>
           </div>
         </div>
@@ -3727,13 +3731,20 @@ function initPreview(){
 }
 function pvShow(kind,data){
   if(!pvRig) return;
+  const previewCanvas=$('#pvCanvas');
   while(pvRig.children.length) pvRig.remove(pvRig.children[0]);
   if(kind==='char'||kind==='fighter'){
     const cfg={hair:data.hair||S.eq.hair,outfit:data.outfit||S.eq.outfit,acc:data.acc||S.eq.acc};
     const m=buildCharacter(cfg);
-    const gm=buildGun(W[S.eq.primary||'sidearm'],1,masteryOf(S.eq.primary||'sidearm').tier);
-    gm.rotation.x=-Math.PI/2; m.hand.add(gm);
-    m.armR.rotation.x=1.35; m.armL.rotation.x=1.15; m.armL.rotation.z=0.22;
+    const weaponId=kind==='fighter' ? data.weaponId : (S.eq.primary||'sidearm');
+    previewCanvas.setAttribute('aria-label',kind==='fighter'
+      ? (weaponId&&W[weaponId]?'Your fighter holding '+W[weaponId].name:'Your fighter unarmed')
+      : 'Your fighter preview');
+    if(weaponId&&W[weaponId]){
+      const gm=buildGun(W[weaponId],1,masteryOf(weaponId).tier);
+      gm.rotation.x=-Math.PI/2; m.hand.add(gm);
+      m.armR.rotation.x=1.35; m.armL.rotation.x=1.15; m.armL.rotation.z=0.22;
+    }
     pvRig.add(m.root);
     if(kind==='fighter'){
       // closer and off-axis, so the weapon in the hands reads as a silhouette
@@ -3747,14 +3758,17 @@ function pvShow(kind,data){
       pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
     }
   } else if(kind==='gun'){
+    previewCanvas.setAttribute('aria-label',data.name+' preview');
     const g=buildGun(data,2.1); g.position.set(0,0,0); pvRig.add(g);
     pvRig.rotation.y=Math.PI*0.5;          // side profile, not down the barrel
     pvCamera.position.set(0,0.5,3.6); pvCamera.lookAt(0,0,0);
   } else if(kind==='pet'){
+    previewCanvas.setAttribute('aria-label',data.name+' preview');
     const m=buildPet(data); pvRig.add(m.root);
     pvRig.rotation.y=Math.PI-0.5;
     pvCamera.position.set(0,1.9,5.4); pvCamera.lookAt(0,1.0,0);
   } else if(kind==='arena'){
+    previewCanvas.setAttribute('aria-label','Arena preview');
     pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
   }
   onResize();
@@ -4102,6 +4116,7 @@ function summary(){
 const TABS=[{id:'fighter',n:'Your fighter'},{id:'weapons',n:'Weapons'},{id:'hair',n:'Hair'},{id:'outfit',n:'Outfits'},
   {id:'acc',n:'Accessories'},{id:'pet',n:'Pets'},{id:'food',n:'Food'},{id:'arena',n:'Arenas'}];
 let shopTab='fighter';
+let fighterPreviewSlot=1;
 function pwBar(n){ return '<span style="color:#f2b134">'+'\u25AE'.repeat(n)+'</span>'+'\u25AF'.repeat(10-n); }
 function rarClass(r){ return r==='myth'?' rar-myth glint':r==='ench'?' rar-ench':''; }
 function card(o){
@@ -4197,7 +4212,7 @@ function renderShop(tab){
     // grid of "Change" buttons was just a worse second copy of it. What nothing
     // else in the game does is show you assembled: dressed, armed, turning.
     $('.shopmain').classList.add('inspect');
-    pvShow('fighter',{}); pvInfoFighter();
+    pvShow('fighter',{weaponId:fighterPreviewWeapon(fighterPreviewSlot)}); pvInfoFighter();
   }
   else if(tab==='weapons'){
     const cur=W[S.eq.primary||'sidearm'];
@@ -4320,25 +4335,38 @@ function pvInfoFighter(){
   const foods=Object.keys(S.food).filter(k=>S.food[k]>0);
   const carried=foods.reduce((a,k)=>a+S.food[k],0);
   const go=(tab,txt)=>'<span class="jump" data-go="'+tab+'">'+esc(txt)+'</span>';
+  const pick=slot=>'<button class="slotpick'+(fighterPreviewSlot===slot?' on':'')+'" data-slot="'+slot+'" '+
+    'aria-pressed="'+(fighterPreviewSlot===slot)+'" title="Preview slot '+slot+'">Slot '+slot+'</button>';
   $('#pvInfo').innerHTML=
     '<h4 style="font-size:20px">'+(ACC?esc(ACC.handle):'Your fighter')+'</h4>'+
     '<div style="color:'+r.col+';margin-bottom:6px">LEVEL '+lvl+' \u00B7 '+r.name.toUpperCase()+'</div>'+
     '<h4>Carrying</h4>'+
-    kv('Slot 1',go('weapons',p.name))+
-    kv('Slot 2',go('weapons',S.eq.secondary?W[S.eq.secondary].name:'empty'))+
-    kv('Slot 3',go('weapons',mel.name))+
+    kv(pick(1),go('weapons',p.name))+
+    kv(pick(2),go('weapons',S.eq.secondary?W[S.eq.secondary].name:'empty'))+
+    kv(pick(3),go('weapons',mel.name))+
     kv('Pet',go('pet',S.eq.pet?PE[S.eq.pet].name:'none'))+
     kv('Food',go('food',carried?plural(carried,'item'):'none'))+
     '<h4>Look</h4>'+
     kv('Hair',go('hair',HA[S.eq.hair].name))+
     kv('Outfit',go('outfit',OU[S.eq.outfit].name))+
     kv('Accessory',go('acc',AC[S.eq.acc].name))+
-    '<div style="margin-top:14px;color:var(--dim);line-height:1.8">This is exactly what drops into '+
-    'the arena. Tap anything above to change it, or press V in a match to see yourself fighting.</div>';
-  // the value itself is the link, so there is no button pretending to be a purchase
+    '<div style="margin-top:14px;color:var(--dim);line-height:1.8">Tap a slot to preview it. Tap an item '+
+    'name to change it, or press V in a match to see yourself fighting.</div>';
+  // Slot buttons only change the inspect view; item names still navigate to their shopping tabs.
+  $('#pvInfo').querySelectorAll('.slotpick').forEach(el=>{
+    el.onclick=()=>{
+      fighterPreviewSlot=Number(el.dataset.slot); AU.ui();
+      pvShow('fighter',{weaponId:fighterPreviewWeapon(fighterPreviewSlot)}); pvInfoFighter();
+    };
+  });
   $('#pvInfo').querySelectorAll('.jump').forEach(el=>{
     el.onclick=()=>{AU.ui();renderShop(el.dataset.go);};
   });
+}
+function fighterPreviewWeapon(slot){
+  if(slot===2) return S.eq.secondary||null;
+  if(slot===3) return S.eq.melee||'knife';
+  return S.eq.primary||'sidearm';
 }
 function pvInfoChar(it){
   const p=W[S.eq.primary||'sidearm'];
