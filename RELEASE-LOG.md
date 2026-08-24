@@ -99,32 +99,32 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ## 0.4 — 23 Aug 2026
 
-* Fixed: shop cards were cut in half. `overflow:hidden` collapsed the grid rows, so weapon cards lost their stats and buy button entirely. Everything is visible now.
+* Fixed: shop cards were cut in half — weapon cards showed an icon and a name with no stats and no buy button. Everything is visible now.
 * Fixed: two places to buy things. The duplicate buy button in the preview pane is gone — purchasing lives only on the card, and every card footer looks the same.
-* Fixed: 20,000-coin exploit. Payouts counted the Reaper's 99,999 overkill damage as real damage. Only damage actually dealt pays out now.
-* New: pets can be killed. They take return fire when they bite, drop at zero HP, and stay down 18 seconds — perk included. No more free permanent damage.
-* Balance: Minigun nerfed hard. It did 525 DPS at 4,200 coins, double the 8,600 Tesla. Now 350, so the price ladder actually means something.
-* Balance: Tesla Arc buffed. It was paying 8,600 coins for less range and damage than a 1,500-coin rifle. More reach, more damage.
+* Fixed: a 20,000-coin exploit. Payouts counted the Reaper's 99,999 overkill as real damage, so only damage actually taken off a fighter pays out now.
+* New: pets can be killed, so they are no longer free permanent damage. They take return fire when they bite and stay down 18 seconds, perk included.
+* Balance: the Minigun did double the damage of the Tesla Arc at half the price. Cut by a third, so the price ladder means something again.
+* Balance: the Tesla Arc cost 8,600 coins for less range and damage than a 1,500-coin rifle. More of both now.
 * Fixed: Bazooka killed its owner. Own-rocket splash cut to 35%, so rocket-jumping works without being suicide.
-* Fixed: arena prices were scrambled. Neon Bazaar cost less than Skyport, Bone Temple cost more than Void Nexus. The unlock ladder rises properly again.
+* Fixed: arena prices were scrambled — Neon Bazaar cost less than Skyport, Bone Temple more than Void Nexus. The unlock ladder rises properly again.
 * New: itemised payout screen. Results now break down exactly where every coin came from, including a win-streak bonus and a first-win-per-arena bounty.
 * Fixed: toast messages were landing on top of the ARMORY header. Moved to the bottom of the screen.
 
 ## 0.3 — 22 Aug 2026
 
 * Fixed: your fighter never turned in third person. The body stayed frozen at its spawn angle while the camera orbited it, so you always saw yourself from the side.
-* Fixed: shots came from behind you. In third person bullets spawned at the camera, four metres back. They now leave your barrel and hit what the crosshair is on.
+* Fixed: in third person your shots came from four metres behind you, at the camera. They now leave your barrel and hit what the crosshair is on.
 * New: every weapon has its own effect. Rail laser beams, forked lightning, rocket trails and fireballs, void beams, buckshot cones, brass casings, a spinning blade arc for the knife.
 * New: kills explode into blocky debris tinted by whatever killed you, and headshots pop a red ring.
 * New: muzzle flashes light the arena. A pooled point light fires on every shot and explosion.
 * Fixed: buy buttons were tiny and easy to miss. Now full-width gold with the price inside, and they turn red with a "you need X more" tooltip when you can't afford it.
 * Fixed: long guns drew outside their shop icons, and hair icons rendered completely off-canvas.
-* Fixed: minimap arrow pointed backwards. It was rotated 180° off.
+* Fixed: the minimap arrow pointed backwards, so the map showed you facing the opposite way to the one you were.
 
 ## 0.2 — 22 Aug 2026
 
 * New: POWER rating on every weapon. A 1–10 bar that rises with price, so the shop ladder is legible at a glance.
-* Fixed: you died in under 5 seconds. All 7 bots dogpiled the player with near-perfect aim. They now prefer fighting each other, react slower, and burst-fire instead of holding the trigger.
+* Fixed: you died in under 5 seconds, because all 7 bots dogpiled you with near-perfect aim. They now prefer fighting each other, react slower, and burst-fire instead of holding the trigger.
 * New: 3.2-second grace period at match start so nobody gets shot before they've found cover.
 * Fixed: guns pointed backwards out of the character's hand.
 * Fixed: graceful failure if the 3D engine can't load, instead of a hung loading screen.
