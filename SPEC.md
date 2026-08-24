@@ -194,7 +194,9 @@ They sit forward on the barrel deliberately: anything near the camera in first p
 
 ## 6. Pets
 
-Seven pets. One equipped at a time. They follow you, engage nearby enemies, and grant a passive perk while alive.
+Seven pets. One equipped at a time. They hold a behind-the-player formation, acquire only targets visible to
+the pet or its owner, pursue the last seen position for a pet-specific memory window, and warp back to formation
+if navigation leaves them stuck. A close pet fades when it enters the camera instead of covering the crosshair.
 
 | Pet | Cost | PWR | Bite | Cooldown | DPS | HP | Perk |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -206,7 +208,19 @@ Seven pets. One equipped at a time. They follow you, engage nearby enemies, and 
 | Razor Raptor | 5,200 | 8 | 11 | 0.75 s | 14.7 | 80 | Bites every 0.75 s, sprints far ahead to harass |
 | Tyrant Rex | 10,000 | 10 | 34 | 2.6 s | 13.1 | 190 | 34 dmg per bite and enemies are thrown back |
 
-**Pet health and counterplay.** Pets are not free permanent damage. Biting an armed fighter draws return fire — the pet takes `max(7, weapon damage × 0.55)` per bite it lands. Explosions damage them too. At zero HP the pet goes down for **18 seconds**, and its perk goes down with it. This is the main lever keeping high-tier pets from replacing the player.
+**Combat roles.** The Terrier retaliates against the last visible attacker; the Cat guards close range; the
+Snake poisons and disengages; the Wolf keeps a four-second visual memory; the Bear prioritises enemies attacking
+its owner; the Raptor hunts weakened targets; and the T-Rex is a heavy knockback finisher. These green role lines
+are separate from the purple special-skill lines in the Armory, so movement AI is not confused with the passive perk.
+
+**Pet health and counterplay.** Pets are real combat targets with hitboxes scaled to their visible model. Bots can
+choose, aim at and shoot them; a pet in a firing lane can take the bullet, and explosions damage them too. The old
+synthetic `max(7, weapon damage × 0.55)` charge per bite is removed. At zero HP the pet goes down for **18 seconds**,
+and its perk goes down with it. This is the main lever keeping high-tier pets from replacing the player.
+
+Pet bite and poison damage still contributes to the owner's total damage, kills, rewards and daily progress, but
+it has its own attribution and never advances the weapon that happened to be in the owner's hands. Poison damage
+accumulates fractional frame damage before applying integer ticks, so the stated 4 damage per second actually lands.
 
 Pet HP and the revive countdown show in the HUD pet bar bottom-left.
 
@@ -898,6 +912,7 @@ python3 -m http.server 8123
 fetch('/balance-sim.js').then(r => r.text()).then(t => eval(t))
 sweep(['ak47','smg','sniper'], 10)                    // 10 matches each
 simMatch('bazooka', 'sidearm', 'claws', 'regular', 7) // one match, full detail
+petSweep(PETS.map(p => p.id), 5)                      // pet kills, downs and errors
 ```
 
 The simulated player tracks with a smoothed lag, has a distance-scaled error cone, takes a

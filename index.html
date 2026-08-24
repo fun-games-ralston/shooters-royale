@@ -138,9 +138,18 @@ canvas{display:block}
 .weapon-trade{display:flex;flex-direction:column;gap:4px}
 .weapon-trade .good,.weapon-trade .bad{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.9em}
 .weapon-mastery{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item.pet-card .st{min-height:185px;display:flex;flex-direction:column;gap:7px}
+.item.pet-card.selected{outline:2px solid var(--ench);outline-offset:-2px;background:#241d33}
+.item.pet-card:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.pet-role{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.9em}
+.pet-skill{display:flex;flex-direction:column;gap:3px;color:var(--ench);line-height:1.45}
+.pet-skill b{color:var(--ench)!important;text-transform:uppercase;letter-spacing:.1em}
+.pet-skill span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;color:#b99ae8}
+.pet-skill-detail{color:var(--ench);line-height:1.7}
 .detailcue{margin-top:auto;padding-top:5px;border-top:1px dashed var(--edge);color:var(--text2);font-size:9px;
   letter-spacing:.14em;text-align:right;text-transform:uppercase}
-.item.weapon-card:hover .detailcue,.item.weapon-card.selected .detailcue{color:var(--ench)}
+.item.weapon-card:hover .detailcue,.item.weapon-card.selected .detailcue,
+.item.pet-card:hover .detailcue,.item.pet-card.selected .detailcue{color:var(--ench)}
 .item .foot{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin-top:auto;flex:0 0 auto}
 .item .foot .row{display:flex;gap:6px}
 .item .foot .row .btn{flex:1;padding:8px 6px}
@@ -254,6 +263,7 @@ canvas{display:block}
 .dnum{position:absolute;font-family:var(--disp);font-size:20px;color:var(--gold);text-shadow:0 2px 0 #000;
   animation:dfloat .8s ease-out forwards}
 .dnum.head{color:var(--ember);font-size:26px}
+.dnum.pet{color:var(--leaf)}
 @keyframes dfloat{to{transform:translateY(-46px);opacity:0}}
 #scope{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .08s;
   background:radial-gradient(circle at center, transparent 0 128px, #000 132px)}
@@ -1089,8 +1099,8 @@ const PETS = [
   {w:.16,h:.16,d:.5,x:0,y:.78,z:.7,c:0xdfe6ee}]},
 
 {id:'bear',name:'Ironhide Bear',cost:3800,rar:'ench',dmg:22,cd:2.0,hp:150,pw:6,range:7,speed:6.2,scale:1.35,
- perk:'guardian',perkTxt:'Takes the hit for you: all incoming damage reduced by 10% while it stands.',
- desc:'Slow, enormous, and hits like a truck. Bodyblocks doorways beautifully.',
+ perk:'guardian',perkTxt:'While active, you take 10% less incoming damage.',
+ desc:'Slow, enormous, and built to pull close attackers away from you.',
  parts:[{w:1.0,h:.86,d:1.3,x:0,y:.9,z:0,c:0x4a3423},{w:.6,h:.56,d:.6,x:0,y:1.06,z:-.9,c:0x5a4029},
   {w:.16,h:.16,d:.1,x:-.22,y:1.36,z:-.82,c:0x3a281a},{w:.16,h:.16,d:.1,x:.22,y:1.36,z:-.82,c:0x3a281a},
   {w:.24,h:.2,d:.18,x:0,y:.94,z:-1.2,c:0x241810},
@@ -1121,6 +1131,27 @@ const PETS = [
   {w:.18,h:.34,d:.18,x:0,y:2.2,z:-.2,c:0x3a5220},{w:.18,h:.3,d:.18,x:0,y:2.16,z:.3,c:0x3a5220}]},
 ];
 const PE = {}; PETS.forEach(p=>PE[p.id]=p);
+/* A pet has two promises: the green line is how it fights, and the purple line
+   is the special skill that changes the rest of the match. Movement values are
+   deliberately data, not branches buried in updatePet, so the shop copy and AI
+   cannot quietly drift apart. `range` above is the original tuning value; the
+   reach shown to players and used by bites is derived once by petReach(). */
+const PET_TACTICS = {
+  dog:{skill:'Tracker Pulse',role:'Retaliates against the last enemy who hurt you.',acquire:28,leash:32,memory:1.6,back:2.8,side:-1.5},
+  cat:{skill:'Ashen Mend',role:'Stays close and swipes at enemies who enter your space.',acquire:13,leash:17,memory:1.0,back:2.7,side:1.4},
+  snake:{skill:'Venom Bite',role:'Darts in, poisons once, then slips back out.',acquire:23,leash:27,memory:1.5,back:3.0,side:-1.7,retreat:1.25},
+  wolf:{skill:'Pack Instinct',role:'Chases visible enemies and tracks them briefly behind cover.',acquire:30,leash:35,memory:4.0,back:3.2,side:1.8},
+  bear:{skill:'Iron Guard',role:'Guards close range and draws fire from attackers on you.',acquire:19,leash:23,memory:2.0,back:3.4,side:0},
+  raptor:{skill:'Frenzy',role:'Sprints ahead and hunts the weakest visible enemy.',acquire:34,leash:39,memory:2.3,back:3.6,side:-2.0},
+  trex:{skill:'Apex Throw',role:'Heavy finisher that soaks fire and knocks enemies away.',acquire:29,leash:34,memory:2.6,back:5.8,side:3.0},
+};
+function petTactic(p){ return PET_TACTICS[p.id]||PET_TACTICS.dog; }
+function petReach(p){ return Math.round(p.range*0.75*10)/10; }
+function petBounds(p){
+  const s=p.scale||1; let hx=.25,hz=.25,h=.5;
+  p.parts.forEach(b=>{ hx=Math.max(hx,(Math.abs(b.x)+b.w/2)*s); hz=Math.max(hz,(Math.abs(b.z)+b.d/2)*s); h=Math.max(h,(b.y+b.h/2)*s); });
+  return {hx:hx,hz:hz,h:h,r:Math.hypot(hx,hz)};
+}
 
 /* ---------------- arenas ---------------- */
 const ARENAS = [
@@ -1586,10 +1617,18 @@ function buildCharacter(cfg){
 function buildPet(p){
   const root=new THREE.Group();
   const body=new THREE.Group(); root.add(body);
-  p.parts.forEach(b=>{ const m=boxMesh(b.w,b.h,b.d,b.c,b.e||0); m.position.set(b.x,b.y,b.z); body.add(m); });
+  const fadeMats=[];
+  p.parts.forEach(b=>{
+    const m=boxMesh(b.w,b.h,b.d,b.c,b.e||0);
+    // World pets can fade when they enter the camera. Cached materials are shared
+    // by every character and preview, so each pet needs its own copy before opacity
+    // changes or a T-Rex beside the camera would fade the whole Armory too.
+    m.material=m.material.clone(); m.material.transparent=true; fadeMats.push(m.material);
+    m.position.set(b.x,b.y,b.z); body.add(m);
+  });
   root.scale.setScalar(p.scale||1);
   root.add(makeBlob(1.8*(p.scale||1)));
-  return {root,body};
+  return {root,body,fadeMats};
 }
 
 /* =====================================================================
@@ -1842,7 +1881,7 @@ const G = {
   t:0,left:0,cam:'first',yaw:0,pitch:0,shake:0,camD:5.2,
   tracers:[],trIdx:0,projs:[],mapBoxes:[],dmgEls:[],fxp:[],plight:null,plightT:0,vm:null,vmGun:null,muzzle:null,
   ads:false,adsT:0,recoil:0,recoilV:0,spinup:0,scoreOpen:false,lastDamageT:-99,
-  events:[], eventT:1e9, outro:null, lastKiller:null, lastPart:null,
+  events:[], eventT:1e9, outro:null, lastKiller:null, lastPart:null,lastAttacker:null,lastAttackerT:-99,
 };
 const keys={};
 function mkTracers(){
@@ -2124,7 +2163,10 @@ function moveY(e,dt,gmul){
   }
   e.pos.y=ny;
   if(!G.world.def.void&&e.pos.y<0){e.pos.y=0;e.vel.y=0;e.onG=true;}
-  if(e.pos.y<-16&&e.alive){ kill(e,null,'the void'); }
+  if(e.pos.y<-16&&e.alive){
+    if(e.isPet) hurtPet(e.maxhp);
+    else kill(e,null,'the void');
+  }
 }
 /* ---------- raycasting ---------- */
 function rayBox(o,d,b){
@@ -2144,6 +2186,12 @@ function rayWorld(o,d,max){
   return best;
 }
 function entBoxes(e){
+  if(e.isPet){
+    const h=e.hit||petBounds(e.def), c=Math.abs(Math.cos(e.yaw||0)),s=Math.abs(Math.sin(e.yaw||0));
+    const hx=c*h.hx+s*h.hz, hz=s*h.hx+c*h.hz;
+    return [{x0:e.pos.x-hx,x1:e.pos.x+hx,y0:e.pos.y,y1:e.pos.y+h.h,
+      z0:e.pos.z-hz,z1:e.pos.z+hz,part:{n:'BODY',m:1}}];
+  }
   const out=[];
   for(const h of HITBOX) out.push({x0:e.pos.x-h.hx,x1:e.pos.x+h.hx,y0:e.pos.y+h.y0,y1:e.pos.y+h.y1,
     z0:e.pos.z-h.hz,z1:e.pos.z+h.hz,part:h});
@@ -2151,16 +2199,22 @@ function entBoxes(e){
 }
 function rayEnts(o,d,max,ignore){
   let best=null,bd=max;
-  for(const e of G.ents){
+  // The owner cannot shoot their own companion, but enemy bullets can target it
+  // and a pet crossing a firing lane can genuinely take the hit.
+  const candidates=G.ents.slice();
+  if(petUp()&&ignore&&!ignore.isPlayer) candidates.push(G.pet);
+  for(const e of candidates){
     if(!e.alive||e===ignore) continue;
     const dx=e.pos.x-o.x,dz=e.pos.z-o.z; if(dx*dx+dz*dz>(max+3)*(max+3)) continue;
     for(const b of entBoxes(e)){ const t=rayBox(o,d,b); if(t>=0&&t<bd){bd=t;best={e,part:b.part,t};} }
   }
   return best;
 }
+function entityEye(e){ return e.pos.y+(e.isPet?Math.max(.35,(e.hit&&e.hit.h||1)*.62):EYE); }
+function entityAimY(e){ return e.pos.y+(e.isPet?Math.max(.3,(e.hit&&e.hit.h||1)*.52):1.15); }
 function los(a,b){
-  const o={x:a.pos.x,y:a.pos.y+EYE,z:a.pos.z};
-  const tx=b.pos.x-o.x,ty=(b.pos.y+1.15)-o.y,tz=b.pos.z-o.z;
+  const o={x:a.pos.x,y:entityEye(a),z:a.pos.z};
+  const tx=b.pos.x-o.x,ty=entityAimY(b)-o.y,tz=b.pos.z-o.z;
   const L=Math.hypot(tx,ty,tz)||.01, d={x:tx/L,y:ty/L,z:tz/L};
   return rayWorld(o,d,L)>=L-0.4;
 }
@@ -2170,7 +2224,7 @@ function makeEnt(o){
     name:'?',isPlayer:false,hp:BASE_HP,abs:0,alive:true,kills:0,
     pos:{x:0,y:0,z:0},vel:{x:0,y:0,z:0},yaw:0,pitch:0,onG:true,
     wep:'sidearm',ammo:0,res:0,reloadT:0,fireT:0,step:0,anim:0,
-    regen:0,regenT:0,poison:0,poisonT:0,speedT:0,speedM:1,hurtT:0,
+    regen:0,regenT:0,poison:0,poisonT:0,poisonAcc:0,poisonBy:null,poisonSource:null,speedT:0,speedM:1,hurtT:0,
     heat:0,heatLock:0,bloom:0,stillT:0,stunT:0,burstLeft:0,chargeT:0,lastShotT:-9,
   },o);
   const wp=W[e.wep]; e.ammo=wp.mag; e.res=wp.reserve;
@@ -2223,10 +2277,12 @@ function spawnMatch(){
   // pet
   G.pet=null;
   if(S.eq.pet && PE[S.eq.pet]){
-    const pd=PE[S.eq.pet], pm=buildPet(pd);
+    const pd=PE[S.eq.pet], pm=buildPet(pd), ph=petBounds(pd);
     scene.add(pm.root);
-    G.pet={def:pd,M:pm,pos:{x:p.pos.x+1.5,y:p.pos.y,z:p.pos.z+1.5},vel:{x:0,y:0,z:0},yaw:0,cd:0,anim:0,target:null,
-      hp:pd.hp,maxhp:pd.hp,down:0};
+    G.pet={name:pd.name,def:pd,M:pm,isPet:true,isPlayer:false,alive:true,
+      pos:{x:p.pos.x+1.5,y:p.pos.y,z:p.pos.z+1.5},vel:{x:0,y:0,z:0},yaw:0,pitch:0,onG:true,
+      hp:pd.hp,maxhp:pd.hp,abs:0,hit:ph,down:0,cd:0,anim:0,target:null,seen:-99,lx:null,lz:null,
+      retreat:0,stuck:0,think:0,hurtT:0,lastAttackT:-99};
   }
 
   // bots
@@ -2276,12 +2332,13 @@ function spawnMatch(){
     G.ents.push(b); attachGun(b);
   }
   buildViewModel();
-  G.yaw=Math.atan2(-p.pos.x,-p.pos.z); G.pitch=0;
+  G.yaw=Math.atan2(-p.pos.x,-p.pos.z); G.pitch=0; p.yaw=G.yaw;
+  if(G.pet) warpPetToFormation(G.pet,p,petTactic(G.pet.def));
   G.t=0; G.left=S.cfg.time*60; G.on=true; G.over=false; G.paused=false;
   G.cam=S.cfg.cam; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
-  G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.grace=3.2;
+  G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.lastAttacker=null; G.lastAttackerT=-99; G.grace=3.2;
   G.events=[]; G.lastKiller=null; G.lastPart=null; G.outro=null; scheduleEvent();
-  G.wepKills={}; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
+  G.wepKills={}; G.petKills=0; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
   G.streakCoins=0; G.lowHp=false; G.ate=0; G.swing=0;
   if(G.training){ G.left=99999; G.grace=1.0; }
   $('#killfeed').innerHTML=''; $('#dmgnums').innerHTML=''; lastHud='';
@@ -2606,7 +2663,7 @@ function explode(pt,wp,owner){
     }
   }
   if(petUp()){ const dp=Math.hypot(G.pet.pos.x-pt.x,G.pet.pos.z-pt.z);
-    if(dp<wp.splashR) hurtPet(Math.round(wp.splash*(1-dp/wp.splashR)*0.7)); }
+    if(dp<wp.splashR) hurtPet(Math.round(wp.splash*(1-dp/wp.splashR)*0.7),owner); }
   if(G.pl.alive){ const d=Math.hypot(G.pl.pos.x-pt.x,G.pl.pos.z-pt.z); if(d<wp.splashR*2.2) G.shake=Math.max(G.shake,0.35*(1-d/(wp.splashR*2.2))); }
 }
 
@@ -2780,9 +2837,11 @@ function impact(pt,color,kind){
   fxSmoke(pt,0x6b6070,.22,.34,.5);
 }
 function flashAt(pt,color){ fxMuzzle(pt,{x:0,y:1,z:0},color,1); }
-function damage(t,amount,part,attacker,pt){
+function damage(t,amount,part,attacker,pt,source){
   if(!t.alive) return;
+  if(t.isPet){ hurtPet(amount,attacker); return; }
   if(G.training&&t.isPlayer) return;
+  const petDamage=source==='pet';
   if(t.isPlayer){
     if(petPerk('guardian')) amount*=0.90;
   }
@@ -2793,40 +2852,51 @@ function damage(t,amount,part,attacker,pt){
   if(pt) fxHit(pt,part==='HEAD');
   if(attacker&&attacker.isPlayer){
     G.dmgDone+=dealt;
-    showDmg(pt,dealt,part==='HEAD');
-    AU.hit(part==='HEAD');
-    const hm=$('#hitmark'); hm.style.opacity=1; hm.style.color=part==='HEAD'?'#e0553a':'#fff';
-    setTimeout(()=>hm.style.opacity=0,110);
-    if(part==='HEAD') G.hs++;
+    showDmg(pt,dealt,part==='HEAD'&&!petDamage,petDamage);
+    if(!petDamage){
+      AU.hit(part==='HEAD');
+      const hm=$('#hitmark'); hm.style.opacity=1; hm.style.color=part==='HEAD'?'#e0553a':'#fff';
+      setTimeout(()=>hm.style.opacity=0,110);
+      if(part==='HEAD') G.hs++;
+    }
   }
   if(t.isPlayer){
     G.lastDamageT=G.t;
+    if(attacker&&!attacker.isPlayer){ G.lastAttacker=attacker; G.lastAttackerT=G.t; }
     if(t.hp<40) G.lowHp=true;
     AU.hurt(); $('#hurt').style.opacity=Math.min(.85,0.25+amount/120);
     setTimeout(()=>$('#hurt').style.opacity=0,140);
     G.shake=Math.max(G.shake,0.12+amount/900);
   }
-  if(attacker&&!attacker.isPlayer&&!t.isPlayer&&t.ai) { t.ai.target=attacker; t.ai.react=0; }
-  if(t.hp<=0){ t.hp=0; kill(t,attacker,part); }
+  if(petDamage&&t.ai&&petUp()){
+    t.ai.target=G.pet; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=G.pet.pos.x; t.ai.lz=G.pet.pos.z;
+  } else if(attacker&&!attacker.isPlayer&&!t.isPlayer&&t.ai) { t.ai.target=attacker; t.ai.react=0; }
+  if(t.hp<=0){ t.hp=0; kill(t,attacker,part,source); }
 }
-function poison(t,dps,time){ t.poison=dps; t.poisonT=time; }
-function kill(t,killer,part){
+function poison(t,dps,time,attacker,source){
+  t.poison=dps; t.poisonT=time; t.poisonAcc=0; t.poisonBy=attacker||null; t.poisonSource=source||null;
+}
+function kill(t,killer,part,source){
   if(!t.alive) return;
+  const petKill=source==='pet';
   t.alive=false;
   t.M.root.rotation.z=Math.PI/2*(Math.random()<.5?1:-1);
   t.M.root.position.y=t.pos.y+0.3;
-  fxDeath(t, killer&&W[killer.wep]?W[killer.wep].fx:null);
+  fxDeath(t, !petKill&&killer&&W[killer.wep]?W[killer.wep].fx:null);
   if(t.tag) t.tag.visible=false;
   AU.kill();
-  const who=killer?(killer.isPlayer?'YOU':killer.name):(part||'THE ARENA');
-  feed(who,t.name,part==='HEAD',killer&&killer.isPlayer,t.isPlayer);
+  const who=petKill&&G.pet?G.pet.def.name.toUpperCase():killer?(killer.isPlayer?'YOU':killer.name):(part||'THE ARENA');
+  feed(who,t.name,part==='HEAD'&&!petKill,!!(killer&&killer.isPlayer),t.isPlayer);
   if(killer&&killer!==t) killer.kills=(killer.kills||0)+1;
   if(killer&&killer.isPlayer){
     G.kills++;
-    const kw=W[killer.wep];
-    G.wepKills[killer.wep]=(G.wepKills[killer.wep]||0)+1;
-    if(kw.melee) G.meleeKills++;
-    if(kw.fx==='rocket'||kw.fx==='arc'||kw.fx==='void') G.bigKills++;
+    if(petKill) G.petKills=(G.petKills||0)+1;
+    else{
+      const kw=W[killer.wep];
+      G.wepKills[killer.wep]=(G.wepKills[killer.wep]||0)+1;
+      if(kw.melee) G.meleeKills++;
+      if(kw.fx==='rocket'||kw.fx==='arc'||kw.fx==='void') G.bigKills++;
+    }
     G.mk = (G.t-G.lastKillT<5) ? G.mk+1 : 1;
     G.lastKillT=G.t;
     G.bestStreak=Math.max(G.bestStreak,G.mk);
@@ -2858,11 +2928,11 @@ function feed(a,b,head,mine,died){
   while(f.children.length>6) f.lastChild.remove();
   setTimeout(()=>d.remove(),5200);
 }
-function showDmg(pt,amount,head){
+function showDmg(pt,amount,head,pet){
   if(!pt) return;
   const v=new THREE.Vector3(pt.x,pt.y,pt.z).project(camera);
   if(v.z>1) return;
-  const el=document.createElement('div'); el.className='dnum'+(head?' head':'');
+  const el=document.createElement('div'); el.className='dnum'+(head?' head':'')+(pet?' pet':'');
   el.textContent=amount; el.style.left=((v.x*.5+.5)*innerWidth)+'px'; el.style.top=((-v.y*.5+.5)*innerHeight)+'px';
   $('#dmgnums').appendChild(el); setTimeout(()=>el.remove(),800);
 }
@@ -2945,7 +3015,13 @@ function hazardTick(e,dt){
   }
 }
 function statusTick(e,dt){
-  if(e.poisonT>0){ e.poisonT-=dt; damage(e,e.poison*dt,'BODY',null,null); }
+  if(e.poisonT>0&&!e.alive){ e.poison=0; e.poisonT=0; e.poisonBy=null; e.poisonSource=null; e.poisonAcc=0; }
+  else if(e.poisonT>0){
+    const active=Math.min(dt,e.poisonT); e.poisonT-=dt; e.poisonAcc=(e.poisonAcc||0)+e.poison*active;
+    const tick=Math.floor(e.poisonAcc);
+    if(tick>0){ e.poisonAcc-=tick; damage(e,tick,'BODY',e.poisonBy,null,e.poisonSource); }
+    if(e.poisonT<=0){ e.poison=0; e.poisonBy=null; e.poisonSource=null; e.poisonAcc=0; }
+  }
   if(e.hurtT>0) e.hurtT-=dt;
 }
 function eatFood(id){
@@ -2984,18 +3060,27 @@ function botDesired(wp){
 function updateBot(b,dt){
   if(!b.alive) return;
   const K=b.K||SKILLS.regular, wp=W[b.wep], mod=G.world.def.mod||{};
+  if(b.ai.target&&!b.ai.target.alive) b.ai.target=null;
   const think=K.think||0.35, focus=K.focus||1.25, memory=K.memory||1.2;
   b.ai.think-=dt;
   if(b.ai.think<=0){
     b.ai.think=think+Math.random()*think*0.6;
     let best=null,bd=1e9;
-    for(const o of G.ents){
+    const candidates=G.ents.slice(); if(petUp()) candidates.push(G.pet);
+    for(const o of candidates){
       if(!o.alive||o===b) continue;
       const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
       const vis=los(b,o);
       // focus>1 pushes the player down the list, so low tiers mostly brawl with each
       // other and a beginner is not swarmed by seven bots at once.
-      const score=d*(vis?1:2.8)*(o.isPlayer?focus:1);
+      let petFocus=1;
+      if(o.isPet){
+        // A pet that just bit this bot becomes the obvious threat. The bear also
+        // wins attention from enemies already pressuring its owner; other pets
+        // remain valid targets without turning every lobby into a pet firing squad.
+        petFocus=o.target===b?0.42:(o.def.perk==='guardian'&&b.ai.target===G.pl?0.62:1.9);
+      }
+      const score=d*(vis?1:2.8)*(o.isPlayer?focus:1)*petFocus;
       if(score<bd){bd=score;best=o;}
     }
     if(best!==b.ai.target){ b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0; }
@@ -3041,7 +3126,7 @@ function updateBot(b,dt){
   // face target
   if(t) b.yaw=Math.atan2(-(t.pos.x-b.pos.x),-(t.pos.z-b.pos.z));
   else b.yaw=Math.atan2(-mx,-mz);
-  if(t) b.pitch=clamp(Math.atan2((b.pos.y+1.3)-(t.pos.y+1.3),dist)*0.6,-0.6,0.6);
+  if(t) b.pitch=clamp(Math.atan2((b.pos.y+1.3)-entityAimY(t),dist)*0.6,-0.6,0.6);
   // timers
   weaponTick(b,dt);
   if(b.res<=0&&b.ammo<=0&&wp.reserve>0) b.res=wp.reserve;
@@ -3058,7 +3143,7 @@ function updateBot(b,dt){
       const eyeO={x:b.pos.x,y:b.pos.y+1.45,z:b.pos.z};
       const tmv=Math.hypot(t.vel.x,t.vel.z);
       const hsChance=K.acc*0.22;
-      const aimY=t.pos.y+(Math.random()<hsChance?1.66:1.10);
+      const aimY=t.isPet?entityAimY(t):t.pos.y+(Math.random()<hsChance?1.66:1.10);
       const err=(1-K.acc)*(1.15+dist*0.072)*(1+tmv*0.05);
       const tp={x:t.pos.x+rnd(-err,err),y:aimY+rnd(-err*.55,err*.55),z:t.pos.z+rnd(-err,err)};
       let ax=tp.x-eyeO.x,ay=tp.y-eyeO.y,az=tp.z-eyeO.z;
@@ -3079,53 +3164,113 @@ function updateBot(b,dt){
    ===================================================================== */
 function petUp(){ return G.pet && G.pet.down<=0; }
 function petPerk(k){ return petUp() && G.pet.def.perk===k; }
+function petFormation(pl,T){
+  const sy=Math.sin(pl.yaw||G.yaw), cy=Math.cos(pl.yaw||G.yaw);
+  return {x:pl.pos.x+sy*T.back+cy*T.side,z:pl.pos.z+cy*T.back-sy*T.side};
+}
+function petSees(P,o){ return !!(o&&o.alive&&(los(P,o)||los(G.pl,o))); }
+function choosePetTarget(P,T){
+  if(P.def.id==='dog'&&G.lastAttacker&&G.lastAttacker.alive&&G.t-G.lastAttackerT<7&&
+    Math.hypot(G.lastAttacker.pos.x-G.pl.pos.x,G.lastAttacker.pos.z-G.pl.pos.z)<=T.acquire&&petSees(P,G.lastAttacker))
+    return G.lastAttacker;
+  let best=null,bs=1e9;
+  for(const o of G.ents){
+    if(!o.alive||o.isPlayer) continue;
+    const ownerD=Math.hypot(o.pos.x-G.pl.pos.x,o.pos.z-G.pl.pos.z);
+    if(ownerD>T.acquire||!petSees(P,o)) continue;
+    let score=Math.hypot(o.pos.x-P.pos.x,o.pos.z-P.pos.z);
+    if(P.def.id==='bear'&&o.ai&&o.ai.target===G.pl) score*=0.3;
+    if(P.def.id==='raptor') score=clamp(o.hp/BASE_HP,0,1)*10+score*.15;
+    if(score<bs){bs=score;best=o;}
+  }
+  return best;
+}
+function warpPetToFormation(P,pl,T){
+  const base=petFormation(pl,T), tries=[base,
+    {x:base.x+2,z:base.z},{x:base.x-2,z:base.z},{x:base.x,z:base.z+2},{x:base.x,z:base.z-2}];
+  const spot=tries.find(q=>freeAt(q.x,pl.pos.y+.1,q.z))||base;
+  P.pos.x=spot.x; P.pos.z=spot.z; P.pos.y=pl.pos.y+.35;
+  P.vel.x=P.vel.y=P.vel.z=0; P.stuck=0; P.onG=false;
+}
+function fadePetNearCamera(P){
+  if(!camera||!P.M.fadeMats) return;
+  const dx=P.pos.x-camera.position.x,dy=P.pos.y+(P.hit.h*.5)-camera.position.y,dz=P.pos.z-camera.position.z;
+  const dist=Math.hypot(dx,dy,dz)||.01, dir=new THREE.Vector3(); camera.getWorldDirection(dir);
+  const inFront=(dx*dir.x+dy*dir.y+dz*dir.z)/dist;
+  const outer=Math.max(2.2,P.hit.r*1.55), opacity=inFront>.08&&dist<outer?clamp((dist-.45)/(outer-.45),.12,1):1;
+  P.M.fadeMats.forEach(m=>{ m.opacity=opacity; m.depthWrite=opacity>.97; });
+}
 function updatePet(dt){
   const P=G.pet; if(!P) return;
-  const pl=G.pl, d=P.def;
+  const pl=G.pl, d=P.def, T=petTactic(d);
   if(P.down>0){
     P.down-=dt;
     P.M.root.visible=false;
     if(P.down<=0){
-      P.hp=P.maxhp; P.M.root.visible=true;
-      P.pos.x=pl.pos.x+1.4; P.pos.z=pl.pos.z+1.4; P.pos.y=pl.pos.y+0.4;
+      P.hp=P.maxhp; P.alive=true; P.M.root.visible=true; P.M.fadeMats.forEach(m=>{m.opacity=1;m.depthWrite=true;});
+      warpPetToFormation(P,pl,T);
       P.vel.x=P.vel.y=P.vel.z=0; P.cd=d.cd;
       toast(d.name+' is back on its feet');
       fxRing({x:P.pos.x,y:P.pos.y+.06,z:P.pos.z},0x7fd45b,.3,2.2,.4);
     }
     return;
   }
-  let tgt=null,bd=1e9;
-  if(pl.alive){
-    for(const o of G.ents){
-      if(!o.alive||o.isPlayer) continue;
-      const dd=Math.hypot(o.pos.x-pl.pos.x,o.pos.z-pl.pos.z);
-      if(dd<20&&dd<bd){bd=dd;tgt=o;}
+  let tgt=P.target, visible=false;
+  if(tgt&&(!tgt.alive||Math.hypot(tgt.pos.x-pl.pos.x,tgt.pos.z-pl.pos.z)>T.leash)) tgt=null;
+  if(tgt){
+    visible=petSees(P,tgt);
+    if(visible){ P.seen=G.t; P.lx=tgt.pos.x; P.lz=tgt.pos.z; }
+    else if(G.t-P.seen>T.memory) tgt=null;
+  }
+  P.think-=dt;
+  if(pl.alive&&P.think<=0){
+    P.think=.28+Math.random()*.18;
+    const choice=choosePetTarget(P,T), canSwitch=d.id==='dog'||d.id==='bear'||d.id==='raptor';
+    if(choice&&(!tgt||canSwitch)){
+      tgt=choice; visible=true; P.seen=G.t; P.lx=tgt.pos.x; P.lz=tgt.pos.z;
     }
   }
   P.target=tgt;
-  let tx,tz;
-  if(tgt){ tx=tgt.pos.x; tz=tgt.pos.z; }
-  else { const a=G.t*0.5; tx=pl.pos.x+Math.cos(a)*2.0; tz=pl.pos.z+Math.sin(a)*2.0; }
+  const formation=petFormation(pl,T);
+  let tx=tgt?(visible?tgt.pos.x:P.lx):formation.x, tz=tgt?(visible?tgt.pos.z:P.lz):formation.z;
+  if(P.retreat>0){
+    P.retreat-=dt;
+    if(tgt){ const ax=P.pos.x-tgt.pos.x,az=P.pos.z-tgt.pos.z,L=Math.hypot(ax,az)||1;
+      tx=P.pos.x+ax/L*4.5; tz=P.pos.z+az/L*4.5; }
+    else { tx=formation.x; tz=formation.z; }
+  }
+  // A companion caught in front of the owner first moves sideways, then settles
+  // behind. This avoids the old shortest path straight through the crosshair.
+  if(!tgt){
+    const sy=Math.sin(pl.yaw||G.yaw),cy=Math.cos(pl.yaw||G.yaw),rx=P.pos.x-pl.pos.x,rz=P.pos.z-pl.pos.z;
+    const front=rx*(-sy)+rz*(-cy),sideSign=T.side<0?-1:1;
+    if(front>.2&&Math.hypot(rx,rz)<5){ tx=pl.pos.x+cy*sideSign*(Math.abs(T.side)+2.2); tz=pl.pos.z-sy*sideSign*(Math.abs(T.side)+2.2); }
+  }
   let dx=tx-P.pos.x,dz=tz-P.pos.z; const dl=Math.hypot(dx,dz)||1;
-  const stop = tgt? d.range*0.55 : 1.2;
+  const reach=petReach(d), stop=tgt?reach*.72:.65;
   let sp=(dl>stop)? d.speed : 0;
-  if(!tgt&&Math.hypot(P.pos.x-pl.pos.x,P.pos.z-pl.pos.z)>16){ P.pos.x=pl.pos.x+1.5; P.pos.z=pl.pos.z+1.5; P.pos.y=pl.pos.y+0.5; }
+  if(Math.hypot(P.pos.x-pl.pos.x,P.pos.z-pl.pos.z)>T.leash+6) warpPetToFormation(P,pl,T);
   const k=clamp(11*dt,0,1);
   P.vel.x=lerp(P.vel.x,dx/dl*sp,k); P.vel.z=lerp(P.vel.z,dz/dl*sp,k);
   const mod=G.world.def.mod||{};
+  const px=P.pos.x,pz=P.pos.z;
   moveAxis(P,'x',P.vel.x*dt); moveAxis(P,'z',P.vel.z*dt);
-  if(P.onG&&sp>0&&Math.random()<dt*2.2) P.vel.y=7.4;
+  const moved=Math.hypot(P.pos.x-px,P.pos.z-pz);
+  if(sp>1&&moved<Math.max(.006,sp*dt*.06)) P.stuck+=dt; else P.stuck=Math.max(0,P.stuck-dt*2);
+  if(P.stuck>.55&&P.onG) P.vel.y=7.8;
+  if(P.stuck>1.65) warpPetToFormation(P,pl,T);
   moveY(P,dt,mod.grav||1);
   P.yaw=Math.atan2(-(dx),-(dz));
   P.cd-=dt;
-  if(tgt&&Math.hypot(tgt.pos.x-P.pos.x,tgt.pos.z-P.pos.z)<d.range*0.75&&P.cd<=0&&pl.alive){
+  visible=tgt&&petSees(P,tgt);
+  if(tgt&&visible&&Math.hypot(tgt.pos.x-P.pos.x,tgt.pos.z-P.pos.z)<reach&&P.cd<=0&&pl.alive){
     P.cd=d.cd;
-    damage(tgt,d.dmg,'BODY',pl,{x:tgt.pos.x,y:tgt.pos.y+1.1,z:tgt.pos.z});
-    if(d.poison) poison(tgt,d.poison.dps,d.poison.t);
+    damage(tgt,d.dmg,'BODY',pl,{x:tgt.pos.x,y:tgt.pos.y+1.1,z:tgt.pos.z},'pet');
+    if(d.poison&&tgt.alive) poison(tgt,d.poison.dps,d.poison.t,pl,'pet');
     if(d.perk==='apex'){ const a=Math.atan2(tgt.pos.x-P.pos.x,tgt.pos.z-P.pos.z);
       tgt.vel.x+=Math.sin(a)*5; tgt.vel.z+=Math.cos(a)*5; tgt.vel.y+=2.4; }
-    // biting an armed fighter costs the pet: they shoot back
-    if(tgt.alive) hurtPet(Math.max(7,Math.round((W[tgt.wep].dmg>900?60:W[tgt.wep].dmg)*0.55)));
+    if(T.retreat) P.retreat=T.retreat;
+    P.lastAttackT=G.t;
     P.anim=1;
     AU.tone(d.id==='trex'?90:420,d.id==='trex'?45:220,.2,.16,'square');
   }
@@ -3136,13 +3281,16 @@ function updatePet(dt){
   M.body.position.y=Math.abs(Math.sin(G.t*10))*0.06*Math.min(1,mv/4);
   M.body.rotation.x=P.anim>0?-0.5*P.anim:Math.sin(G.t*9)*0.03*Math.min(1,mv/5);
   if(P.anim>0) P.anim=Math.max(0,P.anim-dt*4);
+  fadePetNearCamera(P);
 }
-function hurtPet(amount){
+function hurtPet(amount,attacker){
   const P=G.pet; if(!P||P.down>0) return;
-  P.hp-=amount;
+  amount=Math.max(0,Math.round(amount)); if(!amount) return;
+  P.hp-=amount; P.hurtT=.16;
+  if(attacker&&!attacker.isPlayer&&attacker.alive&&petSees(P,attacker)) P.target=attacker;
   fxSpark({x:P.pos.x,y:P.pos.y+0.7,z:P.pos.z},0xd23b3b,4,2,.8);
   if(P.hp<=0){
-    P.hp=0; P.down=18; P.target=null;
+    P.hp=0; P.down=18; P.alive=false; P.target=null;
     fxDeath({pos:P.pos,cfg:{outfit:'recruit'}});
     AU.tone(180,70,.35,.3,'square');
     toast(P.def.name+' is down — 18s',true);
@@ -3301,7 +3449,7 @@ function updateHUD(){
   else{
     const f=clamp(G.pet.hp/G.pet.maxhp,0,1);
     PB.innerHTML='\uD83D\uDC3E '+G.pet.def.name.toUpperCase()+' \u00B7 '+Math.ceil(G.pet.hp)+'/'+G.pet.maxhp+
-      (G.pet.target?' \u00B7 ENGAGING':' \u00B7 FOLLOWING')+
+      (G.pet.target?' \u00B7 ENGAGING '+esc(G.pet.target.name).toUpperCase():' \u00B7 FORMATION')+
       '<div style="width:150px;height:5px;background:#150f22;box-shadow:inset 0 0 0 1px #0a0710;margin-top:4px">'+
       '<div style="width:'+(f*100)+'%;height:100%;background:'+(f>.5?'#7fd45b':f>.25?'#f2b134':'#e0553a')+'"></div></div>';
   }
@@ -3426,7 +3574,7 @@ function endMatch(win){
   S.stats.streak = win ? (S.stats.streak||0)+1 : 0;
   const streakMul = 1+Math.min(0.5,(win?(S.stats.streak-1):0)*0.1);
   const res={ win:win, kills:kills, hs:hs, dmg:Math.round(G.dmgDone), place:place,
-    hpLeft:Math.ceil(G.pl.hp), meleeKills:G.meleeKills||0, bigKills:G.bigKills||0,
+    hpLeft:Math.ceil(G.pl.hp), meleeKills:G.meleeKills||0, petKills:G.petKills||0, bigKills:G.bigKills||0,
     wepsUsed:Object.keys(G.wepKills||{}).length, bestStreak:G.bestStreak||0,
     lowHp:!!G.lowHp, ate:G.ate||0 };
 
@@ -3499,6 +3647,7 @@ function endMatch(win){
   $('#resStats').innerHTML=
     row('Arena',arena.name)+row('Placement','#'+place+' of '+(S.cfg.bots+1))+
     row('Survived',fmtTime(S.cfg.time*60-G.left))+
+    (res.petKills?row('Companion kills',res.petKills):'')+
     (earned.length?'<div class="medals">'+earned.map(m=>'<span class="md">\u2726 '+m.name+
         ' <b>+'+m.coins+'</b></span>').join('')+'</div>':'')+
     (chDone.length?'<div class="medals">'+chDone.map(c=>'<span class="md ch">\u2714 DAILY: '+c.txt+
@@ -4145,7 +4294,7 @@ const TABS=[{id:'fighter',n:'Your fighter'},{id:'weapons',n:'Weapons'},{id:'hair
   {id:'acc',n:'Accessories'},{id:'pet',n:'Pets'},{id:'food',n:'Food'},{id:'arena',n:'Arenas'}];
 let shopTab='fighter';
 let fighterPreviewSlot=1;
-const shopSelection={weapons:null};
+const shopSelection={weapons:null,pet:null};
 let armoryDetailTrigger=null;
 function pwBar(n){ return '<span style="color:#f2b134">'+'\u25AE'.repeat(n)+'</span>'+'\u25AF'.repeat(10-n); }
 function rarClass(r){ return r==='myth'?' rar-myth glint':r==='ench'?' rar-ench':''; }
@@ -4283,6 +4432,19 @@ function weaponCardStats(w){
     '<div class="weapon-mastery">'+masteryTxt(w.id)+'</div>'+
     '<div class="detailcue">Details →</div>';
 }
+function petCardStats(p){
+  const T=petTactic(p), dps=Math.round(p.dmg/p.cd*10)/10;
+  return '<div class="weapon-meta"><b>COMPANION</b><span>POWER '+pwBar(p.pw)+'</span></div>'+
+    '<div class="weapon-specs">'+
+      '<div class="weapon-spec"><span class="wl">Bite</span><b>'+p.dmg+' damage \u00B7 '+dps+' dps</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Pace</span><b>every '+p.cd+'s</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Health</span><b>'+p.hp+' HP \u00B7 revives in 18s</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Reach</span><b>'+petReach(p)+' m</b></div>'+
+    '</div>'+
+    '<span class="good pet-role" title="'+esc(T.role)+'">\u25B2 '+esc(T.role)+'</span>'+
+    '<div class="pet-skill" title="'+esc(p.perkTxt)+'"><b>\u2726 '+esc(T.skill)+'</b><span>'+esc(p.perkTxt)+'</span></div>'+
+    '<div class="detailcue">Details \u2192</div>';
+}
 function plural(n,one,many){ return n+' '+(n===1?one:(many||one+'s')); }
 function masteryTxt(id){
   const m=masteryOf(id);
@@ -4344,17 +4506,18 @@ function renderShop(tab){
     });
   }
   else if(tab==='pet'){
-    pvShow('char',{}); pvInfoChar();
+    const selectedId=shopSelection.pet||S.eq.pet||PETS[0].id;
+    const selectedPet=PE[selectedId]||PETS[0];
+    pvShow('pet',selectedPet); pvInfoPet(selectedPet);
     PETS.forEach(p=>{
       const owned=S.own.pet.indexOf(p.id)>=0, eq=S.eq.pet===p.id;
       const btns=[];
       if(!owned) btns.push({label:'Buy',primary:true,price:p.cost,fn:()=>{ if(buyItem('pet',p.id,p.cost,p.name)){ S.eq.pet=p.id; saveState();} renderShop(tab); }});
       else btns.push({label:eq?'Recalled':'Take along',primary:!eq,fn:()=>{ S.eq.pet=eq?null:p.id; saveState(); AU.ui(); renderShop(tab); }});
-      g.appendChild(card({name:p.name,rar:p.rar,tag:eq?'ACTIVE':null,tagCls:'eq',
-        stats:'<b>POWER</b> '+pwBar(p.pw)+'<br><b>'+p.dmg+' dmg</b> per bite · every '+p.cd+'s · '+
-          Math.round(p.dmg/p.cd*10)/10+' dps<br><b>'+p.hp+' HP</b> — drops under fire, returns after 18s<br>'+p.perkTxt,
+      g.appendChild(card({name:p.name,rar:p.rar,cls:'pet-card',selected:selectedId===p.id,detail:true,tag:eq?'ACTIVE':null,tagCls:'eq',
+        stats:petCardStats(p),
         paint:cv=>paintPet(cv,p),
-        select:()=>{ pvShow('pet',p); pvInfoPet(p); },
+        select:()=>{ shopSelection.pet=p.id; pvShow('pet',p); pvInfoPet(p); },
         buttons:btns}));
     });
   }
@@ -4479,12 +4642,14 @@ function pvInfoChar(it){
     '<div style="margin-top:10px;color:var(--dim)">Third person shows all of this mid-fight. Press V in a match.</div>';
 }
 function pvInfoPet(p){
+  const T=petTactic(p);
   $('#pvInfo').innerHTML='<h4>'+p.name+'</h4><div>'+p.desc+'</div>'+
     kv('Power',pwBar(p.pw))+kv('Bite damage',p.dmg)+kv('Attack every',p.cd+'s')+
     kv('Damage per sec',Math.round(p.dmg/p.cd*10)/10)+kv('Pet health',p.hp)+
-    kv('Reach',p.range+'m')+kv('Speed',p.speed)+
-    '<h4>Perk</h4><div>'+p.perkTxt+'</div>'+
-    '<div style="margin-top:8px;color:var(--dim)">Pets take return fire. Drop one and it stays down for 18 seconds — its perk goes with it.</div>';
+    kv('Bite reach',petReach(p)+'m')+kv('Run speed',p.speed)+
+    '<h4>Combat role</h4><div style="color:var(--leaf);line-height:1.7">\u25B2 '+T.role+'</div>'+
+    '<h4>Special skill</h4><div class="pet-skill-detail">\u2726 '+T.skill+'<br>'+p.perkTxt+'</div>'+
+    '<div style="margin-top:10px;color:var(--dim);line-height:1.7">Enemies can see and shoot pets. At 0 HP a pet stays down for 18 seconds, and its special skill goes with it.</div>';
 }
 function pvInfoFood(f){
   $('#pvInfo').innerHTML= f? ('<h4>'+f.name+'</h4><div>'+f.desc+'</div>'+kv('Heals',f.heal+' HP')+

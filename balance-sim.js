@@ -14,7 +14,8 @@
      4. Then run, for example:
 
           sweep(['ak47','smg','sniper'], 10)              // 10 matches each
-          simMatch('bazooka','sidearm','claws','regular',7)
+          simMatch('bazooka','sidearm','claws','regular',7,'trex')
+          petSweep(PETS.map(p=>p.id), 5)                 // compare all companions
 
    sweep(list, n, secondary, melee) returns average kills, win % and damage.
 
@@ -33,11 +34,13 @@
      - Ten matches is roughly +/- 15% noise. Treat the output as directional.
    ===================================================================== */
 window.__errs=[]; window.addEventListener('error',e=>__errs.push(String(e.message)+' @'+e.lineno));
-window.simMatch=function(primary,secondary,melee,skill,bots){
+window.simMatch=function(primary,secondary,melee,skill,bots,pet){
   S.cfg.mode='trial'; S.cfg.bots=bots||7; S.cfg.skill=skill||'regular'; S.cfg.time=6;
   S.own.weapons=WEAPONS.map(w=>w.id); S.coins=999999;
+  S.own.pet=PETS.map(p=>p.id);
   S.food={steak:4,gapple:2};
   S.eq.primary=primary; S.eq.secondary=secondary; S.eq.melee=melee;
+  S.eq.pet=pet||null;
   startMatch(); G.grace=0;
   const errs=[]; let hpMin=200, cur=null, react=0, aim={x:0,y:0,z:0}, jitT=0, jx=0;
   const DT=0.033;
@@ -88,8 +91,20 @@ window.simMatch=function(primary,secondary,melee,skill,bots){
   }
   for(const kk in keys) keys[kk]=false;
   mouseDown=false; G.ads=false;
-  return {over:G.over, win:G.pl.alive&&G.ents.filter(e=>e.alive).length===1, kills:G.kills, hs:G.hs,
-    dmg:Math.round(G.dmgDone), hp:Math.round(G.pl.hp), hpMin:Math.round(hpMin), errs};
+  return {over:G.over, win:G.pl.alive&&G.ents.filter(e=>e.alive).length===1, kills:G.kills, petKills:G.petKills||0, hs:G.hs,
+    dmg:Math.round(G.dmgDone), hp:Math.round(G.pl.hp), hpMin:Math.round(hpMin), petHp:G.pet?Math.round(G.pet.hp):null,
+    petDown:G.pet?G.pet.down>0:false, errs};
+};
+window.petSweep=function(list,n){
+  const out={};
+  for(const id of list){
+    let k=0,pk=0,w=0,d=0,down=0,e=0;
+    for(let i=0;i<n;i++){ const r=simMatch('sidearm',null,'knife','regular',7,id);
+      k+=r.kills; pk+=r.petKills; w+=r.win?1:0; d+=r.dmg; down+=r.petDown?1:0; if(r.errs.length)e++; }
+    out[id]={kills:+(k/n).toFixed(1),petKills:+(pk/n).toFixed(1),winPct:Math.round(w/n*100),
+      dmg:Math.round(d/n),downPct:Math.round(down/n*100),errs:e};
+  }
+  return out;
 };
 window.sweep=function(list,n,sec,mel){
   const out={};

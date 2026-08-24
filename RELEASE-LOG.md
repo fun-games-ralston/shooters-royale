@@ -13,6 +13,9 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 * Changed: Your Fighter is now a full-width look at yourself rather than a grid of cards. Tap any item in the list beside you to go and change it.
 * New: tap Slot 1, 2 or 3 on Your Fighter to see that weapon in your hands. An empty slot shows you unarmed; tapping the weapon name still takes you to change it.
 * Changed: weapon cards are shorter and easier to compare. They keep damage, firing and ammo, range, one strength, one drawback and mastery; tap one for the complete breakdown. On a narrow screen, details open in a drawer instead of disappearing.
+* Fixed: pets no longer circle your feet or choose enemies through walls. They follow in a camera-safe formation, pursue visible targets, remember them briefly and recover when stuck. The T-Rex follows farther behind and fades if it crosses the camera.
+* Fixed: enemies can now actually see, target and shoot pets. The old fake damage charged on every bite is gone; pet and poison kills count for the match without being credited to the weapon in your hands.
+* Changed: every pet now has a distinct combat role, and Pet cards show it in green beside a purple special-skill callout. Tap a card for the full behavior and counterplay.
 * Changed: Match Setup listed your loadout a third time. One line now, turning red when you have no food.
 
 ## 1.7 — 23 Aug 2026

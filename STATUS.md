@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 1.8 · **Date:** 23 August 2026 · **File:** `index.html` (~219 KB, ~3,900 lines)
+**Version:** 1.8 · **Date:** 23 August 2026 · **File:** `index.html` (~258 KB, ~4,800 lines)
 
 ---
 
@@ -91,6 +91,18 @@ The Weapons grid now separates comparison from inspection. Cards retain damage, 
 range, one strength, one drawback and mastery, with consistent heights and an explicit `Details →` cue.
 Selecting one highlights the card and updates the complete pane on the right. Below 900 px, where that pane
 used to be hidden, the same selection opens an accessible drawer with Close, backdrop and Escape dismissal.
+
+Pets now use the same comparison-then-inspection model. Each card keeps four combat facts, a green combat-role
+line and a purple named special skill; the detail pane explains full behavior and counterplay. Those role strings
+also key the actual AI tuning: Terrier retaliation, Cat close guard, Snake disengage, Wolf memory, Bear protection,
+Raptor weak-target hunting and T-Rex heavy knockback.
+
+The previous pet AI was one loop for all seven pets: select the nearest bot within 20 m of the player without a
+visibility check, otherwise orbit a moving point 2 m away. Bots could not target a pet at all. Every successful
+bite simply deducted a pretend return-fire amount, and the kill was credited to whichever weapon the player held.
+Pets now hold an offset formation behind the camera, acquire visible targets, remember last-seen positions, jump
+and warp when stuck, and fade only when they cross close to the camera. Bots include the active pet in targeting
+and ray hit tests. Companion damage and poison have their own attribution, while still contributing to match kills.
 
 Match Setup was listing the same five slots a third time. It carries one line now, red when you have
 no food, plus a button through to the fighter view.
@@ -363,8 +375,9 @@ One win now buys one cheap weapon, which was the goal.
 **Tyrant Rex shrunk 30%** (scale 1.9 → 1.33). It was 4.56 m tall and 8.07 m long — 2.4× the
 player's height and longer than a bus. It is now 3.19 m tall and 5.65 m long: still 2.2× the
 Razor Raptor in both height and length, and comfortably the largest pet in the game, but it
-reads as a dinosaur rather than as scenery. Pet `scale` is purely cosmetic — it does not touch
-bite range, damage, HP or hitboxes — so nothing about the balance moved.
+reads as a dinosaur rather than as scenery. The scale change did not touch bite range, damage or HP.
+As of 1.8, shootable pet hitboxes are derived from the final scaled model, so the silhouette a player
+sees is also the silhouette an enemy can hit.
 
 ### Difficulty: a toggle, not a curve
 
@@ -581,7 +594,9 @@ All in a real browser (Chromium, Three.js r128 loaded from CDN) against the runn
 | Boot, Three.js load, title screen render | Pass |
 | All 14 weapons fired 50× each with random aim, ADS toggled every third shot | Pass, 0 errors |
 | All 10 arenas build and run | Pass, 0 errors |
-| All 7 pets run a full match | Pass, 0 errors |
+| All 7 pet role, reach and scaled-hitbox definitions | Pass, 0 errors |
+| T-Rex live trial: formation spawn, enemy fire, down and revive | Pass |
+| All 7 Pet cards, selection and complete detail pane | Pass; green role and purple skill verified |
 | All 7 shop tabs, plus setup / help / title | Pass, 0 errors |
 | ~200 simulated full matches across the whole roster | Pass, 0 errors |
 | Particle pool under sustained fire | Capped at 461 against a 460 target, zero leaked |
