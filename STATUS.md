@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.3 · **Date:** 23 August 2026 · **File:** `index.html` (~210 KB, ~3,700 lines)
+**Version:** 1.4 · **Date:** 23 August 2026 · **File:** `index.html` (~216 KB, ~3,900 lines)
 
 ---
 
@@ -63,6 +63,44 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.4 — a death you can watch, and maps that fight back
+
+**The outro.** The results screen used to slam in the instant the last shot landed. There is now a
+beat in between: the world keeps simulating at **0.34× speed** while the camera lifts off the player
+and orbits, the HUD fades to 22%, and a card names what got you — `FERRO · LONGSHOT RAIL · HEADSHOT`,
+or `LAST ONE STANDING · 5 KILLS` on a win. 2.9 s on a death, 3.6 s on a win, click or space to skip.
+Bots keep fighting through it. `endMatch` closes scoring immediately but leaves the world running,
+and the loop routes to `tickOutro`.
+
+**Natural props.** Every arena was boxes on boxes, so ten themes read as one place with a repainted
+floor. Rocks, trees, dead trees, crystals and rivers now vary the silhouettes: Frostbite has ice
+boulders, pines and a frozen creek; Sandpit has bleached rock and dead wood over a dry wash; Atrium
+has real trees in its planters; Emberfall has obsidian and burnt trunks; Void Nexus has crystal
+shards. Collision-box counts went from 132–174 to 138–203.
+
+**Arena events — five maps now fight back.**
+
+| Arena | Event | Every | Radius | Damage |
+| --- | --- | --- | --- | --- |
+| Sandpit | Sinkhole | 9–15 s | 5.2 m | 22 + stun |
+| Frostbite | Ice spikes | 7–12 s | 4.4 m | 28 + launch |
+| Emberfall | Meteor | 6–11 s | 5.0 m | 38 + launch |
+| Bone Temple | Bone spikes | 8–13 s | 4.2 m | 26 + launch |
+| Void Nexus | Void rift | 8–14 s | 4.8 m | 32 |
+
+Damage is strongest in the centre and falls to ~38% at the rim. Events pick a spot near someone
+still alive, and **bots are caught by the same code**.
+
+Two things worth stating. Every event is **telegraphed for 1.2–1.5 s** first — a hazard nobody can
+dodge is just a random tax. And the warning marker is deliberately **not themed**: the first version
+tinted it to match the arena, which made Frostbite's pale cyan ring invisible on its white floor.
+It is now the same hot orange everywhere with the whole danger area shaded, not just outlined —
+one danger colour is something you learn once instead of five times.
+
+Also fixed: the win card read `4 KILLs`, because the plural helper appends a lowercase suffix.
 
 ---
 

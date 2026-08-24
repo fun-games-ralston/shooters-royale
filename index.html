@@ -363,6 +363,22 @@ canvas{display:block}
 .keys{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:2;letter-spacing:.05em}
 .keys kbd{display:inline-block;min-width:22px;text-align:center;padding:2px 6px;margin-right:6px;color:var(--bone);
   background:#241d33;box-shadow:inset 1px 1px 0 rgba(255,255,255,.14),inset -1px -1px 0 rgba(0,0,0,.5)}
+/* The results screen used to slam in the instant you died. This is the beat in
+   between: the world keeps running in slow motion while the camera pulls back. */
+#outro{position:absolute;inset:0;display:none;pointer-events:none;z-index:40;
+  background:radial-gradient(ellipse at center,rgba(13,10,20,0) 25%,rgba(13,10,20,.72) 100%)}
+#outro.on{display:block}
+#hud.dim{opacity:.22;transition:opacity .45s ease}
+#outro .ot-inner{position:absolute;left:0;right:0;top:26%;text-align:center;opacity:0;
+  animation:otIn .55s cubic-bezier(.16,1,.3,1) .25s forwards}
+#outro .ot-title{font-family:var(--disp);font-size:clamp(46px,9vw,104px);letter-spacing:.1em;
+  color:var(--ember);text-shadow:0 5px 0 #000,0 0 40px rgba(224,85,58,.55);line-height:1}
+#outro.win .ot-title{color:var(--gold);text-shadow:0 5px 0 #000,0 0 46px rgba(242,177,52,.6)}
+#outro .ot-sub{font-family:var(--mono);font-size:13px;letter-spacing:.24em;color:var(--bone);
+  margin-top:14px;text-shadow:0 2px 6px #000}
+#outro .ot-skip{position:absolute;left:0;right:0;bottom:34px;text-align:center;font-family:var(--mono);
+  font-size:10px;letter-spacing:.22em;color:var(--dim);opacity:0;animation:otIn .5s ease 1.5s forwards}
+@keyframes otIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:50;padding:12px 22px;font-family:var(--mono);
   font-size:13px;letter-spacing:.1em;background:#1b1626;box-shadow:0 0 0 2px var(--gold);color:var(--gold);opacity:0;transition:opacity .2s}
 .toast.show{opacity:1}
@@ -564,6 +580,14 @@ canvas{display:block}
       <button class="btn ghost" id="btnToMenu">Menu</button>
     </div>
   </div>
+</div>
+
+<div id="outro">
+  <div class="ot-inner">
+    <div class="ot-title" id="otTitle">ELIMINATED</div>
+    <div class="ot-sub" id="otSub"></div>
+  </div>
+  <div class="ot-skip">CLICK OR PRESS SPACE TO SKIP</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1050,7 +1074,7 @@ const ARENAS = [
  sky:0x16121c,fog:0x1a1520,fogD:0.012,ground:0x3a3229,accent:0xe0553a,wall:0x2e2822,light:0xffd9b0,
  fx:{type:'ember',n:260,c:0xff8a3c},blurb:'Rusted catwalks over a cold smelter. Tight sightlines, four stair towers.',
  mod:{}},
-{id:'sandpit',name:'Sandpit',cost:550,size:84,seed:23,
+{id:'sandpit',name:'Sandpit',cost:550,size:84,seed:23,event:{type:'quake',every:[9,15],r:5.2,dmg:22},
  sky:0xe8c98a,fog:0xd9b877,fogD:0.008,ground:0xd2ac6a,accent:0xf2b134,wall:0xb08d52,light:0xfff2d0,
  fx:{type:'dust',n:200,c:0xe8d3a0},blurb:'Open desert bowl with shipping crates. Long lanes — bring a scope.',
  mod:{}},
@@ -1062,11 +1086,11 @@ const ARENAS = [
  sky:0xcfd8e0,fog:0xbcc7d2,fogD:0.007,ground:0xd8d3c8,accent:0x7fd45b,wall:0xa8a196,light:0xffffff,
  fx:{type:'leaf',n:150,c:0x7fd45b},blurb:'Marble gallery with planters and a wide mezzanine ring.',
  mod:{}},
-{id:'frostbite',name:'Frostbite',cost:2500,size:80,seed:67,
+{id:'frostbite',name:'Frostbite',cost:2500,size:80,seed:67,event:{type:'spike',every:[7,12],r:4.4,dmg:28},
  sky:0xa9c4d8,fog:0x9fb8cc,fogD:0.016,ground:0xdfe9f2,accent:0x9fe8ff,wall:0xa8bccd,light:0xdff2ff,
  fx:{type:'snow',n:420,c:0xffffff},blurb:'Frozen quarry. The ice is slick — expect to slide past your cover.',
  mod:{friction:0.42}},
-{id:'emberfall',name:'Emberfall',cost:3300,size:78,seed:83,
+{id:'emberfall',name:'Emberfall',cost:3300,size:78,seed:83,event:{type:'meteor',every:[6,11],r:5.0,dmg:38},
  sky:0x2a0a06,fog:0x3a0f08,fogD:0.017,ground:0x2e1c14,accent:0xff6b2c,wall:0x241410,light:0xff9a5c,
  fx:{type:'ember',n:400,c:0xff5a1c},blurb:'Volcanic basin. Lava pools burn for 14 HP a second — watch your feet.',
  mod:{},hazard:{type:'lava',dps:14}},
@@ -1078,11 +1102,11 @@ const ARENAS = [
  sky:0x120a20,fog:0x1a0f2e,fogD:0.013,ground:0x2a1c3a,accent:0xff3ea5,wall:0x1f1430,light:0xffa8e0,
  fx:{type:'spark',n:340,c:0xff3ea5},blurb:'Night market stalls and awnings. Cramped, colourful, extremely lethal.',
  mod:{}},
-{id:'bonetemple',name:'Bone Temple',cost:6400,size:80,seed:131,
+{id:'bonetemple',name:'Bone Temple',cost:6400,size:80,seed:131,event:{type:'spike',every:[8,13],r:4.2,dmg:26},
  sky:0x1c1a14,fog:0x241f18,fogD:0.015,ground:0x4a4438,accent:0xe8e2d0,wall:0x352f26,light:0xffe9c0,
  fx:{type:'dust',n:220,c:0xd9d2c4},blurb:'Ribcage arches and sunken pits. Three levels of vertical fighting.',
  mod:{}},
-{id:'voidnexus',name:'Void Nexus',cost:8000,size:76,seed:149,
+{id:'voidnexus',name:'Void Nexus',cost:8000,size:76,seed:149,event:{type:'rift',every:[8,14],r:4.8,dmg:32},
  sky:0x08040f,fog:0x0d0618,fogD:0.018,ground:0x1a1030,accent:0xa97bff,wall:0x140a26,light:0xc9a8ff,
  fx:{type:'rift',n:280,c:0xa97bff},blurb:'Broken reality. Low gravity, floating obsidian, and no horizon at all.',
  mod:{grav:0.55},void:true},
@@ -1617,25 +1641,79 @@ function shadeHex(n,f){
   let r=clamp(((n>>16&255)*f)|0,0,255),g=clamp(((n>>8&255)*f)|0,0,255),b=clamp(((n&255)*f)|0,0,255);
   return (r<<16)|(g<<8)|b;
 }
+/* Reusable natural props. The arenas were all boxes-on-boxes, which made ten
+   different themes read as one place with a repainted floor. Rocks, trees and
+   rivers give each map a silhouette you recognise from across the arena.
+   `add` here is makeWorld's, so anything passed solid=false is decoration the
+   player walks through and everything else is real cover. */
+function propRock(add,R,x,y,z,scale,col){
+  const s=scale||1;
+  add(x, y+0.55*s, z, 2.2*s, 1.5*s, 2.0*s, col);
+  add(x-0.7*s, y+0.4*s, z+0.5*s, 1.2*s, 1.0*s, 1.1*s, shadeHex(col,1.12));
+  add(x+0.6*s, y+0.75*s, z-0.4*s, 1.0*s, 1.6*s, 0.9*s, shadeHex(col,0.86));
+  if(R()<0.5) add(x+0.2*s, y+1.5*s, z+0.2*s, 0.8*s, 0.7*s, 0.8*s, shadeHex(col,1.2));
+}
+function propTree(add,R,x,y,z,h,trunk,leaf){
+  const t=h*0.55;
+  add(x, y+t/2, z, 0.5, t, 0.5, trunk);
+  add(x, y+t+0.7, z, 2.6, 1.5, 2.6, leaf);
+  add(x, y+t+1.9, z, 1.7, 1.1, 1.7, shadeHex(leaf,1.12));
+  if(R()<0.6) add(x, y+t+2.7, z, 0.9, 0.7, 0.9, shadeHex(leaf,1.24));
+}
+function propDeadTree(add,R,x,y,z,h,col){
+  add(x, y+h/2, z, 0.42, h, 0.42, col);
+  const a=R()*3;
+  add(x+Math.cos(a)*0.8, y+h*0.75, z+Math.sin(a)*0.8, 1.5, 0.28, 0.28, col, 0, false);
+  add(x-Math.cos(a)*0.7, y+h*0.55, z-Math.sin(a)*0.7, 0.28, 0.28, 1.4, col, 0, false);
+}
+function propCrystal(add,R,x,y,z,h,col){
+  add(x, y+h/2, z, 0.7, h, 0.7, col, .35);
+  add(x+0.5, y+h*0.35, z-0.3, 0.45, h*0.6, 0.45, col, .45, false);
+  add(x-0.4, y+h*0.28, z+0.4, 0.4, h*0.5, 0.4, col, .3, false);
+}
+/* A river is a strip you can see and shoot across but not hide behind. */
+function propRiver(add,R,H,col,width){
+  const w=width||6, wob=[];
+  for(let i=-1;i<=1;i++) wob.push((R()-0.5)*H*0.5);
+  const segs=14;
+  for(let i=0;i<segs;i++){
+    const t=i/(segs-1);
+    const z=-H*1.7/2 + t*H*1.7;
+    const x=wob[0]*(1-t)*(1-t) + wob[1]*2*t*(1-t) + wob[2]*t*t;
+    add(x, 0.06, z, w, 0.12, H*1.7/segs+0.4, col, .22, false);
+  }
+}
 function themeDecor(def,group,R,H,add){
   const t=def.fx.type;
   if(def.id==='foundry'){
     for(let i=0;i<7;i++){ const x=(R()-.5)*H*1.6,z=(R()-.5)*H*1.6;
       add(x,3,z,1.4,6,1.4,0x50412e); add(x,6.4,z,2.2,1.2,2.2,0xe0553a,.4); }
+    for(let i=0;i<6;i++) propRock(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,.8+R()*.6,0x413a31);
   } else if(def.id==='sandpit'){
-    for(let i=0;i<9;i++) add((R()-.5)*H*1.7,.5,(R()-.5)*H*1.7,1.2,1,1.2,0x8f7042);
+    for(let i=0;i<7;i++) add((R()-.5)*H*1.7,.5,(R()-.5)*H*1.7,1.2,1,1.2,0x8f7042);
+    for(let i=0;i<8;i++) propRock(add,R,(R()-.5)*H*1.75,0,(R()-.5)*H*1.75,.9+R()*.9,0xa8834c);
+    for(let i=0;i<6;i++) propDeadTree(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,3+R()*2.4,0x7a5f39);
+    propRiver(add,R,H,0xc9a464,7);
   } else if(def.id==='grid'){
     for(let i=0;i<24;i++){ const t2=(i/23-.5)*def.size;
       add(t2,.03,0,.16,.06,def.size,0x3df2c4,.9,false); add(0,.03,t2,def.size,.06,.16,0x3df2c4,.9,false); }
   } else if(def.id==='atrium'){
-    for(let i=0;i<10;i++){ const x=(R()-.5)*H*1.6,z=(R()-.5)*H*1.6;
-      add(x,.6,z,2.6,1.2,2.6,0x9a9184); add(x,2.2,z,1.8,2.2,1.8,0x4f8f3a,.1); }
+    for(let i=0;i<7;i++){ const x=(R()-.5)*H*1.6,z=(R()-.5)*H*1.6;
+      add(x,.6,z,2.6,1.2,2.6,0x9a9184); propTree(add,R,x,1.2,z,4.4+R()*1.8,0x6b4f2e,0x4f8f3a); }
+    for(let i=0;i<5;i++) propRock(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,.7,0xb9b2a5);
+    propRiver(add,R,H,0x5fa8d8,5);
   } else if(def.id==='frostbite'){
-    for(let i=0;i<12;i++){ const x=(R()-.5)*H*1.7,z=(R()-.5)*H*1.7,h=2+R()*5;
+    for(let i=0;i<9;i++){ const x=(R()-.5)*H*1.7,z=(R()-.5)*H*1.7,h=2+R()*5;
       add(x,h/2,z,.9+R(),h,.9+R(),0xbfe8ff,.12); }
+    for(let i=0;i<7;i++) propRock(add,R,(R()-.5)*H*1.75,0,(R()-.5)*H*1.75,.85+R()*.7,0xaebfcd);
+    for(let i=0;i<8;i++) propTree(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,4.6+R()*2,0x5c4a3a,0x8fb8a0);
+    propRiver(add,R,H,0x9fd8ef,6);
   } else if(def.id==='emberfall'){
-    for(let i=0;i<8;i++){ const x=(R()-.5)*H*1.6,z=(R()-.5)*H*1.6,h=3+R()*6;
+    for(let i=0;i<6;i++){ const x=(R()-.5)*H*1.6,z=(R()-.5)*H*1.6,h=3+R()*6;
       add(x,h/2,z,2+R()*2,h,2+R()*2,0x1a0f0a); add(x,h+.2,z,1.4,.4,1.4,0xff6b2c,.9); }
+    for(let i=0;i<7;i++) propRock(add,R,(R()-.5)*H*1.75,0,(R()-.5)*H*1.75,.9+R()*.8,0x241611);
+    for(let i=0;i<7;i++) propDeadTree(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,3.4+R()*2.6,0x2e1c12);
+    propRiver(add,R,H,0xff6b2c,5);
   } else if(def.id==='skyport'){
     for(let i=0;i<8;i++){ const x=(R()-.5)*40,z=(R()-.5)*40;
       add(x,5.5,z,.4,11,.4,0x50575f); add(x,11.2,z,1.6,.5,1.6,0xf2b134,.6); }
@@ -1644,12 +1722,16 @@ function themeDecor(def,group,R,H,add){
     for(let i=0;i<16;i++){ const x=(R()-.5)*H*1.7,z=(R()-.5)*H*1.7,c=cols[(R()*4)|0];
       add(x,2.6,z,3.4,.3,3.4,c,.7); add(x,1.3,z,.24,2.6,.24,0x2a1c3a);
       add(x,4.2,z,.14,2.4,.14,c,.9,false); }
+    for(let i=0;i<6;i++) propTree(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,4.8+R()*1.6,0x4a3320,0x2f8f6a);
   } else if(def.id==='bonetemple'){
-    for(let i=0;i<7;i++){ const x=(R()-.5)*H*1.5,z=(R()-.5)*H*1.5;
+    for(let i=0;i<6;i++){ const x=(R()-.5)*H*1.5,z=(R()-.5)*H*1.5;
       for(let k=-2;k<=2;k++) add(x+k*1.1,3.5+Math.abs(k)*-.5,z,.7,7-Math.abs(k)*1.4,.7,0xd9d2c4); }
+    for(let i=0;i<7;i++) propRock(add,R,(R()-.5)*H*1.75,0,(R()-.5)*H*1.75,.9+R()*.7,0x8f8577);
+    for(let i=0;i<6;i++) propDeadTree(add,R,(R()-.5)*H*1.7,0,(R()-.5)*H*1.7,3+R()*2,0xc7bfae);
   } else if(def.id==='voidnexus'){
-    for(let i=0;i<26;i++){ const x=(R()-.5)*70,z=(R()-.5)*70,y=3+R()*16,s2=1+R()*3;
+    for(let i=0;i<22;i++){ const x=(R()-.5)*70,z=(R()-.5)*70,y=3+R()*16,s2=1+R()*3;
       add(x,y,z,s2,s2,s2,0x2a1a4a,.25,false); }
+    for(let i=0;i<9;i++) propCrystal(add,R,(R()-.5)*44,0,(R()-.5)*44,2.4+R()*3,0xa97bff);
   }
 }
 function groundAt(boxes,x,z,fromY){
@@ -1702,6 +1784,7 @@ const G = {
   t:0,left:0,cam:'first',yaw:0,pitch:0,shake:0,camD:5.2,
   tracers:[],trIdx:0,projs:[],mapBoxes:[],dmgEls:[],fxp:[],plight:null,plightT:0,vm:null,vmGun:null,muzzle:null,
   ads:false,adsT:0,recoil:0,recoilV:0,spinup:0,scoreOpen:false,lastDamageT:-99,
+  events:[], eventT:1e9, outro:null, lastKiller:null, lastPart:null,
 };
 const keys={};
 function mkTracers(){
@@ -1723,6 +1806,7 @@ function tracer(a,b,color,w){
    weapon / impact effects
    ===================================================================== */
 const RINGG = new THREE.RingGeometry(0.82,1,26);
+const DISCG = new THREE.CircleGeometry(1,26);
 function fxMat(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o===undefined?1:o,depthWrite:false}); }
 function fxBox(w,h,d,c,o){ const m=new THREE.Mesh(BOXG,fxMat(c,o)); m.scale.set(w,h,d); return m; }
 function fxAdd(m,o){
@@ -2138,6 +2222,7 @@ function spawnMatch(){
   G.t=0; G.left=S.cfg.time*60; G.on=true; G.over=false; G.paused=false;
   G.cam=S.cfg.cam; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
   G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.grace=3.2;
+  G.events=[]; G.lastKiller=null; G.lastPart=null; G.outro=null; scheduleEvent();
   G.wepKills={}; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
   G.streakCoins=0; G.lowHp=false; G.ate=0; G.swing=0;
   if(G.training){ G.left=99999; G.grace=1.0; }
@@ -2464,6 +2549,159 @@ function explode(pt,wp,owner){
     if(dp<wp.splashR) hurtPet(Math.round(wp.splash*(1-dp/wp.splashR)*0.7)); }
   if(G.pl.alive){ const d=Math.hypot(G.pl.pos.x-pt.x,G.pl.pos.z-pt.z); if(d<wp.splashR*2.2) G.shake=Math.max(G.shake,0.35*(1-d/(wp.splashR*2.2))); }
 }
+
+/* =====================================================================
+   arena events — the map fights back
+
+   Every one is telegraphed on the ground for over a second before it lands,
+   because a hazard nobody can dodge is just a random tax. Damage falls off
+   from the middle, so clipping the edge stings and standing in it hurts.
+   Bots are caught by exactly the same code, which is half the fun to watch.
+   ===================================================================== */
+/* `core` tints the explosion so each map's hazard still looks like itself.
+   The warning marker is deliberately NOT themed — it is the same hot orange on
+   every map, because a pale cyan ring on Frostbite's white floor was invisible,
+   and because one danger colour is a thing you learn once instead of five times. */
+const WARN_COL = 0xff5a2a;
+const EVENT_LOOK = {
+  meteor:{core:0xffd166, warn:1.5, name:'METEOR'},
+  spike :{core:0xdff4ff, warn:1.2, name:'ICE SPIKES'},
+  rift  :{core:0xc47bff, warn:1.4, name:'VOID RIFT'},
+  quake :{core:0xd2ac6a, warn:1.3, name:'SINKHOLE'},
+};
+function scheduleEvent(){
+  const ev=G.world.def.event;
+  G.eventT = ev ? rnd(ev.every[0], ev.every[1]) : 1e9;
+}
+function spawnArenaEvent(){
+  const ev=G.world.def.event; if(!ev) return;
+  const look=EVENT_LOOK[ev.type]||EVENT_LOOK.meteor;
+  const H=G.world.H-4;
+  // land near somebody who is still alive, so it actually matters
+  const alive=G.ents.filter(e=>e.alive);
+  const near=alive.length?pick(alive):G.pl;
+  const x=clamp(near.pos.x+rnd(-11,11), -H, H);
+  const z=clamp(near.pos.z+rnd(-11,11), -H, H);
+  const y=groundAt(G.world.boxes, x, z, 40);
+
+  // An outline alone reads poorly on a lit floor, so the whole danger area is
+  // shaded as well. A hazard you cannot see coming is just a random tax.
+  const ring=new THREE.Group();
+  const edge=new THREE.Mesh(RINGG, fxMat(WARN_COL,.9));
+  const disc=new THREE.Mesh(DISCG, fxMat(WARN_COL,.26));
+  edge.rotation.x=-Math.PI/2; disc.rotation.x=-Math.PI/2; disc.position.y=-0.02;
+  ring.add(disc); ring.add(edge);
+  ring.position.set(x,y+0.14,z);
+  ring.scale.setScalar(ev.r);
+  ring.userData={edge,disc};
+  scene.add(ring);
+
+  let drop=null;
+  if(ev.type==='meteor'){
+    drop=boxMesh(1.5,1.5,1.5,look.core,1);
+    drop.position.set(x,y+34,z); scene.add(drop);
+  }
+  G.events.push({ev, look, x, y, z, t:0, warn:look.warn, ring, drop, blown:false});
+  if(Math.hypot(G.pl.pos.x-x,G.pl.pos.z-z)<ev.r+7){
+    AU.tone(300,520,.45,.14,'sine');
+    toast(look.name+' INCOMING');
+  }
+}
+function updateArenaEvents(dt){
+  if(!G.world||!G.world.def.event) return;
+  G.eventT-=dt;
+  if(G.eventT<=0 && !G.over){ spawnArenaEvent(); scheduleEvent(); }
+  for(let i=G.events.length-1;i>=0;i--){
+    const E=G.events[i]; E.t+=dt;
+    const u=clamp(E.t/E.warn,0,1);
+    if(!E.blown){
+      // the ring tightens and brightens as it fills, so the timing is readable
+      const sc=E.ev.r*(1.55-0.55*u);
+      E.ring.scale.setScalar(sc);
+      const o=0.4+0.5*u+Math.sin(E.t*22)*0.14*u;
+      E.ring.userData.edge.material.opacity=o;
+      E.ring.userData.disc.material.opacity=o*0.32;
+      if(E.drop){
+        E.drop.position.y=E.y+34*(1-u*u);
+        E.drop.rotation.x+=dt*7; E.drop.rotation.z+=dt*5;
+        if(Math.random()<0.5) fxSpark({x:E.drop.position.x,y:E.drop.position.y,z:E.drop.position.z},E.look.core,1,2.5,1);
+      }
+      if(E.t>=E.warn) blowEvent(E);
+    } else if(E.t>=E.warn+0.55){
+      scene.remove(E.ring); fxKill(E.ring); G.events.splice(i,1);
+    } else {
+      const f=Math.max(0,1-(E.t-E.warn)/0.55);
+      E.ring.userData.edge.material.opacity=0.85*f;
+      E.ring.userData.disc.material.opacity=0;
+      E.ring.scale.setScalar(E.ev.r*(1+(E.t-E.warn)*1.6));
+    }
+  }
+}
+function blowEvent(E){
+  E.blown=true;
+  const {ev,look}=E, pt={x:E.x,y:E.y+0.6,z:E.z};
+  if(E.drop){ scene.remove(E.drop); fxKill(E.drop); E.drop=null; }
+  AU.explode();
+  fxLight(pt, look.core, 6, .3);
+  fxRing({x:E.x,y:E.y+0.1,z:E.z}, look.core, .5, ev.r*2.1, .45);
+  fxRing(pt, WARN_COL, .4, ev.r*1.4, .32, {x:0,y:0,z:1});
+
+  if(ev.type==='spike'){
+    for(let i=0;i<11;i++){
+      const a=Math.random()*Math.PI*2, rr=Math.random()*ev.r;
+      const h=1.6+Math.random()*2.6;
+      const m=fxBox(.34,h,.34, i%2?look.core:0x9fe8ff, .9);
+      m.position.set(E.x+Math.cos(a)*rr, E.y+h/2-0.4, E.z+Math.sin(a)*rr);
+      m.rotation.y=Math.random()*3;
+      fxAdd(m,{life:1.05,o0:.9,fade:true,v:{x:0,y:2.2,z:0},g:9});
+    }
+  } else if(ev.type==='rift'){
+    for(let i=0;i<9;i++){
+      const m=fxBox(.5,4.5,.5, look.core, .85);
+      m.position.set(E.x+rnd(-ev.r,ev.r), E.y+2.2, E.z+rnd(-ev.r,ev.r));
+      fxAdd(m,{life:.75,o0:.8,fade:true,shrink:true,v:{x:0,y:3.4,z:0}});
+    }
+    for(let i=0;i<8;i++) fxSmoke({x:E.x+rnd(-2,2),y:E.y+rnd(0,3),z:E.z+rnd(-2,2)},0x6a3fb0,.5,.9,1.6);
+  } else if(ev.type==='quake'){
+    for(let i=0;i<14;i++){
+      const sz=rnd(.4,1.2);
+      const m=fxBox(sz,sz,sz, 0xe8d3a0, .55);
+      m.position.set(E.x+rnd(-ev.r,ev.r), E.y+.3, E.z+rnd(-ev.r,ev.r));
+      fxAdd(m,{life:rnd(.7,1.2),g:14,fade:true,v:{x:rnd(-3,3),y:rnd(3,7),z:rnd(-3,3)},
+        spin:{x:rnd(-8,8),y:rnd(-8,8),z:rnd(-8,8)}});
+    }
+    for(let i=0;i<10;i++) fxSmoke({x:E.x+rnd(-3,3),y:E.y+rnd(0,1.6),z:E.z+rnd(-3,3)},0xbba272,.8,1.1,1.1);
+  } else {
+    for(let i=0;i<8;i++){
+      const sz=rnd(.9,2.2);
+      const m=fxBox(sz,sz,sz, i%2?look.core:WARN_COL, .92);
+      m.position.set(E.x+rnd(-1.4,1.4), E.y+rnd(.2,2), E.z+rnd(-1.4,1.4));
+      fxAdd(m,{life:rnd(.3,.55),grow:1.6,o0:.9,v:{x:rnd(-2,2),y:rnd(1,3.4),z:rnd(-2,2)}});
+    }
+    for(let i=0;i<12;i++) fxSmoke({x:E.x+rnd(-2,2),y:E.y+rnd(0,2),z:E.z+rnd(-2,2)},0x4a434f,.8,1.2,1.3);
+  }
+  fxSpark(pt, look.core, 18, 8, 1.6);
+
+  // damage, strongest in the middle
+  for(const e of G.ents){
+    if(!e.alive) continue;
+    const d=Math.hypot(e.pos.x-E.x, e.pos.z-E.z);
+    if(d>ev.r || Math.abs((e.pos.y+0.9)-E.y)>5) continue;
+    const f=1-0.62*(d/ev.r);
+    damage(e, Math.round(ev.dmg*f), 'BODY', null, {x:e.pos.x,y:e.pos.y+1.2,z:e.pos.z});
+    if(ev.type==='spike'||ev.type==='meteor'){
+      e.vel.y+=ev.type==='spike'?7.5:4.5; e.onG=false;
+    }
+    if(ev.type==='quake') e.stunT=Math.max(e.stunT||0,0.8);
+  }
+  if(petUp()){
+    const dp=Math.hypot(G.pet.pos.x-E.x,G.pet.pos.z-E.z);
+    if(dp<ev.r) hurtPet(Math.round(ev.dmg*0.6*(1-dp/ev.r)));
+  }
+  const dpl=Math.hypot(G.pl.pos.x-E.x,G.pl.pos.z-E.z);
+  if(dpl<ev.r*2.6) G.shake=Math.max(G.shake, 0.45*(1-dpl/(ev.r*2.6)));
+}
+
 function impact(pt,color,kind){
   if(kind==='smash'||kind==='leech'||kind==='slash') return;
   if(kind==='arc'){ fxSpark(pt,0x7df9ff,7,3.2,1); fxRing(pt,0x7df9ff,.12,1.1,.22,{x:0,y:1,z:0}); return; }
@@ -2530,7 +2768,7 @@ function kill(t,killer,part){
     else if(SPREE[G.kills]) banner(SPREE[G.kills],G.kills+' kills, still standing',3);
     if(G.mk>=2) G.streakCoins=(G.streakCoins||0)+G.mk*15;
   }
-  if(t.isPlayer){ endMatch(false); return; }
+  if(t.isPlayer){ G.lastKiller=killer||null; G.lastPart=part||null; endMatch(false); return; }
   if(G.training){ setTimeout(()=>respawnDummy(t),2200); updateHUD(); return; }
   const alive=G.ents.filter(e=>e.alive);
   if(alive.length===1&&alive[0].isPlayer) endMatch(true);
@@ -3054,6 +3292,7 @@ function tick(dt){
   for(const e of G.ents){ if(!e.isPlayer) updateBot(e,dt); statusTick(e,dt); }
   statusTick(G.pl,dt);
   updatePet(dt);
+  updateArenaEvents(dt);
   stepProjectiles(dt);
   updateModels(dt);
   updateCamera(dt);
@@ -3095,7 +3334,7 @@ function timeUp(){
 function endMatch(win){
   if(G.over) return;
   if(G.training){ return; }
-  G.over=true; G.on=false;
+  G.over=true;                    // scoring closed; the world keeps running for the outro
   document.exitPointerLock&&document.exitPointerLock();
   const kills=G.kills, hs=G.hs;
   const arena=AR[S.cfg.arena];
@@ -3221,9 +3460,65 @@ function endMatch(win){
     stepUpHint();
   cloudSubmit(res, arena.id, S.cfg.time*60-G.left);
   miniBoardT=0;
-  $('#ovResult').classList.remove('hidden');
-  $('#hud').classList.add('hidden');
   refreshCoins();
+  startOutro(win);
+}
+/* ---------------------------------------------------------------
+   The beat between the last shot and the scoreboard. Everything keeps
+   simulating at a third speed while the camera lifts off the player, so a
+   death reads as something that happened rather than a screen that appeared.
+   Skippable, because the fifth time round nobody wants to sit through it.
+   --------------------------------------------------------------- */
+function startOutro(win){
+  const k=G.lastKiller, part=G.lastPart;
+  let sub;
+  if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
+  else if(k&&!k.isPlayer) sub=String(k.name||'?').toUpperCase()+' · '+W[k.wep].name.toUpperCase()+(part==='HEAD'?' · HEADSHOT':'');
+  else if(k&&k.isPlayer) sub='YOUR OWN BLAST';
+  else sub=String(part||'THE ARENA').toUpperCase();
+  $('#otTitle').textContent = win?'VICTORY':'ELIMINATED';
+  $('#otSub').textContent = sub;
+  $('#outro').className='on'+(win?' win':'');
+  $('#hud').classList.add('dim');
+  G.outro={t:0, dur:win?3.6:2.9, win:win, ang:G.yaw, dist:win?3.2:2.6};
+  AU.tone(win?190:150, win?95:62, .9, .18, 'sine');
+}
+function skipOutro(){ if(G.outro) G.outro.t=G.outro.dur; }
+function finishOutro(){
+  G.outro=null; G.on=false;
+  $('#outro').className='';
+  $('#hud').classList.remove('dim');
+  $('#hud').classList.add('hidden');
+  $('#ovResult').classList.remove('hidden');
+}
+function tickOutro(dt){
+  const o=G.outro, sd=dt*0.34;
+  o.t+=dt;
+  G.t+=sd;
+  if(G.left>0) G.left-=sd;
+  for(const e of G.ents){ if(!e.isPlayer) updateBot(e,sd); statusTick(e,sd); }
+  statusTick(G.pl,sd);
+  updatePet(sd); stepProjectiles(sd); updateArenaEvents(sd);
+  updateModels(sd); stepFX(G.fx,sd); stepParts(sd);
+  outroCamera(dt,o);
+  if(o.t>=o.dur) finishOutro();
+}
+function outroCamera(dt,o){
+  const p=G.pl;
+  const focus={x:p.pos.x, y:p.pos.y+(o.win?1.25:0.6), z:p.pos.z};
+  o.ang+=dt*(o.win?0.5:0.34);
+  o.dist=lerp(o.dist, o.win?6.4:5.6, clamp(dt*0.9,0,1));
+  const h=o.win?2.9:2.4;
+  const dir={x:Math.sin(o.ang),y:0,z:Math.cos(o.ang)};
+  // do not bury the camera in a wall
+  const wd=rayWorld({x:focus.x,y:focus.y+h*0.5,z:focus.z},dir,o.dist+0.6);
+  const r=Math.max(1.6,Math.min(o.dist,wd-0.5));
+  camera.position.set(focus.x+dir.x*r, focus.y+h, focus.z+dir.z*r);
+  camera.lookAt(focus.x,focus.y,focus.z);
+  const want=baseFov*(o.win?0.94:0.88);
+  if(Math.abs(camera.fov-want)>0.05){ camera.fov=lerp(camera.fov,want,clamp(dt*1.6,0,1)); camera.updateProjectionMatrix(); }
+  if(G.vm) G.vm.visible=false;
+  p.M.root.visible=true;
 }
 /* advance today's three challenges and hand back whatever just completed */
 function challengeUpdate(res){
@@ -3255,9 +3550,9 @@ function stepUpHint(){
     ' opponents? Match setup \u2192 Opponent skill</span></div>';
 }
 function quitMatch(){
-  G.on=false; G.over=true; G.paused=false;
+  G.on=false; G.over=true; G.paused=false; G.outro=null; $('#outro').className='';
   $('#ovPause').classList.add('hidden'); $('#ovResult').classList.add('hidden');
-  $('#hud').classList.add('hidden');
+  $('#hud').classList.remove('dim'); $('#hud').classList.add('hidden');
   S.food=Object.assign({},G.pl?G.pl.food:S.food); saveState();
   buildMenuScene(); show('scr-title'); refreshCoins();
 }
@@ -3267,7 +3562,9 @@ function quitMatch(){
    ===================================================================== */
 function initInput(){
   const cv=$('#gl');
-  cv.addEventListener('click',()=>{ if(G.on&&!G.paused&&!G.over&&document.pointerLockElement!==cv) cv.requestPointerLock(); });
+  cv.addEventListener('click',()=>{
+    if(G.outro){ skipOutro(); return; }
+    if(G.on&&!G.paused&&!G.over&&document.pointerLockElement!==cv) cv.requestPointerLock(); });
   document.addEventListener('pointerlockchange',()=>{
     if(G.on&&!G.over&&document.pointerLockElement!==cv){ pauseMatch(true); }
   });
@@ -3303,6 +3600,7 @@ function initInput(){
     }
     if(e.code==='KeyV'){ G.cam=G.cam==='first'?'third':'first'; S.cfg.cam=G.cam; saveState();
       toast(G.cam==='first'?'First person':'Third person'); }
+    if(G.outro&&(e.code==='Space'||e.code==='Enter'||e.code==='Escape')){ skipOutro(); return; }
     if(e.code==='KeyT'&&G.training) trainCycle(e.shiftKey?-1:1);
     if(e.code==='Digit1') swapSlot(0);
     if(e.code==='Digit2') swapSlot(1);
@@ -4041,7 +4339,8 @@ function animate(){
   if(pvRig&&!$('#scr-shop').classList.contains('hidden')){
     pvRig.rotation.y+=dt*0.55; pvRenderer.render(pvScene,pvCamera);
   }
-  if(G.on&&!G.paused&&!G.over) tick(dt);
+  if(G.on&&!G.paused&&G.outro) tickOutro(dt);
+  else if(G.on&&!G.paused&&!G.over) tick(dt);
   else if(!G.on){
     menuT+=dt;
     stepFX(G.fx,dt);

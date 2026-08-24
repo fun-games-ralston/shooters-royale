@@ -246,7 +246,39 @@ Ten arenas, procedurally built each match from a themed definition. Foundry is f
 | Bone Temple | 6,400 | — |
 | Void Nexus | 8,000 | 0.55× gravity, fatal falls |
 
-**Generation.** Each arena is built at runtime: floor (or floating island chunks for void arenas), perimeter walls, 16–24 cover obstacles, up to 4 upper decks with generated staircases, a centre structure with two stairways, hazard pools, themed decor, and a 12-point spawn ring. Typical result is 132–174 collision boxes. Weather particles (snow, embers, dust, motes) are driven by the theme.
+**Generation.** Each arena is built at runtime: floor (or floating island chunks for void arenas),
+perimeter walls, 16–24 cover obstacles, up to 4 upper decks with generated staircases, a centre
+structure with two stairways, hazard pools, themed decor, and a 12-point spawn ring. Typical result
+is 138–203 collision boxes. Weather particles (snow, embers, dust, motes) are driven by the theme.
+
+**Natural props.** Every arena used to be boxes stacked on boxes, so ten themes read as one place
+with a repainted floor. Four reusable builders — `propRock`, `propTree`, `propDeadTree`,
+`propCrystal` — plus `propRiver`, which lays a winding non-solid strip you can see and shoot across
+but not hide behind. Frostbite gets ice boulders, pines and a frozen creek; Sandpit gets sun-bleached
+rock and dead wood over a dry wash; Atrium gets real trees in its planters and a water channel;
+Emberfall gets obsidian and burnt trunks over a lava run; Void Nexus gets floating crystal shards.
+
+### 8.1 Arena events
+
+Five arenas fight back. An event picks a spot near someone still alive, telegraphs on the ground,
+then lands.
+
+| Arena | Event | Every | Radius | Damage | Extra |
+| --- | --- | --- | --- | --- | --- |
+| Sandpit | Sinkhole | 9–15 s | 5.2 m | 22 | 0.8 s stun |
+| Frostbite | Ice spikes | 7–12 s | 4.4 m | 28 | launches you |
+| Emberfall | Meteor | 6–11 s | 5.0 m | 38 | falls from the sky, launches you |
+| Bone Temple | Bone spikes | 8–13 s | 4.2 m | 26 | launches you |
+| Void Nexus | Void rift | 8–14 s | 4.8 m | 32 | — |
+
+Damage is strongest in the middle and falls to about 38% at the rim, so clipping the edge stings and
+standing in it hurts. **Bots are caught by exactly the same code**, which is half the fun to watch.
+
+Two deliberate choices. Every event is **telegraphed for 1.2–1.5 s** before it lands, because a
+hazard nobody can dodge is just a random tax. And the warning marker is **not themed** — it is the
+same hot orange on every map, with the whole danger area shaded rather than just outlined. The first
+version tinted the marker to match the arena, which made Frostbite's pale cyan ring invisible against
+its white floor; one danger colour is also something you learn once instead of five times.
 
 ---
 
@@ -604,7 +636,17 @@ Capes flare when sprinting, wings spread on jump, the halo spins faster the more
 
 ## 12. UI
 
-**Screens:** Title → Match Setup → Armory → How to Play, plus in-match Pause and Results overlays.
+**Screens:** Title → Match Setup → Armory → How to Play, plus in-match Pause, **Outro** and Results overlays.
+
+**The outro.** The results screen used to appear the instant the last shot landed, which made a death
+feel like a screen that appeared rather than something that happened. There is now a beat in between:
+the whole world keeps simulating at **0.34× speed** while the camera lifts off the player and orbits,
+the HUD fades to 22%, and a card names what killed you — `FERRO · LONGSHOT RAIL · HEADSHOT`, or
+`LAST ONE STANDING · 5 KILLS` on a win. 2.9 s on a death, 3.6 s on a win, and clicking or pressing
+space skips straight to the scoreboard, because the fifth time round nobody wants to sit through it.
+
+Bots keep fighting during it, which is worth watching. `endMatch` closes scoring immediately
+(`G.over`) but leaves `G.on` true, and the main loop routes to `tickOutro` instead of `tick`.
 
 **Title** follows the layout convention this genre settled on years ago (Krunker, Shell Shockers,
 Brawl Stars) rather than inventing one:
