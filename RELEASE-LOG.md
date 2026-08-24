@@ -1,0 +1,140 @@
+# Shooter's Royale — Release Log
+
+**Developer:** Ethan
+**Play:** https://fun-games-ralston.github.io/shooters-royale/
+
+Newest first. Each entry is one change: a feature that made the game better, or a problem that got solved.
+
+---
+
+## 1.6 — 23 Aug 2026
+
+* Fixed: the fighter preview showed the back of your head. Every preview now opens facing you, with weapons side-on instead of pointing down the lens.
+* Fixed: the Sandpit sinkhole was invisible — sand-coloured debris on a sand floor. It was firing fifteen times a match and hurting people the whole time, and now opens a dark pit.
+* Fixed: you almost never met a hazard, because they picked a target evenly among everyone alive. Half now land near you instead of one in eight.
+* Fixed: nothing told you a map was dangerous. Hazards are now listed on the arena card, in the preview, on the setup chip, and named a second after you land.
+* New: Atrium and Neon Bazaar have hazards — falling glass and a power surge. They were the only paid arenas with nothing at all.
+* Fixed: Bone Temple's spikes were labelled "Ice spikes".
+
+## 1.5 — 23 Aug 2026
+
+* Changed: matches are 3 minutes, adjustable 1–6. They were 6 by default and could run to 15.
+* New: Your Fighter. The Armory's first tab shows your character holding your actual weapon, with one card per slot and a button straight to where you change it.
+* Removed: the field-of-view slider. Anyone who set it to 130° could see round corners other players could not.
+* Fixed: Match Setup repeated itself. The footer restated the arena, opponents, skill and time — all buttons a few centimetres above it.
+
+## 1.4 — 23 Aug 2026
+
+* New: the end of a match is something you watch. The world runs on in slow motion, the camera lifts off your body, and a card names what killed you — space skips it.
+* New: five maps fight back — meteors, ice spikes, sinkholes, bone spikes and void rifts, 22–38 damage. Each is telegraphed with an orange ring for over a second, and bots get hit too.
+* New: maps look like places. Every arena was boxes on boxes; there are now rocks, trees, crystals and rivers, different per map.
+* Fixed: the victory card read "4 KILLs".
+
+## 1.3 — 23 Aug 2026
+
+* New: the leaderboard ranks by the hardest difficulty you have beaten, then by wins at that level. Grinding the easiest setting no longer moves you up — a test player with 530 Rookie wins still sits below three Veteran wins.
+
+## 1.2 — 23 Aug 2026
+
+* Fixed: a Nightmare lobby was seven bots carrying the three slowest guns in the game, so nothing ever closed the distance. Bots now get a role — rusher, mid, marksman, heavy — and difficulty sets how good their weapon is.
+* Fixed: Rookie lobbies were being handed Regular's weapons, Miniguns included.
+* Fixed: bots could never carry the Tesla Arc at any difficulty.
+* New: harder opponents pay more, on kills and fighters outlasted — the two things you cannot fake by dying on purpose.
+
+## 1.1 — 23 Aug 2026
+
+* Fixed: winning without doing anything paid full XP. If the bots wiped each other out and you survived, you earned the same as someone who carried the match.
+* Fixed: difficulty only changed how straight bots shot. A Nightmare bot chased, dodged and healed exactly like a Rookie one; now five things change, including whether they hunt you or each other.
+* Fixed: bots tracked you through walls at every difficulty. A Rookie now loses you almost immediately.
+* Balance: win rates across the five settings are 92 / 75 / 50 / 33 / 8 per cent. The first attempt made Nightmare unwinnable, so the top two were pulled back.
+
+## 1.0 — 23 Aug 2026
+
+* Changed: your settings no longer change your pay. Opponent skill and lobby size swung earnings sevenfold, so two kids could play the same match for wildly different money.
+* Changed: winning while hiding pays less. Three kills unlocks the full win bonus, and losing with two kills now pays nearly as much as winning passively.
+* Changed: starting coins cut from 1,500 to 250. The old balance unlocked 26 items before you had fired a shot; 250 is less than every weapon in the shop.
+* Balance: a typical win pays about 750, roughly one cheap weapon. Owning every gun takes about 60 matches instead of 26.
+* Changed: opponents do not get harder as you level up. That would punish you for improving and push good players down the leaderboard.
+* Fixed: the payout screen showed the wrong numbers — its lines did not add up to the total underneath them.
+
+## 0.9 — 23 Aug 2026
+
+* Balance: coins cut across the board. A single match was paying more than the entire starting balance, so nothing ever felt earned.
+* Balance: medals were firing three a match for ordinary play and quietly paying a quarter of the purse. Halved, with two made harder.
+
+## 0.8 — 23 Aug 2026
+
+* Fixed: the fonts would have broken on school Chromebooks. The title, headings, ammo counter and kill banners would all have rendered in plain Roboto on exactly the machines this game is for.
+* Fixed: small text was too faint to read — most of it scored 3.1 against a 4.5 minimum. New colours, nothing under 10px, and all six screens now pass.
+* Fixed: the profile card sat stranded in a corner with a large dead gap above the menu. The layout is one balanced block now.
+
+## 0.7 — 23 Aug 2026
+
+* New: a proper main menu. Profile card top-left with your level and XP, the leaderboard always visible showing the top five and your position, daily challenges on the right.
+* Fixed: everything below the Deploy button was hard to read over the moving arena behind it. The background is dimmed behind the menu now.
+* Changed: the training range moved out of the main menu into Match Setup. A first-time player should press Deploy and be in a fight.
+
+## 0.6 — 23 Aug 2026
+
+* New: the club. Pick a fighter name and a 4-digit PIN and your scores join a shared leaderboard, with your coins, unlocks and mastery following you to any computer.
+* New: no email, no real names, no ages — nothing stored can identify a child. That is also why there is no "forgot my PIN" link.
+* New: anti-cheat. Impossible numbers are clipped, and you cannot claim more minutes of play in an hour than an hour contains.
+* New: everything still works offline. No wifi, blocked school network, or no leaderboard at all — the game plays and saves normally.
+
+## 0.5 — 23 Aug 2026
+
+* Fixed: the game never saved anything. Every coin, unlock and statistic was wiped by a page refresh.
+* Fixed: the Bazooka had never worked. Every rocket exploded a metre or two from your own face — six fired, six hitting the shooter and nobody else.
+* Fixed: the Obsidian Reaper ended the game. Buying it left nothing to want, so it is now three shots a match, each needing a second of charging while glowing purple where everyone can see you.
+* New: 14 weapons, each behaving differently — damage that fades with distance, spray that climbs, burst fire, a heat bar instead of a magazine, a bipod, a charge-up, shell-by-shell reloading, backstabs, lifesteal, knockback.
+* New: three melee weapons — the knife, a bat that punts people off ledges, and claws that heal you 15 HP a hit. Slot 3 is always melee, so an empty magazine is never the end.
+* Changed: magazines are smaller and spare ammo is finite. The AK-47 went from 30 rounds to 20.
+* New: daily challenges. Three a day, the same three for everyone, reset each morning.
+* New: your first win each day pays double.
+* New: ranks. Ten of them, earned on XP that cannot be spent, so they still mean something once you own everything.
+* New: weapon mastery. Every gun counts its own kills and earns charms on the barrel — decoration only, so it never makes the game easier.
+* New: multi-kill banners. Two kills in five seconds chains into DOUBLE KILL and upward, with a bonus.
+* New: match medals — Sharpshooter, Executioner, Clutch and more — so a losing match can still go somewhere.
+* New: the training range. Nothing hurts you, ammo never runs out, and you can test-fire every weapon in the game before saving up for it.
+
+## 0.4 — 23 Aug 2026
+
+* Fixed: shop cards were cut in half. `overflow:hidden` collapsed the grid rows, so weapon cards lost their stats and buy button entirely. Everything is visible now.
+* Fixed: two places to buy things. The duplicate buy button in the preview pane is gone — purchasing lives only on the card, and every card footer looks the same.
+* Fixed: 20,000-coin exploit. Payouts counted the Reaper's 99,999 overkill damage as real damage. Only damage actually dealt pays out now.
+* New: pets can be killed. They take return fire when they bite, drop at zero HP, and stay down 18 seconds — perk included. No more free permanent damage.
+* Balance: Minigun nerfed hard. It did 525 DPS at 4,200 coins, double the 8,600 Tesla. Now 350, so the price ladder actually means something.
+* Balance: Tesla Arc buffed. It was paying 8,600 coins for less range and damage than a 1,500-coin rifle. More reach, more damage.
+* Fixed: Bazooka killed its owner. Own-rocket splash cut to 35%, so rocket-jumping works without being suicide.
+* Fixed: arena prices were scrambled. Neon Bazaar cost less than Skyport, Bone Temple cost more than Void Nexus. The unlock ladder rises properly again.
+* New: itemised payout screen. Results now break down exactly where every coin came from, including a win-streak bonus and a first-win-per-arena bounty.
+* Fixed: toast messages were landing on top of the ARMORY header. Moved to the bottom of the screen.
+
+## 0.3 — 22 Aug 2026
+
+* Fixed: your fighter never turned in third person. The body stayed frozen at its spawn angle while the camera orbited it, so you always saw yourself from the side.
+* Fixed: shots came from behind you. In third person bullets spawned at the camera, four metres back. They now leave your barrel and hit what the crosshair is on.
+* New: every weapon has its own effect. Rail laser beams, forked lightning, rocket trails and fireballs, void beams, buckshot cones, brass casings, a spinning blade arc for the knife.
+* New: kills explode into blocky debris tinted by whatever killed you, and headshots pop a red ring.
+* New: muzzle flashes light the arena. A pooled point light fires on every shot and explosion.
+* Fixed: buy buttons were tiny and easy to miss. Now full-width gold with the price inside, and they turn red with a "you need X more" tooltip when you can't afford it.
+* Fixed: long guns drew outside their shop icons, and hair icons rendered completely off-canvas.
+* Fixed: minimap arrow pointed backwards. It was rotated 180° off.
+
+## 0.2 — 22 Aug 2026
+
+* New: POWER rating on every weapon. A 1–10 bar that rises with price, so the shop ladder is legible at a glance.
+* Fixed: you died in under 5 seconds. All 7 bots dogpiled the player with near-perfect aim. They now prefer fighting each other, react slower, and burst-fire instead of holding the trigger.
+* New: 3.2-second grace period at match start so nobody gets shot before they've found cover.
+* Fixed: guns pointed backwards out of the character's hand.
+* Fixed: graceful failure if the 3D engine can't load, instead of a hung loading screen.
+
+## 0.1 — 22 Aug 2026
+
+* Initial playable build. One life, 200 HP, last one standing across 10 procedural arenas with cover, upper decks and stairs.
+* 11 weapons from a free pistol to the 15,000-coin Obsidian Reaper that kills on any hit.
+* 7 pets that follow, fight and grant a passive perk — dog, cat, snake, wolf, bear, raptor, T-Rex.
+* Coin economy and armory with weapons, hair, outfits, accessories, pets, food and arena unlocks, all with 3D previews.
+* Food-based healing. Health never regenerates on its own; you buy it beforehand and eat mid-fight.
+* Bot AI across 5 skill tiers plus Mixed, with headshot/torso/leg damage zones.
+* Fully synthesised audio — every weapon has its own timbre, no asset files.

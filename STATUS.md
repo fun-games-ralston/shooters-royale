@@ -4,6 +4,10 @@
 
 ---
 
+> Player-facing history lives in **[RELEASE-LOG.md](RELEASE-LOG.md)** — one line per change, plain
+> language, newest first. This file is the engineering view: what is measured, what is known broken,
+> and why particular decisions went the way they did.
+
 ## Summary
 
 0.5 is a weapon-design and retention pass, and it fixed two bugs that were quietly gutting the game.

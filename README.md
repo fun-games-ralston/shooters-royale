@@ -4,6 +4,8 @@ A 3D browser arena shooter, built by Ethan. One life, 200 HP, last block standin
 
 **▶ Play: https://fun-games-ralston.github.io/shooters-royale/**
 
+What's changed and when: [RELEASE-LOG.md](RELEASE-LOG.md)
+
 Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 
 ---
@@ -40,6 +42,7 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 | File | What it is |
 | --- | --- |
 | `index.html` | The whole game. One file, no build step. |
+| `RELEASE-LOG.md` | Every change, newest first. Start here. |
 | `supabase-setup.sql` | Database for the leaderboard. Paste into Supabase once. |
 | `ONLINE-SETUP.md` | How to switch the leaderboard on. |
 | `SPEC.md` | Game design and technical spec. |
