@@ -126,6 +126,21 @@ canvas{display:block}
 .item .nm{font-family:var(--disp);font-size:15.5px;letter-spacing:.08em;text-transform:uppercase;line-height:1.1}
 .item .st{font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.5;letter-spacing:.03em;min-height:76px}
 .item .st b{color:var(--bone);font-weight:normal}
+.item.weapon-card .st{min-height:188px;display:flex;flex-direction:column;gap:7px}
+.item.weapon-card.selected{outline:2px solid var(--ench);outline-offset:-2px;background:#241d33}
+.item.weapon-card:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.weapon-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:5px;border-bottom:1px solid var(--edge)}
+.weapon-meta span{white-space:nowrap}
+.weapon-specs{display:flex;flex-direction:column;gap:3px}
+.weapon-spec{display:grid;grid-template-columns:45px minmax(0,1fr);gap:6px}
+.weapon-spec .wl{color:#766d86;text-transform:uppercase;letter-spacing:.08em}
+.weapon-spec b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.weapon-trade{display:flex;flex-direction:column;gap:4px}
+.weapon-trade .good,.weapon-trade .bad{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.9em}
+.weapon-mastery{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detailcue{margin-top:auto;padding-top:5px;border-top:1px dashed var(--edge);color:var(--text2);font-size:9px;
+  letter-spacing:.14em;text-align:right;text-transform:uppercase}
+.item.weapon-card:hover .detailcue,.item.weapon-card.selected .detailcue{color:var(--ench)}
 .item .foot{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin-top:auto;flex:0 0 auto}
 .item .foot .row{display:flex;gap:6px}
 .item .foot .row .btn{flex:1;padding:8px 6px}
@@ -152,6 +167,7 @@ canvas{display:block}
 @keyframes glint{0%{left:-120%}55%{left:150%}100%{left:150%}}
 
 .preview{width:296px;border-left:2px solid #0a0710;background:#151020;display:flex;flex-direction:column}
+.detailbackdrop,.pvclose{display:none}
 /* Inspect mode: one tab in the Armory is a look at yourself rather than a shelf
    of things to buy, so it gets the whole width instead of a 296px sidebar. */
 .shopmain.inspect .grid{display:none}
@@ -409,6 +425,15 @@ canvas{display:block}
   .preview{display:none}
   /* except in inspect mode, where the preview IS the page */
   .shopmain.inspect .preview{display:flex;flex-direction:column}
+  .detailbackdrop.open{display:block;position:fixed;inset:0;z-index:60;background:rgba(8,5,14,.82);backdrop-filter:blur(3px)}
+  .shopmain:not(.inspect) .preview.open{display:flex;position:fixed;inset:5vh 5vw;z-index:61;width:auto;max-height:90vh;
+    border:2px solid var(--edge);box-shadow:0 16px 60px #000;flex-direction:column}
+  .shopmain:not(.inspect) .preview.open #pvCanvas{height:min(220px,32vh);flex:0 0 min(220px,32vh)}
+  .shopmain:not(.inspect) .preview.open .pvinfo{min-height:0;padding:18px;overscroll-behavior:contain}
+  .shopmain:not(.inspect) .preview.open .pvclose{display:block;position:absolute;top:10px;right:10px;z-index:2;
+    border:0;padding:7px 10px;background:#241d33;color:var(--bone);box-shadow:inset 0 0 0 2px var(--edge);
+    font-family:var(--disp);font-size:13px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+  .shopmain:not(.inspect) .preview.open .pvclose:hover{color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
   .setgrid{grid-template-columns:1fr}.shopnav{width:132px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
@@ -505,7 +530,9 @@ canvas{display:block}
         <div class="shopnav" id="shopNav"></div>
         <div class="shopmain">
           <div class="grid" id="shopGrid"></div>
-          <div class="preview">
+          <div class="detailbackdrop" id="pvBackdrop"></div>
+          <div class="preview" id="shopPreview">
+            <button class="pvclose" id="pvClose" aria-label="Close item details">Close</button>
             <canvas id="pvCanvas" role="img" aria-label="3D item preview"></canvas>
             <div class="pvinfo" id="pvInfo"></div>
           </div>
@@ -3658,6 +3685,7 @@ function onResize(){
   if(camera){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); }
   if(pvRenderer){ const c=$('#pvCanvas'); pvRenderer.setSize(c.clientWidth,c.clientHeight,false);
     pvCamera.aspect=c.clientWidth/c.clientHeight; pvCamera.updateProjectionMatrix(); }
+  if(innerWidth>900) closeArmoryDetails();
 }
 let scoreEl=null;
 function toggleScores(on){
@@ -4117,11 +4145,13 @@ const TABS=[{id:'fighter',n:'Your fighter'},{id:'weapons',n:'Weapons'},{id:'hair
   {id:'acc',n:'Accessories'},{id:'pet',n:'Pets'},{id:'food',n:'Food'},{id:'arena',n:'Arenas'}];
 let shopTab='fighter';
 let fighterPreviewSlot=1;
+const shopSelection={weapons:null};
+let armoryDetailTrigger=null;
 function pwBar(n){ return '<span style="color:#f2b134">'+'\u25AE'.repeat(n)+'</span>'+'\u25AF'.repeat(10-n); }
 function rarClass(r){ return r==='myth'?' rar-myth glint':r==='ench'?' rar-ench':''; }
 function card(o){
   const el=document.createElement('div');
-  el.className='item blk'+rarClass(o.rar);
+  el.className='item blk'+rarClass(o.rar)+(o.cls?' '+o.cls:'')+(o.selected?' selected':'');
   const cv=iconCanvas(360,208); cv.style.height='104px';
   el.appendChild(cv);
   const nm=document.createElement('div'); nm.className='nm'; nm.textContent=o.name; el.appendChild(nm);
@@ -4130,7 +4160,16 @@ function card(o){
   if(o.tag){ const t=document.createElement('div'); t.className='tag '+(o.tagCls||''); t.textContent=o.tag; el.appendChild(t); }
   o.paint(cv);
   fillButtons(ft,o.buttons);
-  el.onclick=()=>{ o.select&&o.select(); };
+  if(o.detail){
+    el.tabIndex=0; el.setAttribute('aria-label',o.name+' — view details');
+    el.onkeydown=e=>{ if(e.target===el&&(e.code==='Enter'||e.code==='Space')){ e.preventDefault(); el.click(); } };
+  }
+  el.onclick=()=>{
+    if(!o.select) return;
+    if(o.detail&&el.parentElement){ el.parentElement.querySelectorAll('.item.selected').forEach(it=>it.classList.remove('selected')); el.classList.add('selected'); }
+    o.select();
+    if(o.detail){ armoryDetailTrigger=el; openArmoryDetails(); }
+  };
   return el;
 }
 function fillButtons(ft,buttons){
@@ -4189,6 +4228,61 @@ function rangeTxt(w){
   if(!w.fall) return 'full damage to '+w.range+' m';
   return 'full power to '+w.fall[0]+' m \u00B7 '+Math.round(w.fall[2]*100)+'% at '+w.fall[1]+' m';
 }
+function firstSentence(s){
+  const txt=String(s), m=txt.match(/^.*?[.!?](?=\s+[A-Z0-9]|$)/);
+  return m?m[0]:txt;
+}
+const WEAPON_CARD_COPY={
+  knife:['Fast; double damage from behind','Only 3 m of reach'],
+  sidearm:['Pin-point and light on your feet','Single-fire; fades past 26 m'],
+  smg:['15 rounds/sec; strongest up close','Damage collapses past 14 m'],
+  bat:['Launches enemies off ledges','One slow swing each second'],
+  scatter:['Point-blank burst damage','Five shells; weak past 24 m'],
+  burstr:['Laser-straight 3-round bursts','No sustained fire; seven bursts/mag'],
+  ak47:['Reliable damage to 60 m','20 rounds; heavy recoil'],
+  lmg:['60 rounds; accurate while planted','Slow movement; 3.2 s reload'],
+  claws:['Every hit heals 15 HP','Must fight inside 3.2 m'],
+  minigun:['Highest DPS; 150-round belt','Spin-up, slow movement, 5.5 s reload'],
+  sniper:['275 head damage at 250 m','Four shots; must scope'],
+  bazooka:['Splash damage and rocket jumps','Only eight rockets; slow reload'],
+  tesla:['No reload; chains to two targets','Overheats after 18 shots; 42 m range'],
+  reaper:['Any hit kills instantly','Only three shots; 1 s charge']
+};
+function weaponCardDamage(w){
+  if(w.dmg>900) return 'lethal anywhere';
+  if(w.pellets) return w.dmg+' × '+w.pellets+' · '+Math.round(w.dmg*HEAD_MULT)+' head';
+  return w.dmg+' body · '+Math.round(w.dmg*HEAD_MULT)+' head';
+}
+function weaponCardFire(w){
+  if(w.melee) return w.rpm+' swings/min';
+  return w.rpm+' RPM';
+}
+function weaponCardAmmo(w){
+  if(w.melee) return 'never runs out';
+  if(w.heat) return 'heat bar · no magazine';
+  return w.mag+' mag · '+w.reserve+' spare';
+}
+function weaponCardRange(w){
+  if(w.melee) return w.range+' m reach';
+  if(!w.fall) return w.range+' m full power';
+  return w.fall[0]+' m full · '+w.fall[1]+' m max';
+}
+function weaponCardStats(w){
+  const copy=WEAPON_CARD_COPY[w.id]||[firstSentence(w.role),firstSentence(w.limit)];
+  return '<div class="weapon-meta"><b>'+esc(w.cls)+'</b><span>POWER '+pwBar(w.pw)+'</span></div>'+
+    '<div class="weapon-specs">'+
+      '<div class="weapon-spec"><span class="wl">Damage</span><b>'+esc(weaponCardDamage(w))+'</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Fire</span><b>'+esc(weaponCardFire(w))+'</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Ammo</span><b>'+esc(weaponCardAmmo(w))+'</b></div>'+
+      '<div class="weapon-spec"><span class="wl">Range</span><b>'+esc(weaponCardRange(w))+'</b></div>'+
+    '</div>'+
+    '<div class="weapon-trade">'+
+      '<span class="good" title="'+esc(w.role)+'">▲ '+esc(copy[0])+'</span>'+
+      '<span class="bad" title="'+esc(w.limit)+'">▼ '+esc(copy[1])+'</span>'+
+    '</div>'+
+    '<div class="weapon-mastery">'+masteryTxt(w.id)+'</div>'+
+    '<div class="detailcue">Details →</div>';
+}
 function plural(n,one,many){ return n+' '+(n===1?one:(many||one+'s')); }
 function masteryTxt(id){
   const m=masteryOf(id);
@@ -4198,6 +4292,7 @@ function masteryTxt(id){
     (m.next?' \u00B7 '+(m.next.kills-m.kills)+' more for '+m.next.name:' \u00B7 MAXED')+'</span>';
 }
 function renderShop(tab){
+  closeArmoryDetails();
   shopTab=tab;
   const nav=$('#shopNav'); nav.innerHTML='';
   TABS.forEach(t=>{ const b=document.createElement('button');
@@ -4216,27 +4311,19 @@ function renderShop(tab){
   }
   else if(tab==='weapons'){
     const cur=W[S.eq.primary||'sidearm'];
-    pvShow('gun',cur); pvInfoWeapon(cur);
+    const selectedId=shopSelection.weapons||cur.id;
+    const selectedWeapon=W[selectedId]||cur;
+    pvShow('gun',selectedWeapon); pvInfoWeapon(selectedWeapon);
     WEAPONS.forEach(w=>{
       const owned=S.own.weapons.indexOf(w.id)>=0;
       const eq = S.eq.primary===w.id?'SLOT 1':S.eq.secondary===w.id?'SLOT 2':null;
       const btns=weaponBtns(w,tab);
       const eqM = S.eq.melee===w.id&&w.melee ? 'SLOT 3' : null;
-      g.appendChild(card({name:w.name,rar:w.rar,tag:eq||eqM||(w.rar==='myth'?'MYTHIC':null),tagCls:(eq||eqM)?'eq':'myth',
-        stats:'<b>'+w.cls+'</b> · POWER '+pwBar(w.pw)+'<br>'+(w.dmg>900?'ONE SHOT KILL — ANY BODY PART':w.dmg+' body / '+Math.round(w.dmg*HEAD_MULT)+' head')+
-          '<br>'+ammoTxt(w)+'<br>'+rangeTxt(w)+
-          (w.pellets?'<br>'+plural(w.pellets,'pellet')+' per shell':'')+(w.splash?'<br>'+w.splash+' splash · '+w.splashR+'m radius':'')+
-          (w.chain?'<br>chains to '+plural(w.chain,'more fighter')+' nearby':'')+
-          (w.burst?'<br>'+w.burst+'-round burst per trigger pull':'')+
-          (w.leech?'<br>heals you '+w.leech+' HP every hit':'')+
-          (w.knock?'<br>launches whoever you hit':'')+
-          (w.backstab?'<br>×'+w.backstab+' damage from behind':'')+
-          '<br><span class="good">▲ '+w.role+'</span>'+
-          '<br><span class="bad">▼ '+w.limit+'</span>'+
-          '<br><span class="fx">\u2726 '+w.fxName+'</span>'+
-          '<br>'+masteryTxt(w.id),
+      g.appendChild(card({name:w.name,rar:w.rar,cls:'weapon-card',selected:selectedId===w.id,detail:true,
+        tag:eq||eqM||(w.rar==='myth'?'MYTHIC':null),tagCls:(eq||eqM)?'eq':'myth',
+        stats:weaponCardStats(w),
         paint:cv=>paintGun(cv,w),
-        select:()=>{ pvShow('gun',w); pvInfoWeapon(w); },
+        select:()=>{ shopSelection.weapons=w.id; pvShow('gun',w); pvInfoWeapon(w); },
         buttons:btns}));
     });
   }
@@ -4328,6 +4415,19 @@ function pvInfoWeapon(w){
     '<h4>What it is for</h4><div style="color:#7fd45b">'+w.role+'</div>'+
     '<h4>What it costs you</h4><div style="color:#e0553a">'+w.limit+'</div>'+
     '<h4>Mastery</h4><div>'+masteryTxt(w.id)+'</div>';
+}
+function openArmoryDetails(){
+  if(innerWidth>900) return;
+  const preview=$('#shopPreview');
+  $('#pvBackdrop').classList.add('open'); preview.classList.add('open');
+  preview.setAttribute('role','dialog'); preview.setAttribute('aria-modal','true'); preview.setAttribute('aria-label','Item details');
+  requestAnimationFrame(()=>{ onResize(); $('#pvClose').focus(); });
+}
+function closeArmoryDetails(restoreFocus){
+  const back=$('#pvBackdrop'), preview=$('#shopPreview');
+  if(back) back.classList.remove('open');
+  if(preview){ preview.classList.remove('open'); preview.removeAttribute('role'); preview.removeAttribute('aria-modal'); preview.removeAttribute('aria-label'); }
+  if(restoreFocus&&armoryDetailTrigger&&armoryDetailTrigger.isConnected) armoryDetailTrigger.focus();
 }
 function pvInfoFighter(){
   const r=rankOf(S.xp||0), lvl=r.tier+1;
@@ -4439,6 +4539,8 @@ function wireUI(){
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
+  $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
+  $('#pvBackdrop').onclick=()=>closeArmoryDetails(true);
   let resetArmed=0;
   $('#btnReset').onclick=e=>{
     if(Date.now()-resetArmed>4000){ resetArmed=Date.now(); e.target.textContent='Press again — wipes this computer';
@@ -4457,6 +4559,7 @@ function wireUI(){
   $('#btnToMenu').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-title'); };
   document.addEventListener('keydown',e=>{
     if(e.code==='Escape'){
+      if($('#shopPreview').classList.contains('open')){ closeArmoryDetails(true); return; }
       if(G.on&&!G.over&&!G.paused) pauseMatch(true);
       else if(G.paused){ $('#ovPause').classList.add('hidden'); G.paused=false; }
     }

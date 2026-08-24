@@ -87,6 +87,11 @@ looks like a purchase that is not one.
 The shopping tabs were already right and are untouched: `Buy — 350 ⬥` when you do not own it,
 `Slot 1` / `Slot 2` / `Equip` when you do.
 
+The Weapons grid now separates comparison from inspection. Cards retain damage, firing/ammo, effective
+range, one strength, one drawback and mastery, with consistent heights and an explicit `Details →` cue.
+Selecting one highlights the card and updates the complete pane on the right. Below 900 px, where that pane
+used to be hidden, the same selection opens an accessible drawer with Close, backdrop and Escape dismissal.
+
 Match Setup was listing the same five slots a third time. It carries one line now, red when you have
 no food, plus a button through to the fighter view.
 

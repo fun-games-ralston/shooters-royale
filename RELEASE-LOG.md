@@ -12,6 +12,7 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 * Fixed: the Change buttons on Your Fighter looked like purchases and did not change anything — they were gold, the colour used for buying, and all they did was open a tab the left rail already lists.
 * Changed: Your Fighter is now a full-width look at yourself rather than a grid of cards. Tap any item in the list beside you to go and change it.
 * New: tap Slot 1, 2 or 3 on Your Fighter to see that weapon in your hands. An empty slot shows you unarmed; tapping the weapon name still takes you to change it.
+* Changed: weapon cards are shorter and easier to compare. They keep damage, firing and ammo, range, one strength, one drawback and mastery; tap one for the complete breakdown. On a narrow screen, details open in a drawer instead of disappearing.
 * Changed: Match Setup listed your loadout a third time. One line now, turning red when you have no food.
 
 ## 1.7 — 23 Aug 2026

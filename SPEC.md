@@ -746,6 +746,12 @@ New in 0.5:
 Melee weapons show a single `Slot 3` button; firearms show `Slot 1` / `Slot 2`. Every weapon card now carries a
 green ▲ role line, a red ▼ limitation line and its mastery progress.
 
+**Weapon cards are the comparison surface, not the manual.** Each card keeps the weapon's name, class, POWER,
+body/head damage, firing and ammo model, effective range, one short strength, one short drawback, mastery and
+the purchase/equip action. Selecting a card highlights it and puts the complete mechanic, stat and tradeoff
+breakdown in the detail pane. Below 900 px that pane opens as a dismissible drawer, so compact cards never hide
+information from narrow-screen players.
+
 ---
 
 ## 13. Art direction
