@@ -669,7 +669,27 @@ contrast against a background that changes every frame.
 time player should press Deploy and be in a fight; the range matters to the kid who wants to feel
 the Obsidian Reaper before saving fifteen thousand coins for it, and that kid will go looking.
 
-**Match Setup** mirrors the reference screenshot's information architecture but is restructured as a two-column card grid with chip selectors instead of one long list: Arena, Opponents (1–7), Opponent Skill, Time Limit, Mouse Sensitivity, Field of View, Camera, Sound, Nametags, plus a live loadout summary.
+**Match Setup** is a two-column card grid with chip selectors: Mode, Arena, Opponents, Opponent Skill,
+Time Limit (**1–6 minutes, default 3**), Mouse Sensitivity, Camera, Sound, Nametags, and a loadout
+card with a button through to the fighter view.
+
+Field of view is gone. It was a slider most players never touched, it let anyone set 130° and see
+around corners nobody else could, and its only other job — scoping — reads from a fixed `BASE_FOV`.
+Saves written before this carry a stale `fov` and a time limit of up to 15 minutes; `adoptSave`
+deletes the one and clamps the other into range.
+
+The footer used to restate the arena, opponent count, skill and time — every one of which is a chip
+a few centimetres above it. It now carries only the rule of the mode.
+
+### 12.1 Your fighter
+
+The Armory's first tab is a loadout hub, the closest thing the game has to CS2's inspect view. The
+preview pane shows your character built from the real `buildCharacter` data with your **slot 1 weapon
+in their hands**, mastery charms and all, framed off-axis and slowly turning so the silhouette reads.
+Beside it, one card per slot — Slot 1, Slot 2, Slot 3, Pet, Hair, Outfit, Accessory, Food — each
+showing what is in it and a Change button that jumps straight to the right tab.
+
+It answers "what am I actually taking in there" in one screen, which previously took four.
 
 **Armory** is a left tab rail (Weapons / Hair / Outfits / Accessories / Pets / Food / Arenas), a card grid, and a right-hand preview pane with a rotating 3D model and a stat readout.
 

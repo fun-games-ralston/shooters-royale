@@ -1144,7 +1144,7 @@ const DEFAULT_STATE = {
   own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
-  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:6, sens:150, fov:100, sound:true, nametags:true, cam:'first', mode:'trial' },
+  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'trial' },
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
   mastery: {},
@@ -1189,6 +1189,10 @@ function adoptSave(p){
   S.own = Object.assign({}, DEFAULT_STATE.own, p.own||{});
   S.eq  = Object.assign({}, DEFAULT_STATE.eq,  p.eq||{});
   S.cfg = Object.assign({}, DEFAULT_STATE.cfg, p.cfg||{});
+  // Saves written before 1.5 carry a field-of-view setting that no longer exists
+  // and a time limit of up to 15 minutes, outside what the slider can now show.
+  delete S.cfg.fov;
+  S.cfg.time = clamp(Math.round(S.cfg.time||3), 1, 6);
   S.stats=Object.assign({}, DEFAULT_STATE.stats,p.stats||{});
   S.food = p.food||{};
   S.xp = p.xp||0; S.mastery = p.mastery||{}; S.daily = p.daily||null; S.log = p.log||[];
@@ -2142,7 +2146,7 @@ function spawnMatch(){
   mkTracers();
   G.mapBoxes=G.world.boxes.filter(b=>b.y1>0.6&&b.y1<9.5&&(b.x1-b.x0)<26&&(b.z1-b.z0)<26);
 
-  camera=new THREE.PerspectiveCamera(S.cfg.fov,innerWidth/innerHeight,0.05,400);
+  camera=new THREE.PerspectiveCamera(BASE_FOV,innerWidth/innerHeight,0.05,400);
   scene.add(camera);
   G.vm=new THREE.Group(); camera.add(G.vm);
 
@@ -3084,7 +3088,7 @@ function hurtPet(amount){
 /* =====================================================================
    camera + model animation
    ===================================================================== */
-let baseFov=100;
+const BASE_FOV=100;
 function updateCamera(dt){
   const p=G.pl;
   const pitch=clamp(G.pitch-G.recoil*0.018,-1.45,1.45);
@@ -3115,7 +3119,7 @@ function updateCamera(dt){
     G.shake=Math.max(0,G.shake-dt*1.4);
   }
   const wp=W[p.wep];
-  const targetFov = baseFov/(1+(G.adsT*((wp.scope||1.35)-1)));
+  const targetFov = BASE_FOV/(1+(G.adsT*((wp.scope||1.35)-1)));
   if(Math.abs(camera.fov-targetFov)>0.05){ camera.fov=targetFov; camera.updateProjectionMatrix(); }
   const scoped = wp.scope&&G.adsT>0.55;
   $('#scope').style.opacity=scoped?1:0;
@@ -3515,7 +3519,7 @@ function outroCamera(dt,o){
   const r=Math.max(1.6,Math.min(o.dist,wd-0.5));
   camera.position.set(focus.x+dir.x*r, focus.y+h, focus.z+dir.z*r);
   camera.lookAt(focus.x,focus.y,focus.z);
-  const want=baseFov*(o.win?0.94:0.88);
+  const want=BASE_FOV*(o.win?0.94:0.88);
   if(Math.abs(camera.fov-want)>0.05){ camera.fov=lerp(camera.fov,want,clamp(dt*1.6,0,1)); camera.updateProjectionMatrix(); }
   if(G.vm) G.vm.visible=false;
   p.M.root.visible=true;
@@ -3691,12 +3695,21 @@ function initPreview(){
 function pvShow(kind,data){
   if(!pvRig) return;
   while(pvRig.children.length) pvRig.remove(pvRig.children[0]);
-  if(kind==='char'){
+  if(kind==='char'||kind==='fighter'){
     const cfg={hair:data.hair||S.eq.hair,outfit:data.outfit||S.eq.outfit,acc:data.acc||S.eq.acc};
     const m=buildCharacter(cfg);
-    const gm=buildGun(W[S.eq.primary||'sidearm'],1); gm.rotation.x=-Math.PI/2; m.hand.add(gm);
+    const gm=buildGun(W[S.eq.primary||'sidearm'],1,masteryOf(S.eq.primary||'sidearm').tier);
+    gm.rotation.x=-Math.PI/2; m.hand.add(gm);
     m.armR.rotation.x=1.35; m.armL.rotation.x=1.15; m.armL.rotation.z=0.22;
-    pvRig.add(m.root); pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
+    pvRig.add(m.root);
+    if(kind==='fighter'){
+      // closer and off-axis, so the weapon in the hands reads as a silhouette
+      // instead of pointing straight down the lens
+      pvRig.rotation.y=-0.6;
+      pvCamera.position.set(0,1.35,3.15); pvCamera.lookAt(0,1.0,0);
+    } else {
+      pvCamera.position.set(0,1.5,3.9); pvCamera.lookAt(0,1.1,0);
+    }
   } else if(kind==='gun'){
     const g=buildGun(data,2.1); g.position.set(0,0,0); pvRig.add(g);
     pvCamera.position.set(0,0.5,3.6); pvCamera.lookAt(0,0,0);
@@ -4017,9 +4030,8 @@ function renderSetup(){
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
-  g.appendChild(slider('Time limit','Minutes before the trial ends in a draw',2,15,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
+  g.appendChild(slider('Time limit','Minutes before the trial ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
   g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
-  g.appendChild(slider('Field of view','Wider sees more, feels faster',70,130,1,S.cfg.fov,null,v=>{S.cfg.fov=v;baseFov=v;}));
   g.appendChild(chipCard('Camera','Switch any time with V — third person shows your skins',
     [{id:'first',name:'First person'},{id:'third',name:'Third person'}],S.cfg.cam,v=>{S.cfg.cam=v;}));
   g.appendChild(chipCard('Sound','Synthesised gunfire, hits and footsteps',
@@ -4028,25 +4040,29 @@ function renderSetup(){
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.nametags?'on':'off',v=>{S.cfg.nametags=(v==='on');}));
   const lo=document.createElement('div'); lo.className='card blk';
   const foods=Object.keys(S.food).filter(k=>S.food[k]>0).map(k=>F[k].name+' ×'+S.food[k]).join(', ')||'nothing — you cannot heal without food';
-  lo.innerHTML='<div class="lab">Your loadout</div><div class="hint">Change any of this in the armory</div>'+
+  lo.innerHTML='<div class="lab">Your loadout</div><div class="hint">See yourself in 3D and change any of it</div>'+
     '<div style="font-family:var(--mono);font-size:11.5px;line-height:2;color:var(--dim)">'+
     'SLOT 1 <span style="color:var(--bone)">'+W[S.eq.primary||'sidearm'].name+'</span><br>'+
     'SLOT 2 <span style="color:var(--bone)">'+(S.eq.secondary?W[S.eq.secondary].name:'— empty —')+'</span><br>'+
     'SLOT 3 <span style="color:var(--bone)">'+W[S.eq.melee||'knife'].name+'</span><br>'+
     'PET <span style="color:var(--bone)">'+(S.eq.pet?PE[S.eq.pet].name:'— none —')+'</span><br>'+
-    'FOOD <span style="color:var(--bone)">'+foods+'</span></div>';
+    'FOOD <span style="color:var(--bone)">'+foods+'</span></div>'+
+    '<button class="btn sm primary" style="margin-top:12px" id="btnFighter">View your fighter</button>';
   g.appendChild(lo);
+  $('#btnFighter').onclick=()=>{AU.ui();shopTab='fighter';show('scr-shop');};
   summary();
 }
 function summary(){
-  const a=AR[S.cfg.arena];
-  $('#setupSummary').textContent=(a?a.name.toUpperCase():'')+' · '+(S.cfg.bots+1)+' FIGHTERS · '+
-    SKILLS[S.cfg.skill].name.toUpperCase()+' · '+S.cfg.time+' MIN · LAST ONE STANDING';
+  // Was a full restatement of arena, opponent count, skill and time — every one of
+  // which is a chip a few centimetres above it. Just the rule of the mode now.
+  $('#setupSummary').textContent = S.cfg.mode==='training'
+    ? 'TRAINING RANGE · NOTHING CAN HURT YOU · NO COINS'
+    : 'ONE LIFE · NO RESPAWNS · LAST ONE STANDING';
 }
 /* ---------------- armory ---------------- */
-const TABS=[{id:'weapons',n:'Weapons'},{id:'hair',n:'Hair'},{id:'outfit',n:'Outfits'},
+const TABS=[{id:'fighter',n:'Your fighter'},{id:'weapons',n:'Weapons'},{id:'hair',n:'Hair'},{id:'outfit',n:'Outfits'},
   {id:'acc',n:'Accessories'},{id:'pet',n:'Pets'},{id:'food',n:'Food'},{id:'arena',n:'Arenas'}];
-let shopTab='weapons';
+let shopTab='fighter';
 function pwBar(n){ return '<span style="color:#f2b134">'+'\u25AE'.repeat(n)+'</span>'+'\u25AF'.repeat(10-n); }
 function rarClass(r){ return r==='myth'?' rar-myth glint':r==='ench'?' rar-ench':''; }
 function card(o){
@@ -4135,7 +4151,34 @@ function renderShop(tab){
     b.onclick=()=>{AU.ui();renderShop(t.id);}; nav.appendChild(b); });
   const g=$('#shopGrid'); g.innerHTML='';
   const info=$('#pvInfo');
-  if(tab==='weapons'){
+  if(tab==='fighter'){
+    pvShow('fighter',{}); pvInfoFighter();
+    // One card per slot: what is in it, and one tap to go change it.
+    const meleeId=S.eq.melee||'knife';
+    const foods=Object.keys(S.food).filter(k=>S.food[k]>0);
+    const slots=[
+      {lab:'SLOT 1',   name:W[S.eq.primary||'sidearm'].name, sub:W[S.eq.primary||'sidearm'].cls, go:'weapons',
+       paint:cv=>paintGun(cv,W[S.eq.primary||'sidearm'])},
+      {lab:'SLOT 2',   name:S.eq.secondary?W[S.eq.secondary].name:'Empty', sub:S.eq.secondary?W[S.eq.secondary].cls:'no second gun', go:'weapons',
+       paint:cv=>{ if(S.eq.secondary) paintGun(cv,W[S.eq.secondary]); }},
+      {lab:'SLOT 3',   name:W[meleeId].name, sub:'MELEE', go:'weapons', paint:cv=>paintGun(cv,W[meleeId])},
+      {lab:'PET',      name:S.eq.pet?PE[S.eq.pet].name:'None', sub:S.eq.pet?PE[S.eq.pet].perkTxt.split('.')[0]:'nobody watching your back', go:'pet',
+       paint:cv=>{ if(S.eq.pet) paintPet(cv,PE[S.eq.pet]); }},
+      {lab:'HAIR',     name:HA[S.eq.hair].name, sub:'', go:'hair', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'head')},
+      {lab:'OUTFIT',   name:OU[S.eq.outfit].name, sub:'', go:'outfit', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'full')},
+      {lab:'ACCESSORY',name:AC[S.eq.acc].name, sub:'', go:'acc', paint:cv=>paintChar(cv,{hair:S.eq.hair,outfit:S.eq.outfit,acc:S.eq.acc},'head')},
+      {lab:'FOOD',     name:foods.length?foods.map(k=>F[k].name.split(' ').pop()+' \u00D7'+S.food[k]).join(', '):'Nothing',
+       sub:foods.length?'health never comes back on its own':'you will not be able to heal', go:'food',
+       paint:cv=>{ if(foods.length) paintFood(cv,F[foods[0]]); }},
+    ];
+    slots.forEach(sl=>{
+      g.appendChild(card({name:sl.name, rar:'common', tag:sl.lab, tagCls:'eq',
+        stats:sl.sub?('<span style="color:var(--dim)">'+sl.sub+'</span>'):'&nbsp;',
+        paint:sl.paint, select:()=>{ pvShow('fighter',{}); pvInfoFighter(); },
+        buttons:[{label:'Change',primary:true,fn:()=>{AU.ui();renderShop(sl.go);}}]}));
+    });
+  }
+  else if(tab==='weapons'){
     const cur=W[S.eq.primary||'sidearm'];
     pvShow('gun',cur); pvInfoWeapon(cur);
     WEAPONS.forEach(w=>{
@@ -4251,6 +4294,24 @@ function pvInfoWeapon(w){
     '<h4>What it costs you</h4><div style="color:#e0553a">'+w.limit+'</div>'+
     '<h4>Mastery</h4><div>'+masteryTxt(w.id)+'</div>';
 }
+function pvInfoFighter(){
+  const r=rankOf(S.xp||0), lvl=r.tier+1;
+  const p=W[S.eq.primary||'sidearm'], mel=W[S.eq.melee||'knife'];
+  const foods=Object.keys(S.food).filter(k=>S.food[k]>0);
+  const carried=foods.reduce((a,k)=>a+S.food[k],0);
+  $('#pvInfo').innerHTML=
+    '<h4>'+(ACC?esc(ACC.handle):'Your fighter')+'</h4>'+
+    '<div style="color:'+r.col+'">LEVEL '+lvl+' \u00B7 '+r.name.toUpperCase()+'</div>'+
+    kv('Slot 1',p.name)+
+    kv('Slot 2',S.eq.secondary?W[S.eq.secondary].name:'empty')+
+    kv('Slot 3',mel.name)+
+    kv('Pet',S.eq.pet?PE[S.eq.pet].name:'none')+
+    kv('Food carried',carried?plural(carried,'item'):'none')+
+    '<h4>Look</h4>'+
+    kv('Hair',HA[S.eq.hair].name)+kv('Outfit',OU[S.eq.outfit].name)+kv('Accessory',AC[S.eq.acc].name)+
+    '<div style="margin-top:10px;color:var(--dim)">This is exactly what drops into the arena. '+
+    'Everything here shows in third person mid-fight — press V in a match.</div>';
+}
 function pvInfoChar(it){
   const p=W[S.eq.primary||'sidearm'];
   $('#pvInfo').innerHTML='<h4>'+(it?it.name:'Your fighter')+'</h4>'+
@@ -4291,7 +4352,6 @@ function kv(k,v){ return '<div><span class="k">'+k+'</span> · '+v+'</div>'; }
 function startMatch(){
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
   G.training = (S.cfg.mode==='training');
-  baseFov=S.cfg.fov;
   AU.init();
   $$('.screen').forEach(s=>s.classList.add('hidden'));
   $('#ui').classList.add('pass'); $('#coinbar').classList.add('hidden');
@@ -4377,7 +4437,6 @@ async function boot(){
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.setSize(innerWidth,innerHeight);
   clock=new THREE.Clock();
-  baseFov=S.cfg.fov;
   initPreview(); initInput(); wireUI();
   buildMenuScene(); refreshCoins(); show('scr-title');
   $('#loading').classList.add('hidden');

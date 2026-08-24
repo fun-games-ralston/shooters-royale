@@ -1,6 +1,6 @@
 # Shooter's Royale — Build Status
 
-**Version:** 1.4 · **Date:** 23 August 2026 · **File:** `index.html` (~216 KB, ~3,900 lines)
+**Version:** 1.5 · **Date:** 23 August 2026 · **File:** `index.html` (~218 KB, ~3,900 lines)
 
 ---
 
@@ -63,6 +63,31 @@ Instrumenting a match: 6 rockets fired, 6 explosions, all 6 inside the player's 
 self-splash to 35%. The cause was a `<=` that should have been a `<`. After the fix the same instrumentation
 shows rockets travelling 11–25 m and detonating on target. The 35% self-splash stays, because rocket-jumping
 is fun and should survive.
+
+---
+
+## New in 1.5 — shorter matches, no FOV slider, and a fighter view
+
+**Time limit is 1–6 minutes, default 3** (was 2–15, default 6). Three minutes is about right for a
+lunch break and keeps the daily challenges reachable in a sitting.
+
+**Field of view removed** — the setting, the slider and every reference. It was a control almost
+nobody touched, it let anyone set 130° and see round corners other players could not, and its only
+other job (scoping) now reads a fixed `BASE_FOV`. Verified the Longshot Rail still zooms 100° → 27.8°.
+
+**Your fighter** is the Armory's new first tab, and the closest thing the game has to CS2's inspect
+view. The preview shows your character with your **slot 1 weapon actually in their hands**, mastery
+charms included, framed off-axis and turning so the silhouette reads. Beside it, one card per slot —
+Slot 1, 2, 3, Pet, Hair, Outfit, Accessory, Food — each with a Change button straight to that tab.
+One screen answers "what am I taking in there", which used to take four.
+
+**Match Setup de-duplicated.** The footer restated the arena, opponent count, skill and time, all of
+which are chips a few centimetres above it. It now carries only the rule of the mode, and the loadout
+card has a button through to the fighter view.
+
+**Migration:** saves written before this carry a stale `fov` and a time limit of up to 15 minutes.
+`adoptSave` deletes the one and clamps the other, verified against a seeded 12-minute save — coins
+and stats untouched, time pulled to 6, and an already-valid save left alone.
 
 ---
 
