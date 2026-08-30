@@ -48,6 +48,10 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 | `SPEC.md` | Game design and technical spec. |
 | `STATUS.md` | Build status, balance numbers, known issues. |
 | `balance-sim.js` | Balance harness — drives a simulated player inside the live game. |
+| `pvp-spike.html` | Standalone 2–4 player host-authority networking lab. |
+| `pvp-netcode.js` | Pure host simulation, prediction, interpolation, and rewind hit logic. |
+| `pvp-realtime.js` | Supabase Realtime room and point-to-point input transport. |
+| `PVP-NETCODE.md` | Ground-truth contract, test results, limitations, and merge gates. |
 
 ## Running it locally
 
@@ -58,3 +62,9 @@ python3 -m http.server 8123
 
 Opening `index.html` by double-clicking works too, but a local server is closer
 to how it behaves when published.
+
+## PvP prototype
+
+PvP is being proven in a standalone lab before it touches the main match. Start
+the server above, open `http://localhost:8123/pvp-spike.html`, and see
+[`PVP-NETCODE.md`](PVP-NETCODE.md) for the authority model and test commands.
