@@ -14,6 +14,8 @@
     label{display:block;color:var(--dim);font-size:12px;letter-spacing:1px;margin:10px 0 5px}input{width:100%;background:#09070e;border:1px solid #514063;color:var(--ink);font:16px "Courier New";padding:11px;text-transform:uppercase}
     button{border:2px solid #6d577f;background:#251a35;color:var(--ink);padding:10px 15px;cursor:pointer;font-size:15px;margin-top:12px}button.primary{background:var(--gold);border-color:#ffd274;color:#1a1120}button:disabled{opacity:.45;cursor:wait}
     .warning{border-left:4px solid var(--gold);padding:10px 12px;background:#21182c;color:#cfc3d4;margin-top:16px}.hidden{display:none!important}
+    .lobby{max-width:760px;margin:0 auto}.lobbytop{display:flex;justify-content:space-between;gap:16px;align-items:start}.lobbycode{font:28px Impact,sans-serif;letter-spacing:5px;color:var(--gold)}
+    .lobbyroster{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}.seat{border:1px solid var(--edge);background:#0d0914;padding:12px}.seat.empty{color:var(--dim)}.seat b{display:block;color:var(--ink)}
     .play{display:grid;grid-template-columns:minmax(0,760px) 1fr;gap:16px;align-items:start}canvas{display:block;width:100%;aspect-ratio:4/3;background:#0d1016;border:2px solid var(--edge);cursor:crosshair}
     .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.metric{background:#120d1c;border:1px solid var(--edge);padding:8px}.metric b{display:block;color:var(--gold);font-size:17px}.metric small{color:var(--dim)}
     .side h2{font-size:18px;color:var(--gold);margin:0 0 8px}.roster,.log{border:1px solid var(--edge);background:#0d0914;padding:10px;margin-bottom:14px}.roster div{padding:5px 0;border-bottom:1px solid #241a31}.roster div:last-child{border:0}.log{height:250px;overflow:auto;color:var(--dim);font-size:12px}.log .hit{color:var(--green)}.log .death{color:var(--red)}
@@ -49,6 +51,18 @@
     <p id="connectStatus" class="sub"></p>
   </section>
 
+  <section id="lobby" class="panel lobby hidden">
+    <div class="lobbytop">
+      <div><h2 style="margin:0">Friends lobby</h2><div class="sub" id="lobbyState">Connecting</div></div>
+      <div style="text-align:right"><small style="color:var(--dim)">ROOM CODE</small><div id="lobbyCode" class="lobbycode">—</div></div>
+    </div>
+    <div class="invite"><input id="invite" readonly><button id="copy">Copy invite</button></div>
+    <div id="lobbyRoster" class="lobbyroster"></div>
+    <div class="warning"><b>Test mode:</b> 2–4 friends. The host owns positions, bullets, hits, HP, and deaths. If the host leaves, the match ends.</div>
+    <button id="startTest" class="primary" disabled>Waiting for a friend</button>
+    <button id="leaveLobby">Leave lobby</button>
+  </section>
+
   <section id="play" class="play hidden">
     <div>
       <div class="hud">
@@ -61,9 +75,7 @@
       <p class="controls">WASD move · mouse aims · click or Space fires · 30 damage · 200 HP · authoritative snapshots and inputs run at 8 Hz</p>
     </div>
     <aside class="side panel">
-      <h2>Invite</h2>
-      <div class="invite"><input id="invite" readonly><button id="copy">Copy</button></div>
-      <h2 style="margin-top:16px">Room</h2>
+      <h2>Room</h2>
       <div id="roster" class="roster"></div>
       <h2>Authority log</h2>
       <div id="log" class="log"></div>
@@ -84,7 +96,7 @@
   const canvas=$('#arena'),ctx=canvas.getContext('2d');
   const keys={},pointer={x:canvas.width/2,y:canvas.height/2};
   const spawns=[{x:-9,z:0},{x:9,z:0},{x:0,z:-9},{x:0,z:9}];
-  let room=null,authority=null,predictor=null,isHost=false,peerId='',roster=[],latest=null;
+  let room=null,authority=null,predictor=null,isHost=false,peerId='',roster=[],latest=null,connected=false;
   let inputSeq=0,fireId=0,fireQueued=false,lastFrame=performance.now(),inputAccum=0,snapshotAccum=0;
   let traces=[],clockTimer=null,running=false;
 
@@ -116,22 +128,24 @@
       onInput:(id,input,receivedAt)=>authority&&authority.receiveInput(id,input,receivedAt),
       onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());}},
       onEvent:showEvent,
+      onLobby:lobbyMessage,
       onRoster:updateRoster,
       onStatus:status=>{
         if(status.kind==='error'||status.kind==='send_error') addLog(status.error?status.error.message:`Send failed: ${status.status}`,'death');
-        updateMetrics();
+        updateMetrics();updateLobbyControls();
       },
     });
     try{
       await room.connect();
-      running=true;
-      $('#setup').classList.add('hidden');$('#play').classList.remove('hidden');
+      connected=true;
+      $('#setup').classList.add('hidden');$('#lobby').classList.remove('hidden');
       $('#role').textContent=host?'HOST AUTHORITY':'GUEST CLIENT';
       const invite=`${location.origin}${location.pathname}#${room.roomCode}`;$('#invite').value=invite;
+      $('#lobbyCode').textContent=room.roomCode;
       history.replaceState(null,'',`#${room.roomCode}`);
       if(!host){room.syncClock();clockTimer=setInterval(()=>room&&room.syncClock(),2500);}
-      addLog(host?'Host authority started':'Connected; waiting for host snapshot');
-      canvas.focus();lastFrame=performance.now();requestAnimationFrame(frame);
+      addLog(host?'Host authority ready':'Connected; waiting for host to start');
+      updateLobbyControls();
     }catch(error){
       setStatus(`Could not connect: ${error.message}`);$('#create').disabled=$('#join').disabled=false;
       if(room) await room.close();room=null;authority=null;predictor=null;
@@ -155,6 +169,49 @@
       const d=document.createElement('div');d.textContent=`${p.playerId===peerId?'◆':'◇'} ${names.get(p.playerId)} · ${p.role.toUpperCase()}`;return d;
     }));
     $('#players').textContent=`${Math.min(next.length,4)} / 4`;updateMetrics();
+    const seats=[];
+    for(let i=0;i<4;i++){
+      const p=next[i],d=document.createElement('div');d.className='seat'+(p?'':' empty');
+      if(p){const b=document.createElement('b');b.textContent=`${p.playerId===peerId?'◆':'◇'} ${p.name}`;d.append(b,document.createTextNode(p.role==='host'?'HOST AUTHORITY':'CONNECTED'));}
+      else d.textContent=`◇ OPEN SEAT ${i+1}`;
+      seats.push(d);
+    }
+    $('#lobbyRoster').replaceChildren(...seats);updateLobbyControls();
+  }
+
+  function updateLobbyControls(){
+    if(!room) return;
+    const hostPresent=roster.some(p=>p.role==='host');
+    if(isHost){
+      const ready=room.canStart();
+      $('#startTest').disabled=!ready;$('#startTest').textContent=ready?'Start test match':'Waiting for a friend';
+      $('#lobbyState').textContent=ready?'Everyone is connected. Start when ready.':roster.length>=2?'Finishing the network handshake…':'Share the invite link with 1–3 friends.';
+    }else{
+      $('#startTest').disabled=true;$('#startTest').textContent='Waiting for host';
+      $('#lobbyState').textContent=hostPresent?'Connected. The host will start the match.':'Finding the host…';
+    }
+  }
+
+  async function requestStart(){
+    if(!isHost||running||!room.canStart()) return;
+    const message={seq:Date.now(),type:'start',startsAtMs:Date.now()+900};
+    $('#startTest').disabled=true;$('#startTest').textContent='Starting…';
+    if(await room.sendLobby(message)) lobbyMessage(Object.assign({hostId:peerId},message));
+    else{addLog('Could not broadcast match start','death');updateLobbyControls();}
+  }
+
+  function lobbyMessage(message){
+    if(!message||message.type!=='start'||running) return;
+    const hostNow=isHost?Date.now():room.toHostTime(Date.now());
+    const wait=Math.max(0,Number(message.startsAtMs)-hostNow);
+    $('#lobbyState').textContent=`Match starting in ${Math.max(1,Math.ceil(wait/1000))}…`;
+    setTimeout(startArena,wait);
+  }
+
+  function startArena(){
+    if(running) return;
+    running=true;$('#lobby').classList.add('hidden');$('#play').classList.remove('hidden');
+    addLog('Match started');canvas.focus();lastFrame=performance.now();requestAnimationFrame(frame);
   }
 
   function showEvent(event){
@@ -241,8 +298,10 @@
   canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();pointer.x=(e.clientX-r.left)*canvas.width/r.width;pointer.y=(e.clientY-r.top)*canvas.height/r.height;});
   canvas.addEventListener('mousedown',e=>{if(e.button===0)fireQueued=true;canvas.focus();});
   $('#create').onclick=()=>begin(true);$('#join').onclick=()=>begin(false);
+  $('#startTest').onclick=requestStart;
   $('#copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#invite').value);$('#copy').textContent='Copied';}catch(e){$('#invite').select();}setTimeout(()=>$('#copy').textContent='Copy',1200);};
-  $('#leave').onclick=async()=>{running=false;if(clockTimer)clearInterval(clockTimer);if(room)await room.close();location.reload();};
+  const leave=async()=>{running=false;connected=false;if(clockTimer)clearInterval(clockTimer);if(room)await room.close();location.reload();};
+  $('#leave').onclick=leave;$('#leaveLobby').onclick=leave;
   addEventListener('beforeunload',()=>room&&room.close());
   if(location.hash.length>1) $('#roomCode').value=location.hash.slice(1).toUpperCase();
 })();

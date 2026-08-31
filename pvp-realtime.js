@@ -32,16 +32,19 @@
       this.onInput=options.onInput||(()=>{});
       this.onSnapshot=options.onSnapshot||(()=>{});
       this.onEvent=options.onEvent||(()=>{});
+      this.onLobby=options.onLobby||(()=>{});
       this.onRoster=options.onRoster||(()=>{});
       this.onStatus=options.onStatus||(()=>{});
       this.stateChannel=null;
       this.inputChannel=null;
       this.hostInputChannels=new Map();
+      this.hostInputReady=new Set();
       this.roster=[];
       this.clockOffsetMs=0;
       this.rttMs=null;
       this.clockSamples=[];
       this.lastGameEventSeq=0;
+      this.lastLobbySeq=0;
       this.metrics={sent:0,received:0,errors:0};
     }
 
@@ -60,16 +63,25 @@
           if(Number.isFinite(seq)) this.lastGameEventSeq=seq;
           this.onEvent(payload);
         })
+        .on('broadcast',{event:'lobby'},({payload})=>{
+          this.metrics.received++;
+          const seq=Number(payload&&payload.seq);
+          if(Number.isFinite(seq)&&seq<=this.lastLobbySeq) return;
+          const host=this.roster.find(p=>p.role==='host');
+          if(!host||cleanPeer(payload&&payload.hostId)!==host.playerId) return;
+          if(Number.isFinite(seq)) this.lastLobbySeq=seq;
+          this.onLobby(payload);
+        })
         .on('broadcast',{event:'clock'},({payload})=>{this.metrics.received++;this._clock(payload);})
         .on('presence',{event:'sync'},()=>this._syncPresence())
         .on('presence',{event:'join'},()=>this._syncPresence())
         .on('presence',{event:'leave'},()=>this._syncPresence());
 
       await this._subscribe(this.stateChannel,'state');
-      await this.stateChannel.track({
-        playerId:this.peerId,name:this.name,role:this.isHost?'host':'guest',joinedAt:Date.now(),
-      });
       if(!this.isHost) await this._openClientInput();
+      await this.stateChannel.track({
+        playerId:this.peerId,name:this.name,role:this.isHost?'host':'guest',ready:true,joinedAt:Date.now(),
+      });
       this.onStatus({kind:'connected',roomCode:this.roomCode,peerId:this.peerId});
       return this;
     }
@@ -93,7 +105,7 @@
       for(const entries of Object.values(state||{})) for(const raw of entries||[]){
         const playerId=cleanPeer(raw.playerId);
         if(playerId&&!byId.has(playerId)) byId.set(playerId,{
-          playerId,name:String(raw.name||'Fighter').slice(0,16),role:raw.role==='host'?'host':'guest',
+          playerId,name:String(raw.name||'Fighter').slice(0,16),role:raw.role==='host'?'host':'guest',ready:raw.ready===true,
         });
       }
       this.roster=Array.from(byId.values()).sort((a,b)=>a.playerId.localeCompare(b.playerId));
@@ -117,10 +129,13 @@
         if(payload&&cleanPeer(payload.playerId)===playerId) this.onInput(playerId,payload.input,Date.now());
       });
       this.hostInputChannels.set(playerId,channel);
-      this._subscribe(channel,`input ${playerId}`).catch(error=>{
-        this.metrics.errors++;
-        this.onStatus({kind:'error',error});
-      });
+      this._subscribe(channel,`input ${playerId}`).then(()=>{
+        this.hostInputReady.add(playerId);
+        this.onStatus({kind:'input_ready',playerId});
+      }).catch(error=>{
+          this.metrics.errors++;
+          this.onStatus({kind:'error',error});
+        });
     }
 
     async sendInput(input){
@@ -136,6 +151,12 @@
     async sendEvent(event){
       if(!this.isHost) return false;
       return this._send(this.stateChannel,'game',event);
+    }
+
+    async sendLobby(message){
+      if(!this.isHost) return false;
+      const payload=Object.assign({},message,{hostId:this.peerId});
+      return this._send(this.stateChannel,'lobby',payload);
     }
 
     async _send(channel,event,payload){
@@ -178,10 +199,16 @@
 
     toHostTime(clientWallTimeMs){ return Number(clientWallTimeMs)+this.clockOffsetMs; }
 
+    canStart(){
+      if(!this.isHost||this.roster.length<2||this.roster.length>4) return false;
+      return this.roster.filter(p=>p.playerId!==this.peerId).every(p=>p.ready&&this.hostInputReady.has(p.playerId));
+    }
+
     async close(){
       const channels=[this.inputChannel,...this.hostInputChannels.values(),this.stateChannel].filter(Boolean);
       await Promise.all(channels.map(c=>this.client.removeChannel(c)));
       this.inputChannel=null; this.stateChannel=null; this.hostInputChannels.clear();
+      this.hostInputReady.clear();
       this.onStatus({kind:'closed'});
     }
   }

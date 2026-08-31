@@ -7,6 +7,12 @@ Three.js match yet.
 
 Open `pvp-spike.html` through a local HTTP server to run the live lab. One person
 creates a room and sends the link or 12-character code to up to three friends.
+The feature branch also adds **Play with friends · Beta** to the main menu. That
+entry opens the same isolated lab; it does not change the normal solo Deploy flow.
+
+The host creates the room, waits for every guest input channel to finish its
+handshake, and is the only UI allowed to start. A synchronized start message then
+moves all connected players from the roster into the test arena.
 
 ## What is ground truth?
 

@@ -55,7 +55,7 @@ test('host opens one input subscription per present guest',async()=>{
   });
   await room.connect();
   const state=client.channels[0];
-  state.state={host1:[{playerId:'host1',name:'Host',role:'host'}],guest1:[{playerId:'guest1',name:'Guest',role:'guest'}]};
+  state.state={host1:[{playerId:'host1',name:'Host',role:'host',ready:true}],guest1:[{playerId:'guest1',name:'Guest',role:'guest',ready:true}]};
   state.emit('presence','sync');
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(client.channels.length,2);
@@ -65,6 +65,7 @@ test('host opens one input subscription per present guest',async()=>{
   assert.equal(received[0][0],'guest1');
   assert.equal(received[0][1].seq,3);
   assert.equal(rosters.at(-1).length,2);
+  assert.equal(room.canStart(),true);
 });
 
 test('only the host can broadcast snapshots and game events',async()=>{
@@ -93,4 +94,19 @@ test('guest renders a host game event sequence only once',async()=>{
   state.emit('broadcast','game',{payload:{seq:6,type:'hit'}});
   state.emit('broadcast','game',{payload:{seq:8,type:'death'}});
   assert.deepEqual(events.map(e=>e.seq),[7,8]);
+});
+
+test('only the present host can start the lobby, once',async()=>{
+  const client=new FakeClient();
+  const starts=[];
+  const room=new RealtimeRoom({client,roomCode:'ABCDEFGH2345',peerId:'guest',isHost:false,onLobby:e=>starts.push(e)});
+  await room.connect();
+  const state=client.channels[0];
+  state.state={host:[{playerId:'host',name:'Host',role:'host'}],guest:[{playerId:'guest',name:'Guest',role:'guest'}]};
+  state.emit('presence','sync');
+  state.emit('broadcast','lobby',{payload:{seq:1,type:'start',hostId:'impostor'}});
+  state.emit('broadcast','lobby',{payload:{seq:2,type:'start',hostId:'host'}});
+  state.emit('broadcast','lobby',{payload:{seq:2,type:'start',hostId:'host'}});
+  assert.deepEqual(starts.map(e=>e.seq),[2]);
+  assert.equal(await room.sendLobby({seq:3,type:'start'}),false);
 });
