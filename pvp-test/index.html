@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Block Royale · PvP Netcode Spike</title>
+  <style>
+    :root{color-scheme:dark;--ink:#eee3d2;--dim:#8c8299;--panel:#181124;--edge:#392d4b;--gold:#f2b134;--green:#7fd45b;--red:#e0553a}
+    *{box-sizing:border-box} body{margin:0;background:#09070e;color:var(--ink);font:15px/1.45 "Courier New",monospace;min-height:100vh}
+    main{width:min(1100px,calc(100% - 32px));margin:28px auto} h1,h2,button{font-family:Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:2px}
+    h1{font-size:34px;margin:0;color:var(--gold)} .sub{color:var(--dim);margin:2px 0 22px}
+    .panel{background:var(--panel);border:2px solid var(--edge);padding:18px;box-shadow:0 12px 38px #0008}.setup{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{border:1px solid var(--edge);padding:16px;background:#120d1c}.card h2{font-size:20px;margin:0 0 10px}.card p{color:var(--dim);min-height:44px}
+    label{display:block;color:var(--dim);font-size:12px;letter-spacing:1px;margin:10px 0 5px}input{width:100%;background:#09070e;border:1px solid #514063;color:var(--ink);font:16px "Courier New";padding:11px;text-transform:uppercase}
+    button{border:2px solid #6d577f;background:#251a35;color:var(--ink);padding:10px 15px;cursor:pointer;font-size:15px;margin-top:12px}button.primary{background:var(--gold);border-color:#ffd274;color:#1a1120}button:disabled{opacity:.45;cursor:wait}
+    .warning{border-left:4px solid var(--gold);padding:10px 12px;background:#21182c;color:#cfc3d4;margin-top:16px}.hidden{display:none!important}
+    .lobby{max-width:760px;margin:0 auto}.lobbytop{display:flex;justify-content:space-between;gap:16px;align-items:start}.lobbycode{font:28px Impact,sans-serif;letter-spacing:5px;color:var(--gold)}
+    .lobbyroster{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}.seat{border:1px solid var(--edge);background:#0d0914;padding:12px}.seat.empty{color:var(--dim)}.seat b{display:block;color:var(--ink)}
+    .play{display:grid;grid-template-columns:minmax(0,760px) 1fr;gap:16px;align-items:start}canvas{display:block;width:100%;aspect-ratio:4/3;background:#0d1016;border:2px solid var(--edge);cursor:crosshair}
+    .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.metric{background:#120d1c;border:1px solid var(--edge);padding:8px}.metric b{display:block;color:var(--gold);font-size:17px}.metric small{color:var(--dim)}
+    .side h2{font-size:18px;color:var(--gold);margin:0 0 8px}.roster,.log{border:1px solid var(--edge);background:#0d0914;padding:10px;margin-bottom:14px}.roster div{padding:5px 0;border-bottom:1px solid #241a31}.roster div:last-child{border:0}.log{height:250px;overflow:auto;color:var(--dim);font-size:12px}.log .hit{color:var(--green)}.log .death{color:var(--red)}
+    .controls{color:var(--dim);font-size:12px;margin:8px 0}.invite{display:flex;gap:8px}.invite input{font-size:12px;text-transform:none}.invite button{margin:0;white-space:nowrap}
+    @media(max-width:820px){.setup,.play{grid-template-columns:1fr}.hud{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>PvP Netcode Spike</h1>
+  <p class="sub">A deliberately small 2–4 player lab for host authority, prediction, reconciliation, interpolation, and rewind hit detection.</p>
+
+  <section id="setup" class="panel">
+    <div class="setup">
+      <div class="card">
+        <h2>Create a room</h2>
+        <p>Your browser becomes the authority. If the host leaves, this test match ends.</p>
+        <label for="hostName">Fighter name</label>
+        <input id="hostName" maxlength="16" value="HOST">
+        <button id="create" class="primary">Create test room</button>
+      </div>
+      <div class="card">
+        <h2>Join a friend</h2>
+        <p>Open the same page in another browser or device and enter the room code.</p>
+        <label for="guestName">Fighter name</label>
+        <input id="guestName" maxlength="16" value="GUEST">
+        <label for="roomCode">Room code</label>
+        <input id="roomCode" maxlength="20" placeholder="12 CHARACTER CODE">
+        <button id="join">Join test room</button>
+      </div>
+    </div>
+    <div class="warning"><b>Spike security:</b> the room is public-but-unlisted and protected only by a random code. This is suitable for a friends test, not the productized release. Private channels and anonymous Auth come next if the netcode passes.</div>
+    <p id="connectStatus" class="sub"></p>
+  </section>
+
+  <section id="lobby" class="panel lobby hidden">
+    <div class="lobbytop">
+      <div><h2 style="margin:0">Friends lobby</h2><div class="sub" id="lobbyState">Connecting</div></div>
+      <div style="text-align:right"><small style="color:var(--dim)">ROOM CODE</small><div id="lobbyCode" class="lobbycode">—</div></div>
+    </div>
+    <div class="invite"><input id="invite" readonly><button id="copy">Copy invite</button></div>
+    <div id="lobbyRoster" class="lobbyroster"></div>
+    <div class="warning"><b>Test mode:</b> 2–4 friends. The host owns positions, bullets, hits, HP, and deaths. If the host leaves, the match ends.</div>
+    <button id="startTest" class="primary" disabled>Waiting for a friend</button>
+    <button id="leaveLobby">Leave lobby</button>
+  </section>
+
+  <section id="play" class="play hidden">
+    <div>
+      <div class="hud">
+        <div class="metric"><small>ROLE</small><b id="role">—</b></div>
+        <div class="metric"><small>PLAYERS</small><b id="players">0 / 4</b></div>
+        <div class="metric"><small>ROUND TRIP</small><b id="rtt">HOST</b></div>
+        <div class="metric"><small>MESSAGES</small><b id="messages">0 ↑ 0 ↓</b></div>
+      </div>
+      <canvas id="arena" width="800" height="600" tabindex="0" aria-label="PvP network test arena"></canvas>
+      <p class="controls">WASD move · mouse aims · click or Space fires · 30 damage · 200 HP · authoritative snapshots and inputs run at 8 Hz</p>
+    </div>
+    <aside class="side panel">
+      <h2>Room</h2>
+      <div id="roster" class="roster"></div>
+      <h2>Authority log</h2>
+      <div id="log" class="log"></div>
+      <button id="leave">Leave test</button>
+    </aside>
+  </section>
+</main>
+
+<script src="supabase-2.91.1.min.js"></script>
+<script src="pvp-netcode.js"></script>
+<script src="pvp-realtime.js"></script>
+<script>
+(()=>{
+  'use strict';
+  const SUPABASE_URL='https://ctzjitzkolqghvonjtnx.supabase.co';
+  const SUPABASE_KEY='sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
+  const $=s=>document.querySelector(s);
+  const canvas=$('#arena'),ctx=canvas.getContext('2d');
+  const keys={},pointer={x:canvas.width/2,y:canvas.height/2};
+  const spawns=[{x:-9,z:0},{x:9,z:0},{x:0,z:-9},{x:0,z:9}];
+  let room=null,authority=null,predictor=null,isHost=false,peerId='',roster=[],latest=null,connected=false;
+  let seenHost=false,hostEnded=false,hostLossTimer=null,warnedConnection=false;
+  let inputSeq=0,fireId=0,fireQueued=false,lastFrame=performance.now(),inputAccum=0,snapshotAccum=0;
+  let traces=[],clockTimer=null,running=false;
+
+  const addLog=(text,kind='')=>{
+    const line=document.createElement('div');line.textContent=`${new Date().toLocaleTimeString()}  ${text}`;line.className=kind;
+    $('#log').prepend(line);while($('#log').children.length>40) $('#log').lastChild.remove();
+  };
+  const cleanName=v=>(String(v||'FIGHTER').replace(/[^a-zA-Z0-9 _-]/g,'').trim()||'FIGHTER').slice(0,16);
+  const setStatus=text=>{$('#connectStatus').textContent=text;};
+
+  async function begin(host){
+    if(running) return;
+    if(!window.supabase){setStatus('The multiplayer client did not load. Refresh this page and try again.');return;}
+    isHost=host;peerId=PVPRealtime.randomPeerId();
+    const code=host?PVPRealtime.randomRoomCode(12):$('#roomCode').value;
+    const name=cleanName(host?$('#hostName').value:$('#guestName').value);
+    if(!host&&String(code).replace(/[^A-Z2-9]/gi,'').length<8){setStatus('Enter the room code from the host.');return;}
+    $('#create').disabled=$('#join').disabled=true;setStatus('Connecting to the PvP test room…');
+    const client=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+      realtime:{params:{eventsPerSecond:20}},
+    });
+    if(host){
+      authority=new PVPNetcode.HostAuthority({startTimeMs:Date.now()});
+      authority.addPlayer(peerId,spawns[0]);
+    }else predictor=new PVPNetcode.ClientPredictor(peerId,spawns[1]);
+    room=new PVPRealtime.RealtimeRoom({
+      client,roomCode:code,peerId,name,isHost:host,
+      onInput:(id,input,receivedAt)=>authority&&authority.receiveInput(id,input,receivedAt),
+      onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());}},
+      onEvent:showEvent,
+      onLobby:lobbyMessage,
+      onRoster:updateRoster,
+      onStatus:status=>{
+        if(status.kind==='error'||status.kind==='send_error') addLog(status.error?status.error.message:`Send failed: ${status.status}`,'death');
+        updateMetrics();updateLobbyControls();
+      },
+    });
+    try{
+      await room.connect();
+      connected=true;
+      $('#setup').classList.add('hidden');$('#lobby').classList.remove('hidden');
+      $('#role').textContent=host?'HOST AUTHORITY':'GUEST CLIENT';
+      const invite=`${location.href.split('#')[0]}#${room.roomCode}`;$('#invite').value=invite;
+      $('#lobbyCode').textContent=room.roomCode;
+      history.replaceState(null,'',`#${room.roomCode}`);
+      if(!host){room.syncClock();clockTimer=setInterval(()=>room&&room.syncClock(),2500);}
+      addLog(host?'Host authority ready':'Connected; waiting for host to start');
+      updateLobbyControls();
+    }catch(error){
+      setStatus(`Could not connect: ${error.message}`);$('#create').disabled=$('#join').disabled=false;
+      if(room) await room.close();room=null;authority=null;predictor=null;
+    }
+  }
+
+  function updateRoster(next){
+    roster=next;
+    if(authority){
+      const admitted=new Set(next.slice(0,4).map(p=>p.playerId));admitted.add(peerId);
+      for(const p of next.slice(0,4)) if(!authority.players.has(p.playerId)){
+        const spawn=spawns[authority.players.size%spawns.length];authority.addPlayer(p.playerId,spawn);addLog(`${p.name} joined`);
+      }
+      for(const id of Array.from(authority.players.keys())) if(id!==peerId&&!admitted.has(id)){
+        authority.removePlayer(id);addLog(`${id.slice(0,6)} left`);
+      }
+      if(next.length>4) addLog('Room is full; extra presence ignored','death');
+    }
+    const names=new Map(next.map(p=>[p.playerId,p.name]));
+    if(!isHost){
+      const hostPresent=next.some(p=>p.role==='host');
+      if(hostPresent){seenHost=true;if(hostLossTimer){clearTimeout(hostLossTimer);hostLossTimer=null;}}
+      else if(connected&&seenHost&&!hostEnded&&!hostLossTimer) hostLossTimer=setTimeout(()=>{
+        hostLossTimer=null;if(room&&!room.roster.some(p=>p.role==='host')) endForHostLeave();
+      },1500);
+    }
+    $('#roster').replaceChildren(...next.slice(0,4).map(p=>{
+      const d=document.createElement('div');d.textContent=`${p.playerId===peerId?'◆':'◇'} ${names.get(p.playerId)} · ${p.role.toUpperCase()}`;return d;
+    }));
+    $('#players').textContent=`${Math.min(next.length,4)} / 4`;updateMetrics();
+    const seats=[];
+    for(let i=0;i<4;i++){
+      const p=next[i],d=document.createElement('div');d.className='seat'+(p?'':' empty');
+      if(p){const b=document.createElement('b');b.textContent=`${p.playerId===peerId?'◆':'◇'} ${p.name}`;d.append(b,document.createTextNode(p.role==='host'?'HOST AUTHORITY':'CONNECTED'));}
+      else d.textContent=`◇ OPEN SEAT ${i+1}`;
+      seats.push(d);
+    }
+    $('#lobbyRoster').replaceChildren(...seats);updateLobbyControls();
+  }
+
+  function updateLobbyControls(){
+    if(!room) return;
+    if(hostEnded){$('#startTest').disabled=true;$('#startTest').textContent='Host disconnected';return;}
+    const hostPresent=roster.some(p=>p.role==='host');
+    if(isHost){
+      const ready=room.canStart();
+      $('#startTest').disabled=!ready;$('#startTest').textContent=ready?'Start test match':'Waiting for a friend';
+      $('#lobbyState').textContent=ready?'Everyone is connected. Start when ready.':roster.length>=2?'Finishing the network handshake…':'Share the invite link with 1–3 friends.';
+    }else{
+      $('#startTest').disabled=true;$('#startTest').textContent='Waiting for host';
+      $('#lobbyState').textContent=hostPresent?'Connected. The host will start the match.':'Finding the host…';
+    }
+  }
+
+  async function requestStart(){
+    if(!isHost||running||!room.canStart()) return;
+    const message={seq:Date.now(),type:'start',startsAtMs:Date.now()+900};
+    $('#startTest').disabled=true;$('#startTest').textContent='Starting…';
+    if(await room.sendLobby(message)) lobbyMessage(Object.assign({hostId:peerId},message));
+    else{addLog('Could not broadcast match start','death');updateLobbyControls();}
+  }
+
+  function lobbyMessage(message){
+    if(!message||message.type!=='start'||running) return;
+    const hostNow=isHost?Date.now():room.toHostTime(Date.now());
+    const wait=Math.max(0,Number(message.startsAtMs)-hostNow);
+    $('#lobbyState').textContent=`Match starting in ${Math.max(1,Math.ceil(wait/1000))}…`;
+    setTimeout(startArena,wait);
+  }
+
+  function startArena(){
+    if(running) return;
+    running=true;$('#lobby').classList.add('hidden');$('#play').classList.remove('hidden');
+    addLog('Match started');canvas.focus();lastFrame=performance.now();requestAnimationFrame(frame);
+  }
+
+  function endForHostLeave(){
+    hostEnded=true;running=false;$('#play').classList.add('hidden');$('#lobby').classList.remove('hidden');
+    $('#lobbyState').textContent='The host disconnected, so this test match ended.';
+    $('#startTest').disabled=true;$('#startTest').textContent='Host disconnected';
+    addLog('Host disconnected; authority ended the match','death');
+  }
+
+  function showEvent(event){
+    if(!event||!event.type) return;
+    if(event.type==='hit'||event.type==='death'||event.type==='shot'){
+      traces.push({at:performance.now(),origin:event.origin,end:event.impact||event.end,hit:event.hit});
+      if(event.hit) addLog(`${short(event.shooterId)} hit ${short(event.targetId)} · ${event.targetHp} HP · rewind ${Math.round(event.rewindMs)} ms`,event.killed?'death':'hit');
+    }
+  }
+  const short=id=>{const p=roster.find(x=>x.playerId===id);return p?p.name:String(id||'').slice(0,6);};
+
+  function localPosition(){
+    if(authority){const p=authority.players.get(peerId);return p&&{x:p.x,z:p.z,yaw:p.yaw};}
+    return predictor&&{x:predictor.x,z:predictor.z,yaw:predictor.yaw};
+  }
+  function control(){
+    const p=localPosition()||{x:0,z:0};
+    const w=screenToWorld(pointer.x,pointer.y),dx=w.x-p.x,dz=w.z-p.z;
+    return {moveX:(keys.KeyD?1:0)-(keys.KeyA?1:0),moveZ:(keys.KeyS?1:0)-(keys.KeyW?1:0),yaw:Math.atan2(-dx,-dz)};
+  }
+
+  function frame(now){
+    if(!running) return;
+    const dt=Math.min(50,now-lastFrame);lastFrame=now;inputAccum+=dt;snapshotAccum+=dt;
+    const c=control();
+    if(authority){
+      authority.step(dt,Date.now());
+    }else if(predictor) predictor.predict(c,dt,room.toHostTime(Date.now()));
+
+    if(inputAccum>=125){
+      const elapsed=inputAccum;inputAccum%=125;
+      if(authority){
+        const input=PVPNetcode.sanitizeInput({seq:++inputSeq,moveX:c.moveX,moveZ:c.moveZ,yaw:c.yaw,
+          fireId:fireQueued?++fireId:fireId,shotAtMs:Date.now(),clientTimeMs:Date.now()});
+        authority.receiveInput(peerId,input,Date.now());
+      }else if(predictor&&room){
+        const hostNow=room.toHostTime(Date.now());
+        const input=predictor.makeInput({...c,fire:fireQueued},hostNow,elapsed,true);
+        room.sendInput(input);
+      }
+      fireQueued=false;
+    }
+    if(authority&&snapshotAccum>=125){
+      snapshotAccum%=125;latest=authority.createSnapshot();room.sendSnapshot(latest);
+      for(const event of authority.drainEvents()){showEvent(event);room.sendEvent(event);}
+    }
+    draw(now);updateMetrics();requestAnimationFrame(frame);
+  }
+
+  function visiblePlayers(){
+    if(authority) return Array.from(authority.players.values(),p=>({id:p.id,x:p.x,z:p.z,yaw:p.yaw,hp:p.hp,alive:p.alive}));
+    const out=[];
+    const selfMeta=latest&&latest.players.find(p=>p.id===peerId);
+    if(predictor) out.push({id:peerId,x:predictor.x,z:predictor.z,yaw:predictor.yaw,hp:selfMeta?selfMeta.hp:200,alive:selfMeta?selfMeta.alive:true});
+    if(latest&&room) for(const p of latest.players) if(p.id!==peerId){
+      const smooth=predictor.remoteAt(p.id,room.toHostTime(Date.now())-125)||p;out.push(Object.assign({},p,smooth));
+    }
+    return out;
+  }
+
+  function draw(now){
+    ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#0d1016';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='#392d4b';ctx.lineWidth=2;ctx.strokeRect(70,50,660,500);
+    ctx.strokeStyle='#171d27';ctx.lineWidth=1;
+    for(let i=-20;i<=20;i+=4){const a=worldToScreen(i,-20),b=worldToScreen(i,20);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    for(let i=-20;i<=20;i+=4){const a=worldToScreen(-20,i),b=worldToScreen(20,i);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    traces=traces.filter(t=>now-t.at<320);
+    for(const t of traces){const a=worldToScreen(t.origin.x,t.origin.z),b=worldToScreen(t.end.x,t.end.z),alpha=1-(now-t.at)/320;
+      ctx.strokeStyle=t.hit?`rgba(127,212,91,${alpha})`:`rgba(242,177,52,${alpha})`;ctx.lineWidth=t.hit?4:2;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    for(const p of visiblePlayers()){
+      const s=worldToScreen(p.x,p.z),mine=p.id===peerId,color=mine?'#f2b134':'#7fb5e8';
+      ctx.save();ctx.translate(s.x,s.y);ctx.fillStyle=p.alive?color:'#4a4350';ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#eee3d2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-Math.sin(p.yaw)*24,-Math.cos(p.yaw)*24);ctx.stroke();
+      ctx.fillStyle='#0a0710';ctx.fillRect(-18,17,36,5);ctx.fillStyle=p.hp>80?'#7fd45b':'#e0553a';ctx.fillRect(-18,17,36*Math.max(0,p.hp)/200,5);
+      ctx.fillStyle='#eee3d2';ctx.font='12px Courier New';ctx.textAlign='center';ctx.fillText(short(p.id),0,-18);ctx.restore();
+    }
+  }
+  const worldToScreen=(x,z)=>({x:canvas.width/2+x*15,y:canvas.height/2+z*15});
+  const screenToWorld=(x,y)=>({x:(x-canvas.width/2)/15,z:(y-canvas.height/2)/15});
+  function updateMetrics(){
+    if(!room)return;
+    const rtt=room.rttMs;
+    $('#rtt').textContent=isHost?'HOST':rtt===null?'SYNCING':`${Math.round(rtt)} ms`;
+    $('#rtt').style.color=!isHost&&rtt!==null&&rtt>400?'var(--red)':'';
+    $('#messages').textContent=`${room.metrics.sent} ↑ ${room.metrics.received} ↓`;
+    if(!isHost&&!warnedConnection&&rtt!==null&&rtt>400){warnedConnection=true;addLog('Poor connection: shots older than 200 ms are not rewound','death');}
+  }
+
+  addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){fireQueued=true;e.preventDefault();}});
+  addEventListener('keyup',e=>{keys[e.code]=false;});
+  canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();pointer.x=(e.clientX-r.left)*canvas.width/r.width;pointer.y=(e.clientY-r.top)*canvas.height/r.height;});
+  canvas.addEventListener('mousedown',e=>{if(e.button===0)fireQueued=true;canvas.focus();});
+  $('#create').onclick=()=>begin(true);$('#join').onclick=()=>begin(false);
+  $('#startTest').onclick=requestStart;
+  $('#copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#invite').value);$('#copy').textContent='Copied';}catch(e){$('#invite').select();}setTimeout(()=>$('#copy').textContent='Copy',1200);};
+  const leave=async()=>{running=false;connected=false;if(clockTimer)clearInterval(clockTimer);if(room)await room.close();location.reload();};
+  $('#leave').onclick=leave;$('#leaveLobby').onclick=leave;
+  addEventListener('beforeunload',()=>room&&room.close());
+  if(location.hash.length>1) $('#roomCode').value=location.hash.slice(1).toUpperCase();
+})();
+</script>
+</body>
+</html>
