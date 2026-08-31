@@ -97,6 +97,7 @@
   const keys={},pointer={x:canvas.width/2,y:canvas.height/2};
   const spawns=[{x:-9,z:0},{x:9,z:0},{x:0,z:-9},{x:0,z:9}];
   let room=null,authority=null,predictor=null,isHost=false,peerId='',roster=[],latest=null,connected=false;
+  let seenHost=false,hostEnded=false,hostLossTimer=null,warnedConnection=false;
   let inputSeq=0,fireId=0,fireQueued=false,lastFrame=performance.now(),inputAccum=0,snapshotAccum=0;
   let traces=[],clockTimer=null,running=false;
 
@@ -165,6 +166,13 @@
       if(next.length>4) addLog('Room is full; extra presence ignored','death');
     }
     const names=new Map(next.map(p=>[p.playerId,p.name]));
+    if(!isHost){
+      const hostPresent=next.some(p=>p.role==='host');
+      if(hostPresent){seenHost=true;if(hostLossTimer){clearTimeout(hostLossTimer);hostLossTimer=null;}}
+      else if(connected&&seenHost&&!hostEnded&&!hostLossTimer) hostLossTimer=setTimeout(()=>{
+        hostLossTimer=null;if(room&&!room.roster.some(p=>p.role==='host')) endForHostLeave();
+      },1500);
+    }
     $('#roster').replaceChildren(...next.slice(0,4).map(p=>{
       const d=document.createElement('div');d.textContent=`${p.playerId===peerId?'◆':'◇'} ${names.get(p.playerId)} · ${p.role.toUpperCase()}`;return d;
     }));
@@ -181,6 +189,7 @@
 
   function updateLobbyControls(){
     if(!room) return;
+    if(hostEnded){$('#startTest').disabled=true;$('#startTest').textContent='Host disconnected';return;}
     const hostPresent=roster.some(p=>p.role==='host');
     if(isHost){
       const ready=room.canStart();
@@ -212,6 +221,13 @@
     if(running) return;
     running=true;$('#lobby').classList.add('hidden');$('#play').classList.remove('hidden');
     addLog('Match started');canvas.focus();lastFrame=performance.now();requestAnimationFrame(frame);
+  }
+
+  function endForHostLeave(){
+    hostEnded=true;running=false;$('#play').classList.add('hidden');$('#lobby').classList.remove('hidden');
+    $('#lobbyState').textContent='The host disconnected, so this test match ended.';
+    $('#startTest').disabled=true;$('#startTest').textContent='Host disconnected';
+    addLog('Host disconnected; authority ended the match','death');
   }
 
   function showEvent(event){
@@ -291,7 +307,14 @@
   }
   const worldToScreen=(x,z)=>({x:canvas.width/2+x*15,y:canvas.height/2+z*15});
   const screenToWorld=(x,y)=>({x:(x-canvas.width/2)/15,z:(y-canvas.height/2)/15});
-  function updateMetrics(){if(!room)return;$('#rtt').textContent=isHost?'HOST':room.rttMs===null?'SYNCING':`${Math.round(room.rttMs)} ms`;$('#messages').textContent=`${room.metrics.sent} ↑ ${room.metrics.received} ↓`;}
+  function updateMetrics(){
+    if(!room)return;
+    const rtt=room.rttMs;
+    $('#rtt').textContent=isHost?'HOST':rtt===null?'SYNCING':`${Math.round(rtt)} ms`;
+    $('#rtt').style.color=!isHost&&rtt!==null&&rtt>400?'var(--red)':'';
+    $('#messages').textContent=`${room.metrics.sent} ↑ ${room.metrics.received} ↓`;
+    if(!isHost&&!warnedConnection&&rtt!==null&&rtt>400){warnedConnection=true;addLog('Poor connection: shots older than 200 ms are not rewound','death');}
+  }
 
   addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){fireQueued=true;e.preventDefault();}});
   addEventListener('keyup',e=>{keys[e.code]=false;});
