@@ -84,7 +84,7 @@
   </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.91.1/dist/umd/supabase.min.js"></script>
+<script src="supabase-2.91.1.min.js"></script>
 <script src="pvp-netcode.js"></script>
 <script src="pvp-realtime.js"></script>
 <script>
@@ -110,7 +110,7 @@
 
   async function begin(host){
     if(running) return;
-    if(!window.supabase){setStatus('Supabase library did not load. Check this network allows cdn.jsdelivr.net.');return;}
+    if(!window.supabase){setStatus('The multiplayer client did not load. Refresh this page and try again.');return;}
     isHost=host;peerId=PVPRealtime.randomPeerId();
     const code=host?PVPRealtime.randomRoomCode(12):$('#roomCode').value;
     const name=cleanName(host?$('#hostName').value:$('#guestName').value);

@@ -51,6 +51,7 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 | `pvp-spike.html` | Standalone 2–4 player host-authority networking lab. |
 | `pvp-netcode.js` | Pure host simulation, prediction, interpolation, and rewind hit logic. |
 | `pvp-realtime.js` | Supabase Realtime room and point-to-point input transport. |
+| `supabase-2.91.1.min.js` | Pinned browser client for reliable branch previews and device tests without a third-party CDN runtime dependency. |
 | `PVP-NETCODE.md` | Ground-truth contract, test results, limitations, and merge gates. |
 
 ## Running it locally
