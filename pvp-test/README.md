@@ -3,7 +3,7 @@
 Permanent GitHub Pages staging route for the 2–4 player PvP prototype.
 
 - Source branch: `pvp-realtime-spike`
-- Source commit: `0a7e5ada6cae6baca11327570a84f6c7a600774a`
+- Source commit: `6d8898a38adbc13e767fe04f7f44df94d8e31a01`
 - Public route: `/shooters-royale/pvp-test/`
 
 The root production game is unchanged by this isolated test deployment.

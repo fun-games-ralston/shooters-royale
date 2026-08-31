@@ -17,7 +17,7 @@
     .lobby{max-width:760px;margin:0 auto}.lobbytop{display:flex;justify-content:space-between;gap:16px;align-items:start}.lobbycode{font:28px Impact,sans-serif;letter-spacing:5px;color:var(--gold)}
     .lobbyroster{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}.seat{border:1px solid var(--edge);background:#0d0914;padding:12px}.seat.empty{color:var(--dim)}.seat b{display:block;color:var(--ink)}
     .play{display:grid;grid-template-columns:minmax(0,760px) 1fr;gap:16px;align-items:start}.arena-wrap{position:relative}canvas{display:block;width:100%;aspect-ratio:4/3;background:#0d1016;border:2px solid var(--edge);cursor:crosshair}
-    .eliminated{position:absolute;inset:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#09070ecc;pointer-events:none}.eliminated strong{font:38px Impact,"Arial Narrow",sans-serif;letter-spacing:4px;text-transform:uppercase;color:var(--red)}.eliminated span{max-width:360px;color:var(--ink);margin-top:6px}
+    .eliminated,.round-over{position:absolute;inset:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#09070ecc;pointer-events:none}.eliminated strong,.round-over strong{font:38px Impact,"Arial Narrow",sans-serif;letter-spacing:4px;text-transform:uppercase;color:var(--red)}.round-over strong.win{color:var(--green)}.eliminated span,.round-over span{max-width:420px;color:var(--ink);margin-top:6px}.round-over{z-index:2}
     .hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.metric{background:#120d1c;border:1px solid var(--edge);padding:8px}.metric b{display:block;color:var(--gold);font-size:17px}.metric small{color:var(--dim)}
     .side h2{font-size:18px;color:var(--gold);margin:0 0 8px}.roster,.log{border:1px solid var(--edge);background:#0d0914;padding:10px;margin-bottom:14px}.roster div{padding:5px 0;border-bottom:1px solid #241a31}.roster div:last-child{border:0}.log{height:250px;overflow:auto;color:var(--dim);font-size:12px}.log .hit{color:var(--green)}.log .death{color:var(--red)}
     .controls{color:var(--dim);font-size:12px;margin:8px 0}.invite{display:flex;gap:8px}.invite input{font-size:12px;text-transform:none}.invite button{margin:0;white-space:nowrap}
@@ -75,6 +75,7 @@
       <div class="arena-wrap">
         <canvas id="arena" width="800" height="600" tabindex="0" aria-label="PvP network test arena"></canvas>
         <div id="eliminated" class="eliminated hidden"><strong>Eliminated</strong><span>This fighter is at 0 HP. Movement is disabled for this round. Leave the test to start a new room.</span></div>
+        <div id="roundOver" class="round-over hidden"><strong id="roundTitle">Round over</strong><span id="roundSummary"></span></div>
       </div>
       <p class="controls">WASD move · mouse aims · click or Space fires · 30 damage · 200 HP · authoritative snapshots and inputs run at 8 Hz</p>
     </div>
@@ -101,7 +102,7 @@
   const keys={},pointer={x:canvas.width/2,y:canvas.height/2};
   const spawns=[{x:-9,z:0},{x:9,z:0},{x:0,z:-9},{x:0,z:9}];
   let room=null,authority=null,predictor=null,isHost=false,peerId='',roster=[],latest=null,connected=false;
-  let seenHost=false,hostEnded=false,hostLossTimer=null,warnedConnection=false,playerEliminated=false;
+  let seenHost=false,hostEnded=false,hostLossTimer=null,warnedConnection=false,playerEliminated=false,roundEnded=false;
   let inputSeq=0,fireId=0,fireQueued=false,lastFrame=performance.now(),inputAccum=0,snapshotAccum=0;
   let traces=[],clockTimer=null,running=false;
 
@@ -131,7 +132,7 @@
     room=new PVPRealtime.RealtimeRoom({
       client,roomCode:code,peerId,name,isHost:host,
       onInput:(id,input,receivedAt)=>authority&&authority.receiveInput(id,input,receivedAt),
-      onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());syncLifeState();}},
+      onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());syncLifeState();if(snapshot.roundEnded)finishRound({winnerId:snapshot.winnerId,reason:'snapshot'});}},
       onEvent:showEvent,
       onLobby:lobbyMessage,
       onRoster:updateRoster,
@@ -223,6 +224,7 @@
 
   function startArena(){
     if(running) return;
+    if(authority&&!authority.startRound()){addLog('Match needs at least two connected players','death');updateLobbyControls();return;}
     running=true;$('#lobby').classList.add('hidden');$('#play').classList.remove('hidden');
     addLog('Match started');canvas.focus();lastFrame=performance.now();requestAnimationFrame(frame);
   }
@@ -236,12 +238,30 @@
 
   function showEvent(event){
     if(!event||!event.type) return;
+    if(event.type==='round_end'){finishRound(event);return;}
     if(event.type==='hit'||event.type==='death'||event.type==='shot'){
       traces.push({at:performance.now(),origin:event.origin,end:event.impact||event.end,hit:event.hit});
       if(event.hit) addLog(`${short(event.shooterId)} hit ${short(event.targetId)} · ${event.targetHp} HP · rewind ${Math.round(event.rewindMs)} ms`,event.killed?'death':'hit');
     }
   }
   const short=id=>{const p=roster.find(x=>x.playerId===id);return p?p.name:String(id||'').slice(0,6);};
+
+  function finishRound(event){
+    if(roundEnded) return;
+    roundEnded=true;running=false;
+    if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
+    for(const code of Object.keys(keys)) keys[code]=false;
+    fireQueued=false;
+    const winnerId=event&&event.winnerId;
+    const won=winnerId===peerId;
+    const winner=winnerId?short(winnerId):'Nobody';
+    $('#roundTitle').textContent=won?'Victory':'Game over';
+    $('#roundTitle').classList.toggle('win',won);
+    $('#roundSummary').textContent=winnerId?`${winner} is the last fighter alive. Leave the test to start a new room.`:'No fighter survived. Leave the test to start a new room.';
+    $('#roundOver').classList.remove('hidden');
+    addLog(winnerId?`${winner} won the round`:'Round ended with no survivor',won?'hit':'death');
+    updateMetrics();
+  }
 
   function localPosition(){
     if(authority){const p=authority.players.get(peerId);return p&&{x:p.x,z:p.z,yaw:p.yaw};}

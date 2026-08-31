@@ -72,6 +72,9 @@
       this.snapshotSeq=0;
       this.eventSeq=0;
       this.events=[];
+      this.roundActive=false;
+      this.roundEnded=false;
+      this.winnerId=null;
       this.metrics={acceptedInputs:0,droppedInputs:0,acceptedShots:0,droppedShots:0,rewoundShots:0};
     }
 
@@ -101,12 +104,20 @@
       id=safeId(id);
       if(!this.players.delete(id)) return false;
       this._event('left',{playerId:id});
+      this._checkRoundEnd('last_connected');
+      return true;
+    }
+
+    startRound(){
+      if(this.roundEnded||this.players.size<2) return false;
+      this.roundActive=true;
       return true;
     }
 
     receiveInput(id,raw,receivedAtMs=this.serverTimeMs){
       const p=this.players.get(safeId(id));
       if(!p||!p.alive) return {accepted:false,reason:'unknown_or_dead'};
+      if(this.roundEnded) return {accepted:false,reason:'round_ended'};
       const input=sanitizeInput(raw);
       if(input.seq<=p.lastInputSeq){
         this.metrics.droppedInputs++;
@@ -130,7 +141,7 @@
       this.serverTimeMs=Math.max(this.serverTimeMs,target);
       const dt=dtMs/1000;
       for(const p of this.players.values()){
-        if(p.alive){
+        if(p.alive&&!this.roundEnded){
           p.x=clamp(p.x+p.input.moveX*this.cfg.moveSpeed*dt,-this.cfg.arenaHalfSize,this.cfg.arenaHalfSize);
           p.z=clamp(p.z+p.input.moveZ*this.cfg.moveSpeed*dt,-this.cfg.arenaHalfSize,this.cfg.arenaHalfSize);
           p.yaw=p.input.yaw;
@@ -196,8 +207,18 @@
         result.killed=!target.alive;
         result.impact={x:shooterPast.x+dir.x*distance,z:shooterPast.z+dir.z*distance,distance};
         this._event(result.killed?'death':'hit',result);
+        if(result.killed) this._checkRoundEnd('last_alive');
       }else this._event('shot',result);
       return result;
+    }
+
+    _checkRoundEnd(reason){
+      if(!this.roundActive||this.roundEnded) return null;
+      const alive=Array.from(this.players.values()).filter(p=>p.alive);
+      if(alive.length>1) return null;
+      this.roundEnded=true;
+      this.winnerId=alive[0]?alive[0].id:null;
+      return this._event('round_end',{winnerId:this.winnerId,reason:reason||'last_alive'});
     }
 
     _event(type,data){
@@ -213,6 +234,8 @@
         protocol:1,
         seq:++this.snapshotSeq,
         serverTimeMs:this.serverTimeMs,
+        roundEnded:this.roundEnded,
+        winnerId:this.winnerId,
         players:Array.from(this.players.values(),p=>({
           id:p.id,x:p.x,z:p.z,yaw:p.yaw,hp:p.hp,alive:p.alive,lastProcessedInput:p.lastInputSeq,
         })),
