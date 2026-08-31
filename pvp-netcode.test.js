@@ -113,6 +113,27 @@ test('only the host can declare death, and a dead player cannot keep moving',()=
   assert.equal(target.x,10);
 });
 
+test('the host ends the round once when only one fighter remains',()=>{
+  const host=new HostAuthority({weaponDamage:200});
+  const shooter=host.addPlayer('shooter');
+  host.addPlayer('target',{x:10});
+  assert.equal(host.startRound(),true);
+  const shot=host.receiveInput('shooter',{
+    seq:1,fireId:1,yaw:-Math.PI/2,shotAtMs:0,
+  },0).shot;
+  assert.equal(shot.killed,true);
+  assert.equal(host.roundEnded,true);
+  assert.equal(host.winnerId,'shooter');
+  assert.deepEqual(host.drainEvents().map(e=>e.type),['joined','joined','death','round_end']);
+  assert.equal(host.receiveInput('shooter',{seq:2,moveX:1},10).reason,'round_ended');
+  const before=shooter.x;
+  host.step(100,100);
+  assert.equal(shooter.x,before);
+  const snapshot=host.createSnapshot();
+  assert.equal(snapshot.roundEnded,true);
+  assert.equal(snapshot.winnerId,'shooter');
+});
+
 test('client rejects stale snapshots and reconciles from host state',()=>{
   const client=new ClientPredictor('me',{moveSpeed:8});
   client.makeInput({moveX:1,yaw:.2},0,125);

@@ -42,6 +42,8 @@ duplicate packets are ignored.
    validated time, then performs the ray test.
 5. If the ray intersects a target, the host changes current HP/death state and
    broadcasts the result. All clients render that decision.
+6. When only one fighter remains, the host emits one `round_end` event and the
+   clients stop gameplay inputs, snapshots, and clock-sync traffic on the results screen.
 
 The short rewind prevents the common unfair result where a player aimed correctly
 but the target moved before the packet reached the host. The cap prevents someone
