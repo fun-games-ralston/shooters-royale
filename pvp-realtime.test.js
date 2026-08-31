@@ -3,6 +3,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {RealtimeRoom,randomRoomCode}=require('./pvp-realtime.js');
+const {HostAuthority}=require('./pvp-netcode.js');
 
 class FakeChannel{
   constructor(topic,options){this.topic=topic;this.options=options;this.handlers=[];this.sent=[];this.state={};}
@@ -66,6 +67,27 @@ test('host opens one input subscription per present guest',async()=>{
   assert.equal(received[0][1].seq,3);
   assert.equal(rosters.at(-1).length,2);
   assert.equal(room.canStart(),true);
+});
+
+test('living guest input reaches host authority and advances the authoritative snapshot',async()=>{
+  const client=new FakeClient();
+  const authority=new HostAuthority({moveSpeed:8,startTimeMs:0});
+  authority.addPlayer('host',{x:-9,z:0});
+  authority.addPlayer('guest1',{x:9,z:0});
+  const room=new RealtimeRoom({
+    client,roomCode:'ABCDEFGH2345',peerId:'host',name:'Host',isHost:true,
+    onInput:(id,input,receivedAt)=>authority.receiveInput(id,input,receivedAt),
+  });
+  await room.connect();
+  const state=client.channels[0];
+  state.state={host:[{playerId:'host',name:'Host',role:'host',ready:true}],guest1:[{playerId:'guest1',name:'Guest',role:'guest',ready:true}]};
+  state.emit('presence','sync');
+  await new Promise(resolve=>setImmediate(resolve));
+  client.channels[1].emit('broadcast','input',{payload:{playerId:'guest1',input:{seq:1,moveX:1,moveZ:0,yaw:0}}});
+  authority.step(125,125);
+  const guest=authority.createSnapshot().players.find(p=>p.id==='guest1');
+  assert.equal(guest.lastProcessedInput,1);
+  assert.ok(guest.x>9,`expected guest to move from x=9, received ${guest.x}`);
 });
 
 test('only the host can broadcast snapshots and game events',async()=>{

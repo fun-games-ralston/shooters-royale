@@ -81,6 +81,7 @@ The automated suite covers:
 - the 200 ms rewind cap;
 - duplicate shot and fire-rate enforcement;
 - prediction reconciliation and remote interpolation;
+- live guest input reaching host authority, plus prediction stopping cleanly at 0 HP;
 - separate guest input channels and host-only snapshots;
 - convergence under deterministic latency, jitter, reordering, and packet loss.
 

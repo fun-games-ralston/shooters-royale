@@ -129,6 +129,23 @@ test('client rejects stale snapshots and reconciles from host state',()=>{
   close(client.x,1.8);
 });
 
+test('an eliminated client stops predicting movement instead of flashing against host snapshots',()=>{
+  const client=new ClientPredictor('me',{x:9,moveSpeed:8});
+  client.predict({moveX:1,yaw:.2},100,100);
+  assert.ok(client.x>9);
+  const result=client.applySnapshot({protocol:1,seq:1,serverTimeMs:100,players:[
+    {id:'me',x:9,z:0,yaw:.2,hp:0,alive:false,lastProcessedInput:0},
+  ]},150);
+  assert.equal(result.accepted,true);
+  assert.equal(client.alive,false);
+  assert.equal(client.hp,0);
+  assert.equal(client.x,9);
+  assert.equal(client.pending.length,0);
+  assert.equal(client.predictedHistory.length,0);
+  assert.equal(client.predict({moveX:1,yaw:.2},100,200),false);
+  assert.equal(client.x,9);
+});
+
 test('remote players are interpolated between authoritative snapshots',()=>{
   const client=new ClientPredictor('me');
   client.applySnapshot({protocol:1,seq:1,serverTimeMs:0,players:[
