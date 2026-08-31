@@ -46,6 +46,16 @@ test('guest sends controls only on its point-to-point input channel',async()=>{
   assert.equal(client.removed.length,2);
 });
 
+test('guest acknowledges the authoritative round result on its input channel',async()=>{
+  const client=new FakeClient();
+  const room=new RealtimeRoom({client,roomCode:'ABCDEFGH2345',peerId:'guest1',name:'Guest',isHost:false});
+  await room.connect();
+  assert.equal(await room.sendRoundAck(7),true);
+  assert.equal(client.channels[1].sent.at(-1).event,'round_ack');
+  assert.deepEqual(client.channels[1].sent.at(-1).payload,{playerId:'guest1',roundEndSeq:7});
+  assert.equal(await room.sendRoundAck(0),false);
+});
+
 test('host opens one input subscription per present guest',async()=>{
   const client=new FakeClient();
   const received=[];
@@ -67,6 +77,22 @@ test('host opens one input subscription per present guest',async()=>{
   assert.equal(received[0][1].seq,3);
   assert.equal(rosters.at(-1).length,2);
   assert.equal(room.canStart(),true);
+});
+
+test('host receives a guest round-result acknowledgement',async()=>{
+  const client=new FakeClient();
+  const acknowledgements=[];
+  const room=new RealtimeRoom({
+    client,roomCode:'ABCDEFGH2345',peerId:'host1',name:'Host',isHost:true,
+    onRoundAck:(...args)=>acknowledgements.push(args),
+  });
+  await room.connect();
+  const state=client.channels[0];
+  state.state={host1:[{playerId:'host1',name:'Host',role:'host',ready:true}],guest1:[{playerId:'guest1',name:'Guest',role:'guest',ready:true}]};
+  state.emit('presence','sync');
+  await new Promise(resolve=>setImmediate(resolve));
+  client.channels[1].emit('broadcast','round_ack',{payload:{playerId:'guest1',roundEndSeq:7}});
+  assert.deepEqual(acknowledgements,[['guest1',7]]);
 });
 
 test('living guest input reaches host authority and advances the authoritative snapshot',async()=>{

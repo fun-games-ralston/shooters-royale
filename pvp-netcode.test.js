@@ -132,6 +132,8 @@ test('the host ends the round once when only one fighter remains',()=>{
   const snapshot=host.createSnapshot();
   assert.equal(snapshot.roundEnded,true);
   assert.equal(snapshot.winnerId,'shooter');
+  assert.ok(snapshot.roundEndSeq>0);
+  assert.equal(snapshot.roundEndSeq,host.roundEndSeq);
 });
 
 test('client rejects stale snapshots and reconciles from host state',()=>{

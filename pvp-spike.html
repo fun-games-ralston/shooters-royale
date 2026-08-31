@@ -90,8 +90,8 @@
 </main>
 
 <script src="supabase-2.91.1.min.js?v=2.91.1"></script>
-<script src="pvp-netcode.js?v=3"></script>
-<script src="pvp-realtime.js?v=1"></script>
+<script src="pvp-netcode.js?v=4"></script>
+<script src="pvp-realtime.js?v=2"></script>
 <script>
 (()=>{
   'use strict';
@@ -105,6 +105,8 @@
   let seenHost=false,hostEnded=false,hostLossTimer=null,warnedConnection=false,playerEliminated=false,roundEnded=false;
   let inputSeq=0,fireId=0,fireQueued=false,lastFrame=performance.now(),inputAccum=0,snapshotAccum=0;
   let traces=[],clockTimer=null,running=false;
+  let roundFinalizeTimer=null,roundFinalizeDeadline=0,roundEndPayload=null,roundConfirmationLogged=false;
+  const roundAcks=new Set();
 
   const addLog=(text,kind='')=>{
     const line=document.createElement('div');line.textContent=`${new Date().toLocaleTimeString()}  ${text}`;line.className=kind;
@@ -132,7 +134,8 @@
     room=new PVPRealtime.RealtimeRoom({
       client,roomCode:code,peerId,name,isHost:host,
       onInput:(id,input,receivedAt)=>authority&&authority.receiveInput(id,input,receivedAt),
-      onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());syncLifeState();if(snapshot.roundEnded)finishRound({winnerId:snapshot.winnerId,reason:'snapshot'});}},
+      onRoundAck:handleRoundAck,
+      onSnapshot:snapshot=>{if(predictor){latest=snapshot;predictor.applySnapshot(snapshot,Date.now());syncLifeState();if(snapshot.roundEnded)finishRound({winnerId:snapshot.winnerId,roundEndSeq:snapshot.roundEndSeq,reason:'snapshot'});}},
       onEvent:showEvent,
       onLobby:lobbyMessage,
       onRoster:updateRoster,
@@ -230,7 +233,7 @@
   }
 
   function endForHostLeave(){
-    hostEnded=true;running=false;$('#play').classList.add('hidden');$('#lobby').classList.remove('hidden');
+    hostEnded=true;running=false;stopRoundFinalizer();$('#play').classList.add('hidden');$('#lobby').classList.remove('hidden');
     $('#lobbyState').textContent='The host disconnected, so this test match ended.';
     $('#startTest').disabled=true;$('#startTest').textContent='Host disconnected';
     addLog('Host disconnected; authority ended the match','death');
@@ -246,7 +249,52 @@
   }
   const short=id=>{const p=roster.find(x=>x.playerId===id);return p?p.name:String(id||'').slice(0,6);};
 
+  function expectedRoundGuests(){
+    return roster.filter(p=>p.playerId!==peerId).map(p=>p.playerId);
+  }
+
+  function stopRoundFinalizer(){
+    if(roundFinalizeTimer){clearInterval(roundFinalizeTimer);roundFinalizeTimer=null;}
+  }
+
+  function allRoundAcksReceived(){
+    return expectedRoundGuests().every(id=>roundAcks.has(id));
+  }
+
+  function completeRoundFinalizer(confirmed){
+    stopRoundFinalizer();
+    if(roundConfirmationLogged) return;
+    roundConfirmationLogged=true;
+    addLog(confirmed?'Round result confirmed by all players':'Round result confirmation timed out',confirmed?'hit':'death');
+    updateMetrics();
+  }
+
+  function sendFinalRoundState(){
+    if(!room||!authority||!roundEndPayload) return;
+    room.sendSnapshot(authority.createSnapshot());
+    room.sendEvent(roundEndPayload);
+    if(allRoundAcksReceived()) completeRoundFinalizer(true);
+    else if(Date.now()>=roundFinalizeDeadline) completeRoundFinalizer(false);
+  }
+
+  function startRoundFinalizer(event){
+    if(roundEndPayload) return;
+    roundEndPayload=event;
+    roundAcks.add(peerId);
+    roundFinalizeDeadline=Date.now()+3000;
+    sendFinalRoundState();
+    if(!allRoundAcksReceived()) roundFinalizeTimer=setInterval(sendFinalRoundState,250);
+  }
+
+  function handleRoundAck(playerId,roundEndSeq){
+    if(!isHost||!authority||!authority.roundEnded||roundEndSeq!==authority.roundEndSeq) return;
+    roundAcks.add(playerId);
+    if(allRoundAcksReceived()) completeRoundFinalizer(true);
+  }
+
   function finishRound(event){
+    const roundEndSeq=Math.max(0,Math.floor(Number(event&&(event.seq||event.roundEndSeq))||0));
+    if(!isHost&&room&&roundEndSeq) room.sendRoundAck(roundEndSeq);
     if(roundEnded) return;
     roundEnded=true;running=false;
     if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
@@ -260,6 +308,7 @@
     $('#roundSummary').textContent=winnerId?`${winner} is the last fighter alive. Leave the test to start a new room.`:'No fighter survived. Leave the test to start a new room.';
     $('#roundOver').classList.remove('hidden');
     addLog(winnerId?`${winner} won the round`:'Round ended with no survivor',won?'hit':'death');
+    if(isHost) startRoundFinalizer(event);
     updateMetrics();
   }
 
@@ -363,7 +412,7 @@
   $('#create').onclick=()=>begin(true);$('#join').onclick=()=>begin(false);
   $('#startTest').onclick=requestStart;
   $('#copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#invite').value);$('#copy').textContent='Copied';}catch(e){$('#invite').select();}setTimeout(()=>$('#copy').textContent='Copy',1200);};
-  const leave=async()=>{running=false;connected=false;if(clockTimer)clearInterval(clockTimer);if(room)await room.close();location.reload();};
+  const leave=async()=>{running=false;connected=false;stopRoundFinalizer();if(clockTimer)clearInterval(clockTimer);if(room)await room.close();location.reload();};
   $('#leave').onclick=leave;$('#leaveLobby').onclick=leave;
   addEventListener('beforeunload',()=>room&&room.close());
   if(location.hash.length>1) $('#roomCode').value=location.hash.slice(1).toUpperCase();

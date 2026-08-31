@@ -42,8 +42,10 @@ duplicate packets are ignored.
    validated time, then performs the ray test.
 5. If the ray intersects a target, the host changes current HP/death state and
    broadcasts the result. All clients render that decision.
-6. When only one fighter remains, the host emits one `round_end` event and the
-   clients stop gameplay inputs, snapshots, and clock-sync traffic on the results screen.
+6. When only one fighter remains, the host assigns an authoritative round-end
+   sequence, repeats the final snapshot and `round_end` event, and waits for every
+   connected guest to acknowledge it. Gameplay and network traffic stop after all
+   players confirm the result, or after a short timeout.
 
 The short rewind prevents the common unfair result where a player aimed correctly
 but the target moved before the packet reached the host. The cap prevents someone
@@ -84,6 +86,7 @@ The automated suite covers:
 - duplicate shot and fire-rate enforcement;
 - prediction reconciliation and remote interpolation;
 - live guest input reaching host authority, plus prediction stopping cleanly at 0 HP;
+- reliable round-result delivery with guest acknowledgements before final traffic stops;
 - separate guest input channels and host-only snapshots;
 - convergence under deterministic latency, jitter, reordering, and packet loss.
 
