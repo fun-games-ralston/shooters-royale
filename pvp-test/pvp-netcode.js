@@ -75,6 +75,7 @@
       this.roundActive=false;
       this.roundEnded=false;
       this.winnerId=null;
+      this.roundEndSeq=0;
       this.metrics={acceptedInputs:0,droppedInputs:0,acceptedShots:0,droppedShots:0,rewoundShots:0};
     }
 
@@ -218,7 +219,9 @@
       if(alive.length>1) return null;
       this.roundEnded=true;
       this.winnerId=alive[0]?alive[0].id:null;
-      return this._event('round_end',{winnerId:this.winnerId,reason:reason||'last_alive'});
+      const event=this._event('round_end',{winnerId:this.winnerId,reason:reason||'last_alive'});
+      this.roundEndSeq=event.seq;
+      return event;
     }
 
     _event(type,data){
@@ -235,6 +238,7 @@
         seq:++this.snapshotSeq,
         serverTimeMs:this.serverTimeMs,
         roundEnded:this.roundEnded,
+        roundEndSeq:this.roundEndSeq,
         winnerId:this.winnerId,
         players:Array.from(this.players.values(),p=>({
           id:p.id,x:p.x,z:p.z,yaw:p.yaw,hp:p.hp,alive:p.alive,lastProcessedInput:p.lastInputSeq,

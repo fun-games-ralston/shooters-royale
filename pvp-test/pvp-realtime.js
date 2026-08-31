@@ -30,6 +30,7 @@
       this.name=String(options.name||'Fighter').replace(/[<>]/g,'').slice(0,16);
       this.isHost=!!options.isHost;
       this.onInput=options.onInput||(()=>{});
+      this.onRoundAck=options.onRoundAck||(()=>{});
       this.onSnapshot=options.onSnapshot||(()=>{});
       this.onEvent=options.onEvent||(()=>{});
       this.onLobby=options.onLobby||(()=>{});
@@ -127,6 +128,11 @@
       channel.on('broadcast',{event:'input'},({payload})=>{
         this.metrics.received++;
         if(payload&&cleanPeer(payload.playerId)===playerId) this.onInput(playerId,payload.input,Date.now());
+      }).on('broadcast',{event:'round_ack'},({payload})=>{
+        this.metrics.received++;
+        if(!payload||cleanPeer(payload.playerId)!==playerId) return;
+        const roundEndSeq=Math.max(0,Math.floor(Number(payload.roundEndSeq)||0));
+        if(roundEndSeq) this.onRoundAck(playerId,roundEndSeq);
       });
       this.hostInputChannels.set(playerId,channel);
       this._subscribe(channel,`input ${playerId}`).then(()=>{
@@ -141,6 +147,13 @@
     async sendInput(input){
       if(this.isHost) return false;
       return this._send(this.inputChannel,'input',{playerId:this.peerId,input});
+    }
+
+    async sendRoundAck(roundEndSeq){
+      if(this.isHost) return false;
+      roundEndSeq=Math.max(0,Math.floor(Number(roundEndSeq)||0));
+      if(!roundEndSeq) return false;
+      return this._send(this.inputChannel,'round_ack',{playerId:this.peerId,roundEndSeq});
     }
 
     async sendSnapshot(snapshot){
