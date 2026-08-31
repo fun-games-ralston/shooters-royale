@@ -141,7 +141,7 @@
       connected=true;
       $('#setup').classList.add('hidden');$('#lobby').classList.remove('hidden');
       $('#role').textContent=host?'HOST AUTHORITY':'GUEST CLIENT';
-      const invite=`${location.origin}${location.pathname}#${room.roomCode}`;$('#invite').value=invite;
+      const invite=`${location.href.split('#')[0]}#${room.roomCode}`;$('#invite').value=invite;
       $('#lobbyCode').textContent=room.roomCode;
       history.replaceState(null,'',`#${room.roomCode}`);
       if(!host){room.syncClock();clockTimer=setInterval(()=>room&&room.syncClock(),2500);}
