@@ -505,6 +505,7 @@ canvas{display:block}
         <div class="tagline">One life · Eight fighters · Last block standing</div>
         <div class="menu-col">
           <button class="btn primary" id="btnPlay">Deploy</button>
+          <button class="btn" id="btnFriends">Play with friends <span style="color:var(--gold)">Beta</span></button>
           <button class="btn" id="btnShop">Armory</button>
           <button class="btn" id="btnSetup">Match setup</button>
           <button class="btn ghost" id="btnHelp">How to play</button>
@@ -4814,6 +4815,7 @@ function startMatch(){
 }
 function wireUI(){
   $('#btnPlay').onclick=()=>{AU.ui();S.cfg.mode='trial';startMatch();};
+  $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-test/';};
   $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();show('scr-setup');};
