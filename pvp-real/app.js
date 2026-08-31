@@ -16,6 +16,7 @@
   ].map(id => [id, document.getElementById(id)]));
 
   const keys = Object.create(null);
+  const keyPulseUntil = Object.create(null);
   const weaponKeys = { Digit1: 'sidearm', Digit2: 'ak47', Digit3: 'scatter', Digit4: 'bazooka' };
   let room = null;
   let authority = null;
@@ -327,12 +328,13 @@
   }
 
   function movementInput() {
+    const active = code => !!keys[code] || performance.now() < (keyPulseUntil[code] || 0);
     return {
-      moveF: (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0),
-      moveR: (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0),
+      moveF: (active('KeyW') ? 1 : 0) - (active('KeyS') ? 1 : 0),
+      moveR: (active('KeyD') ? 1 : 0) - (active('KeyA') ? 1 : 0),
       yaw: localYaw,
       pitch: localPitch,
-      jump: !!keys.Space,
+      jump: active('Space'),
       sprint: !!(keys.ShiftLeft || keys.ShiftRight),
       trigger,
       fireId,
@@ -432,6 +434,7 @@
     running = false;
     trigger = false;
     for (const code of Object.keys(keys)) keys[code] = false;
+    for (const code of Object.keys(keyPulseUntil)) keyPulseUntil[code] = 0;
     if (frameHandle) cancelAnimationFrame(frameHandle);
     if (clockTimer) clearInterval(clockTimer);
     clockTimer = null;
@@ -784,6 +787,7 @@
 
   addEventListener('keydown', event => {
     keys[event.code] = true;
+    if (!event.repeat && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(event.code)) keyPulseUntil[event.code] = performance.now() + 110;
     if (weaponKeys[event.code]) chooseWeapon(weaponKeys[event.code]);
     if (event.code === 'KeyR' && !event.repeat) reloadId += 1;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
