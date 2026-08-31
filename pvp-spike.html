@@ -8,7 +8,7 @@
     :root{color-scheme:dark;--ink:#eee3d2;--dim:#8c8299;--panel:#181124;--edge:#392d4b;--gold:#f2b134;--green:#7fd45b;--red:#e0553a}
     *{box-sizing:border-box} body{margin:0;background:#09070e;color:var(--ink);font:15px/1.45 "Courier New",monospace;min-height:100vh}
     main{width:min(1100px,calc(100% - 32px));margin:28px auto} h1,h2,button{font-family:Impact,"Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:2px}
-    h1{font-size:34px;margin:0;color:var(--gold)} .sub{color:var(--dim);margin:2px 0 22px}
+    h1{font-size:34px;margin:0;color:var(--gold)} .sub{color:var(--dim);margin:2px 0 22px}.real-beta{display:inline-block;color:var(--green);border:1px solid var(--green);padding:8px 11px;text-decoration:none;text-transform:uppercase;font-weight:bold;margin:-8px 0 20px}
     .panel{background:var(--panel);border:2px solid var(--edge);padding:18px;box-shadow:0 12px 38px #0008}.setup{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .card{border:1px solid var(--edge);padding:16px;background:#120d1c}.card h2{font-size:20px;margin:0 0 10px}.card p{color:var(--dim);min-height:44px}
     label{display:block;color:var(--dim);font-size:12px;letter-spacing:1px;margin:10px 0 5px}input{width:100%;background:#09070e;border:1px solid #514063;color:var(--ink);font:16px "Courier New";padding:11px;text-transform:uppercase}
@@ -28,6 +28,7 @@
 <main>
   <h1>PvP Netcode Spike</h1>
   <p class="sub">A deliberately small 2–4 player lab for host authority, prediction, reconciliation, interpolation, and rewind hit detection.</p>
+  <a class="real-beta" href="pvp-real/">Play the real 3D Foundry beta →</a>
 
   <section id="setup" class="panel">
     <div class="setup">
