@@ -225,6 +225,7 @@
       this.id=safeId(playerId);
       this.cfg=Object.assign({},DEFAULTS,options);
       this.x=finite(options.x); this.z=finite(options.z); this.yaw=normAngle(options.yaw);
+      this.hp=this.cfg.baseHp; this.alive=true;
       this.seq=0; this.fireId=0; this.lastSnapshotSeq=0; this.pending=[];
       this.predictedHistory=[];
       this.remotes=new Map();
@@ -250,6 +251,7 @@
     }
 
     predict(control,dtMs,hostTimeMs){
+      if(!this.alive) return false;
       const move=normalizeMove(control&&control.moveX,control&&control.moveZ);
       this._integrate({moveX:move.x,moveZ:move.z,yaw:normAngle(control&&control.yaw)},clamp(finite(dtMs),0,100));
       if(Number.isFinite(Number(hostTimeMs))){
@@ -257,6 +259,7 @@
         const cutoff=Number(hostTimeMs)-1000;
         while(this.predictedHistory.length>2&&this.predictedHistory[1].atMs<cutoff) this.predictedHistory.shift();
       }
+      return true;
     }
 
     _predictedAt(atMs){
@@ -292,8 +295,13 @@
           this.metrics.corrections++;
           this.metrics.maxCorrection=Math.max(this.metrics.maxCorrection,correction);
         }
+        this.hp=clamp(finite(self.hp,this.cfg.baseHp),0,this.cfg.baseHp);
+        this.alive=self.alive!==false&&this.hp>0;
         this.pending=this.pending.filter(p=>p.input.seq>self.lastProcessedInput);
-        if(predicted){
+        if(!this.alive){
+          this.x=self.x; this.z=self.z; this.yaw=self.yaw;
+          this.pending=[]; this.predictedHistory=[];
+        }else if(predicted){
           const dx=self.x-predicted.x,dz=self.z-predicted.z;
           this.x+=dx; this.z+=dz;
           for(const sample of this.predictedHistory) if(sample.atMs>=snapshot.serverTimeMs){sample.x+=dx;sample.z+=dz;}
