@@ -5,7 +5,7 @@ This feature-branch slice tests whether the actual Block Royale movement and com
 ## Entry point
 
 - Browser route: `pvp-real/`
-- Netcode lab entry: `pvp-spike.html` → **Play the real 3D Foundry beta**
+- Netcode lab entry: `pvp-test/` → **Play the real 3D Foundry beta**
 - Branch: `pvp-realtime-spike`
 
 The existing `index.html` solo game is unchanged.

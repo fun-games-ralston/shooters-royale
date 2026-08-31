@@ -3,7 +3,7 @@
 
 const readline = require('node:readline');
 const { createClient } = require('@supabase/supabase-js');
-const PVPRealtime = require('../pvp-realtime.js');
+const PVPRealtime = require('../pvp-test/pvp-realtime.js');
 const Sim = require('./sim.js');
 
 const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
