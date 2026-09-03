@@ -1,9 +1,14 @@
 (function(root,factory){
-  const api=factory();
+  const api=factory(
+    typeof module==='object'&&module.exports?require('../shared/pve-content.generated.js'):root.BlockRoyaleContent,
+    typeof module==='object'&&module.exports?require('../shared/world.js'):root.BlockRoyaleWorld
+  );
   if(typeof module==='object'&&module.exports) module.exports=api;
   else root.PVPRealSim=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+})(typeof globalThis!=='undefined'?globalThis:this,function(Content,SharedWorld){
   'use strict';
+
+  if(!Content||!SharedWorld) throw new Error('Shared PvE content and world modules must load before PvP simulation');
 
   const CFG={
     baseHp:200,maxPlayers:2,simulationHz:30,inputHz:20,snapshotHz:15,
@@ -15,13 +20,15 @@
     {part:'BODY',y0:.84,y1:1.42,hx:.50,hz:.24,m:1},
     {part:'LEGS',y0:0,y1:.84,hx:.32,hz:.24,m:.65},
   ];
-  const WEAPONS={
-    sidearm:{id:'sidearm',name:'M9 Sidearm',kind:'hitscan',dmg:30,rpm:300,mag:12,reserve:72,reload:1.15,spread:.9,range:60,fall:[26,55,.6],speed:1.12,auto:false,color:0xffe08a},
-    ak47:{id:'ak47',name:'AK-47',kind:'hitscan',dmg:32,rpm:600,mag:20,reserve:80,reload:2,spread:1.8,range:90,fall:[60,90,.7],speed:.98,auto:true,color:0xffb347},
-    scatter:{id:'scatter',name:'Scattergun',kind:'hitscan',dmg:16,pellets:9,rpm:85,mag:5,reserve:30,reload:2.1,spread:4.6,range:30,fall:[11,24,.3],speed:1.06,auto:false,color:0xffc46b},
-    bazooka:{id:'bazooka',name:'Bazooka',kind:'rocket',dmg:95,splash:85,splashR:5.6,rpm:55,mag:2,reserve:6,reload:3.2,spread:.7,range:150,speed:.84,auto:false,projectileSpeed:58,color:0xff6b2c},
-  };
+  const WEAPONS=Object.fromEntries(Content.WEAPONS.map(source=>[source.id,Object.freeze({
+    ...source,
+    kind:source.proj?'rocket':source.melee?'melee':'hitscan',
+    projectileSpeed:source.projSpeed,
+    color:source.tracer||source.flash||0xf2b134,
+  })]));
   const WEAPON_IDS=Object.keys(WEAPONS);
+  const PETS=Object.fromEntries(Content.PETS.map(pet=>[pet.id,Object.freeze({...pet,tactic:Content.PET_TACTICS[pet.id]})]));
+  const ARENAS=Object.fromEntries(Content.ARENAS.map(arena=>[arena.id,Object.freeze(arena)]));
   const clamp=(v,a,b)=>v<a?a:v>b?b:v;
   const lerp=(a,b,t)=>a+(b-a)*t;
   const finite=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
@@ -56,7 +63,7 @@
     return best;
   }
 
-  function makeFoundryWorld(){
+  function makeLegacyFoundryWorld(){
     const visuals=[],boxes=[],spawns=[],R=mulberry32(11),size=76,H=size/2;
     const colors={sky:0x16121c,fog:0x1a1520,ground:0x3a3229,accent:0xe0553a,wall:0x2e2822,light:0xffd9b0};
     const add=(x,y,z,w,h,d,color,emissive=0,solid=true)=>{
@@ -119,6 +126,9 @@
     return world;
   }
 
+  function makeArenaWorld(id='foundry'){return SharedWorld.makeWorld(ARENAS[id]?id:'foundry');}
+  function makeFoundryWorld(){return makeArenaWorld('foundry');}
+
   function boxHit(world,x,y,z){
     const r=CFG.radius,h=CFG.height;
     for(const b of world.boxes) if(x-r<b.x1&&x+r>b.x0&&z-r<b.z1&&z+r>b.z0&&y<b.y1&&y+h>b.y0)return b;
@@ -153,7 +163,7 @@
     return {
       seq:Math.max(0,Math.floor(finite(raw.seq))),clientTimeMs:finite(raw.clientTimeMs),
       moveF:f,moveR:r,yaw:normAngle(raw.yaw),pitch:clamp(finite(raw.pitch),-1.1,1.1),
-      jump:raw.jump===true,sprint:raw.sprint===true,trigger:raw.trigger===true,
+      jump:raw.jump===true,sprint:raw.sprint===true,trigger:raw.trigger===true,ads:raw.ads===true,
       fireId:Math.max(0,Math.floor(finite(raw.fireId))),shotAtMs:finite(raw.shotAtMs),
       reloadId:Math.max(0,Math.floor(finite(raw.reloadId))),
       weapon:WEAPONS[raw.weapon]?raw.weapon:'sidearm',
@@ -161,14 +171,25 @@
   }
 
   function inventory(){
-    const out={};for(const id of WEAPON_IDS)out[id]={ammo:WEAPONS[id].mag,reserve:WEAPONS[id].reserve};return out;
+    const out={};for(const id of WEAPON_IDS){const weapon=WEAPONS[id];out[id]={ammo:weapon.mag>0?weapon.mag:-1,reserve:weapon.reserve||0};}return out;
   }
 
-  function makePlayer(id,name,spawn){
+  function safeProfile(raw={}){
+    const defaults=['sidearm','scatter','knife'];
+    const loadout=[];
+    for(const id of Array.isArray(raw.loadout)?raw.loadout:defaults)if(WEAPONS[id]&&!loadout.includes(id)&&loadout.length<3)loadout.push(id);
+    for(const id of defaults)if(!loadout.includes(id)&&loadout.length<3)loadout.push(id);
+    const pick=(list,id,fallback)=>list.some(item=>item.id===id)?id:fallback;
+    return {loadout,pet:PETS[raw.pet]?raw.pet:null,
+      hair:pick(Content.HAIRS,raw.hair,'crop'),outfit:pick(Content.OUTFITS,raw.outfit,'recruit'),acc:pick(Content.ACCS,raw.acc,'none')};
+  }
+
+  function makePlayer(id,name,spawn,profile={}){
+    profile=safeProfile(profile);
     return {id,name:safeName(name),x:spawn.x,y:spawn.y,z:spawn.z,vx:0,vy:0,vz:0,yaw:0,pitch:0,onGround:true,
-      hp:CFG.baseHp,alive:true,weapon:'sidearm',inventory:inventory(),reloadUntil:0,nextFireAt:0,
+      hp:CFG.baseHp,alive:true,weapon:profile.loadout[0],loadout:profile.loadout,profile,inventory:inventory(),reloadUntil:0,nextFireAt:0,
       input:sanitizeInput({}),lastInputSeq:0,lastConsumedFireId:0,lastReloadId:0,jumpLatch:false,
-      history:[],lastShotAt:-Infinity,shotCounter:0,kills:0};
+      history:[],lastShotAt:-Infinity,lastDamageAt:-Infinity,shotCounter:0,kills:0,heat:0,heatLockUntil:0,triggerSince:0,chargeSince:0,burstLeft:0,poisonUntil:0,poisonNextAt:0,poisonOwnerId:null};
   }
 
   function moveAxis(player,axis,delta,world){
@@ -183,7 +204,8 @@
   }
 
   function moveVertical(player,dt,world){
-    player.vy-=CFG.gravity*dt;
+    const gravity=world.def&&world.def.mod&&world.def.mod.grav||1;
+    player.vy-=CFG.gravity*gravity*dt;
     let ny=player.y+player.vy*dt;
     if(player.vy<=0){
       let support=null;
@@ -198,16 +220,22 @@
       player.onGround=false;
     }
     player.y=ny;
-    if(player.y<0){player.y=0;player.vy=0;player.onGround=true;}
+    if(!world.def?.void&&player.y<0){player.y=0;player.vy=0;player.onGround=true;}
   }
 
   function integrateMovement(player,input,world,dt){
     const weapon=WEAPONS[player.weapon]||WEAPONS.sidearm;
-    let speed=CFG.baseMoveSpeed*weapon.speed*(input.sprint?CFG.sprint:1);
+    const pet=player.profile&&PETS[player.profile.pet];
+    const petSpeed=pet&&pet.perk==='pack'&&!player.petDown?1.07:1;
+    const arenaSpeed=world.def&&world.def.mod&&world.def.mod.speed||1;
+    const chargeSlow=weapon.charge&&input.trigger?weapon.chargeSlow||1:1;
+    const stunned=player.stunUntil&&player.stunUntil>player.nowMs;
+    let speed=stunned?0:CFG.baseMoveSpeed*weapon.speed*petSpeed*arenaSpeed*chargeSlow*(input.sprint?CFG.sprint:1);
     const sy=Math.sin(input.yaw),cy=Math.cos(input.yaw);
     const wx=-sy*input.moveF+cy*input.moveR,wz=-cy*input.moveF-sy*input.moveR;
-    const k=clamp(15*dt,0,1);
-    player.vx=lerp(player.vx,wx*speed,k);player.vz=lerp(player.vz,wz*speed,k);
+    const friction=world.def&&world.def.mod&&world.def.mod.friction;
+    const accel=friction?Math.max(2,15*friction):15;
+    player.vx=lerp(player.vx,wx*speed,clamp(accel*dt,0,1));player.vz=lerp(player.vz,wz*speed,clamp(accel*dt,0,1));
     if(input.jump&&!player.jumpLatch&&player.onGround){player.vy=8.7;player.onGround=false;}
     player.jumpLatch=input.jump;
     moveAxis(player,'x',player.vx*dt,world);moveAxis(player,'z',player.vz*dt,world);moveVertical(player,dt,world);
@@ -237,22 +265,23 @@
 
   class Authority{
     constructor(options={}){
-      this.world=options.world||makeFoundryWorld();this.players=new Map();this.projectiles=[];this.events=[];
+      this.world=options.world||makeArenaWorld('foundry');this.players=new Map();this.pets=new Map();this.projectiles=[];this.events=[];
       this.serverTimeMs=finite(options.startTimeMs,0);this.snapshotSeq=0;this.eventSeq=0;this.projectileSeq=0;
       this.roundActive=false;this.roundEnded=false;this.roundEndSeq=0;this.winnerId=null;
-      this.metrics={acceptedInputs:0,droppedInputs:0,shots:0,hits:0,rockets:0};
+      this.random=mulberry32((this.world.def&&this.world.def.seed||11)^0x51ed270b);this.nextArenaEventAt=Infinity;this.arenaEvents=[];
+      this.metrics={acceptedInputs:0,droppedInputs:0,shots:0,hits:0,rockets:0,petHits:0,hazardHits:0};
     }
 
     addPlayer(id,options={}){
       id=safeId(id);if(!id||this.players.has(id)||this.players.size>=CFG.maxPlayers)return null;
       const defaultSpawn=this.world.duelSpawns[this.players.size]||this.world.spawns[this.players.size]||{x:0,y:0,z:0};
       const spawn={x:finite(options.x,defaultSpawn.x),y:finite(options.y,defaultSpawn.y),z:finite(options.z,defaultSpawn.z)};
-      const player=makePlayer(id,options.name||id,spawn);this.players.set(id,player);this._facePlayers();this._record(player,this.serverTimeMs);
+      const player=makePlayer(id,options.name||id,spawn,options.profile);this.players.set(id,player);this._makePet(player);this._facePlayers();this._record(player,this.serverTimeMs);
       this._event('joined',{playerId:id,name:player.name});return player;
     }
 
     removePlayer(id){
-      id=safeId(id);if(!this.players.delete(id))return false;
+      id=safeId(id);if(!this.players.delete(id))return false;this.pets.delete(id);
       this._event('left',{playerId:id});this._checkRoundEnd('last_connected');return true;
     }
 
@@ -263,7 +292,11 @@
       }
     }
 
-    startRound(){if(this.players.size!==2||this.roundEnded)return false;this.roundActive=true;return true;}
+    startRound(){
+      if(this.players.size!==2||this.roundEnded)return false;this.roundActive=true;
+      const event=this.world.def&&this.world.def.event;if(event)this.nextArenaEventAt=this.serverTimeMs+(event.every[0]+this.random()*(event.every[1]-event.every[0]))*1000;
+      return true;
+    }
 
     receiveInput(id,raw,receivedAtMs=this.serverTimeMs){
       const player=this.players.get(safeId(id));if(!player||!player.alive)return{accepted:false,reason:'unknown_or_dead'};
@@ -275,17 +308,99 @@
     step(dtMs,nowMs){
       dtMs=clamp(finite(dtMs),0,50);this.serverTimeMs=Math.max(this.serverTimeMs,finite(nowMs,this.serverTimeMs+dtMs));const dt=dtMs/1000;
       for(const player of this.players.values())if(player.alive&&!this.roundEnded){
-        this._weaponInput(player);integrateMovement(player,player.input,this.world,dt);this._record(player,this.serverTimeMs);
+        player.nowMs=this.serverTimeMs;this._weaponInput(player);this._tickStatus(player,dt);integrateMovement(player,player.input,this.world,dt);this._applyWorldRules(player,dt);this._record(player,this.serverTimeMs);
         this._tryFire(player);
       }
-      this._stepProjectiles(dt);for(const player of this.players.values())this._record(player,this.serverTimeMs);
+      this._stepPets(dt);this._stepArenaEvents();this._stepProjectiles(dt);for(const player of this.players.values())this._record(player,this.serverTimeMs);
       this._checkRoundEnd('last_alive');
+    }
+
+    _makePet(owner){
+      const def=PETS[owner.profile.pet];if(!def)return null;
+      const tactic=def.tactic||Content.PET_TACTICS.dog,sy=Math.sin(owner.yaw),cy=Math.cos(owner.yaw);
+      const pet={id:`pet_${owner.id}`,ownerId:owner.id,defId:def.id,x:owner.x+sy*tactic.back+cy*tactic.side,y:owner.y,z:owner.z+cy*tactic.back-sy*tactic.side,
+        vx:0,vz:0,yaw:owner.yaw,hp:def.hp,maxHp:def.hp,alive:true,downUntil:0,nextAttackAt:0,targetId:null,retreatUntil:0,lastPoisonTarget:null};
+      owner.petDown=false;this.pets.set(owner.id,pet);return pet;
+    }
+
+    _tickStatus(player,dt){
+      const weapon=WEAPONS[player.weapon];
+      if(weapon&&weapon.heat&&player.heat>0&&!player.input.trigger)player.heat=Math.max(0,player.heat-weapon.heat.cool*dt);
+      if(player.poisonUntil>this.serverTimeMs&&this.serverTimeMs>=player.poisonNextAt){
+        player.poisonNextAt=this.serverTimeMs+1000;const owner=this.players.get(player.poisonOwnerId);
+        this._damage(player,4,owner,'BODY',{x:player.x,y:player.y+1,z:player.z},'pet');
+      }
+      const pet=PETS[player.profile.pet];
+      if(pet&&pet.perk==='mend'&&!player.petDown&&this.serverTimeMs-player.lastDamageAt>=3000&&player.hp>0&&player.hp<CFG.baseHp)player.hp=Math.min(CFG.baseHp,player.hp+1.5*dt);
+    }
+
+    _applyWorldRules(player,dt){
+      for(const hazard of this.world.hazards||[])if(player.x>=hazard.x0&&player.x<=hazard.x1&&player.z>=hazard.z0&&player.z<=hazard.z1&&player.y<.7){
+        if(this.serverTimeMs>=(player.nextHazardAt||0)){player.nextHazardAt=this.serverTimeMs+250;this.metrics.hazardHits++;this._damage(player,hazard.dps*.25,null,'BODY',{x:player.x,y:player.y,z:player.z},'lava');}
+      }
+      if(this.world.def&&this.world.def.void&&player.y<-8)this._damage(player,CFG.baseHp*2,null,'BODY',{x:player.x,y:player.y,z:player.z},'void');
+    }
+
+    _petCanSee(pet,target){
+      const dx=target.x-pet.x,dy=target.y+1-(pet.y+.7),dz=target.z-pet.z,distance=Math.hypot(dx,dy,dz)||1;
+      return rayWorld(this.world,{x:pet.x,y:pet.y+.7,z:pet.z},{x:dx/distance,y:dy/distance,z:dz/distance},distance)>=distance-.45;
+    }
+
+    _stepPets(dt){
+      for(const pet of this.pets.values()){
+        const owner=this.players.get(pet.ownerId),def=PETS[pet.defId],tactic=def.tactic||Content.PET_TACTICS.dog;if(!owner)continue;
+        if(!pet.alive){
+          owner.petDown=true;
+          if(this.serverTimeMs>=pet.downUntil&&owner.alive){pet.alive=true;pet.hp=pet.maxHp;owner.petDown=false;pet.x=owner.x;pet.y=owner.y;pet.z=owner.z;this._event('pet_revive',{playerId:owner.id,petId:pet.id,pet:def.id});}
+          continue;
+        }
+        if(!owner.alive)continue;
+        const enemies=[...this.players.values()].filter(player=>player.id!==owner.id&&player.alive);
+        let target=this.players.get(pet.targetId),targetDistance=target?Math.hypot(target.x-owner.x,target.z-owner.z):Infinity;
+        if(!target||!target.alive||targetDistance>tactic.leash)target=null;
+        if(!target){target=enemies.filter(player=>Math.hypot(player.x-owner.x,player.z-owner.z)<=tactic.acquire&&this._petCanSee(pet,player)).sort((a,b)=>{
+          if(def.id==='raptor')return a.hp-b.hp;return Math.hypot(a.x-pet.x,a.z-pet.z)-Math.hypot(b.x-pet.x,b.z-pet.z);
+        })[0]||null;}
+        pet.targetId=target&&target.id;
+        const sy=Math.sin(owner.yaw),cy=Math.cos(owner.yaw),formation={x:owner.x+sy*tactic.back+cy*tactic.side,z:owner.z+cy*tactic.back-sy*tactic.side};
+        let tx=target?target.x:formation.x,tz=target?target.z:formation.z;
+        if(pet.retreatUntil>this.serverTimeMs&&target){const dx=pet.x-target.x,dz=pet.z-target.z,length=Math.hypot(dx,dz)||1;tx=pet.x+dx/length*4.5;tz=pet.z+dz/length*4.5;}
+        const dx=tx-pet.x,dz=tz-pet.z,length=Math.hypot(dx,dz)||1,reach=Math.round(def.range*.75*10)/10,stop=target?reach*.72:.65;
+        if(Math.hypot(pet.x-owner.x,pet.z-owner.z)>tactic.leash+6){pet.x=formation.x;pet.z=formation.z;pet.y=owner.y;}
+        else if(length>stop){const step=Math.min(length-stop,def.speed*dt),nx=pet.x+dx/length*step,nz=pet.z+dz/length*step,ny=groundAt(this.world.boxes,nx,nz,pet.y+3);if(SharedWorld.freeAt(this.world,nx,ny+.02,nz,.3,Math.max(.7,def.scale||1))){pet.x=nx;pet.z=nz;pet.y=ny;}}
+        pet.yaw=Math.atan2(-dx,-dz);
+        if(target&&this._petCanSee(pet,target)&&Math.hypot(target.x-pet.x,target.z-pet.z)<reach&&this.serverTimeMs>=pet.nextAttackAt){
+          pet.nextAttackAt=this.serverTimeMs+def.cd*1000;this.metrics.petHits++;
+          this._damage(target,def.dmg,owner,'BODY',{x:target.x,y:target.y+1,z:target.z},'pet');
+          if(def.poison&&target.alive){target.poisonUntil=this.serverTimeMs+def.poison.t*1000;target.poisonNextAt=this.serverTimeMs+1000;target.poisonOwnerId=owner.id;}
+          if(def.perk==='apex'&&target.alive){const ax=target.x-pet.x,az=target.z-pet.z,l=Math.hypot(ax,az)||1;target.vx+=ax/l*5;target.vz+=az/l*5;target.vy+=2.4;}
+          if(tactic.retreat)pet.retreatUntil=this.serverTimeMs+tactic.retreat*1000;
+          this._event('pet_attack',{playerId:owner.id,targetId:target.id,petId:pet.id,pet:def.id,damage:def.dmg,targetHp:Math.round(target.hp)});
+        }
+      }
+    }
+
+    _scheduleArenaEvent(){
+      const def=this.world.def,event=def&&def.event;if(!event)return;
+      const radius=Math.max(4,this.world.H*.65),angle=this.random()*Math.PI*2,range=this.random()*radius;
+      const item={id:`a${++this.projectileSeq}`,type:event.type,x:Math.cos(angle)*range,z:Math.sin(angle)*range,r:event.r,dmg:event.dmg,impactAt:this.serverTimeMs+1000};
+      this.arenaEvents.push(item);this._event('arena_warning',{...item,label:event.label||event.type.toUpperCase()});
+      this.nextArenaEventAt=this.serverTimeMs+(event.every[0]+this.random()*(event.every[1]-event.every[0]))*1000;
+    }
+
+    _stepArenaEvents(){
+      if(this.roundEnded)return;if(this.serverTimeMs>=this.nextArenaEventAt)this._scheduleArenaEvent();
+      for(let i=this.arenaEvents.length-1;i>=0;i--){const event=this.arenaEvents[i];if(this.serverTimeMs<event.impactAt)continue;
+        for(const player of this.players.values())if(player.alive&&Math.hypot(player.x-event.x,player.z-event.z)<event.r){this.metrics.hazardHits++;this._damage(player,event.dmg,null,'BODY',{x:player.x,y:player.y+1,z:player.z},event.type);}
+        this._event('arena_impact',{...event});this.arenaEvents.splice(i,1);
+      }
     }
 
     _weaponInput(player){
       const input=player.input;
-      if(WEAPONS[input.weapon]&&input.weapon!==player.weapon){
+      if(WEAPONS[input.weapon]&&player.loadout.includes(input.weapon)&&input.weapon!==player.weapon){
         player.weapon=input.weapon;player.reloadUntil=0;player.nextFireAt=Math.max(player.nextFireAt,this.serverTimeMs+180);
+        player.burstLeft=0;player.chargeSince=0;player.triggerSince=0;
         this._event('weapon',{playerId:player.id,weapon:player.weapon});
       }
       if(input.reloadId>player.lastReloadId){player.lastReloadId=input.reloadId;this._startReload(player);}
@@ -294,8 +409,9 @@
 
     _startReload(player){
       const weapon=WEAPONS[player.weapon],ammo=player.inventory[player.weapon];
-      if(player.reloadUntil||ammo.ammo>=weapon.mag||ammo.reserve<=0)return false;
-      player.reloadUntil=this.serverTimeMs+weapon.reload*1000;this._event('reload',{playerId:player.id,weapon:player.weapon});return true;
+      if(weapon.mag<=0||player.reloadUntil||ammo.ammo>=weapon.mag||ammo.reserve<=0)return false;
+      const duration=weapon.shellReload?weapon.shellReload*Math.min(weapon.mag-ammo.ammo,ammo.reserve):weapon.reload;
+      player.reloadUntil=this.serverTimeMs+duration*1000;this._event('reload',{playerId:player.id,weapon:player.weapon});return true;
     }
 
     _finishReload(player){
@@ -305,14 +421,25 @@
 
     _tryFire(player){
       const weapon=WEAPONS[player.weapon],input=player.input,ammo=player.inventory[player.weapon];
-      const edge=input.fireId>player.lastConsumedFireId,wants=weapon.auto?input.trigger:edge;
+      const edge=input.fireId>player.lastConsumedFireId;
+      if(input.trigger&&!player.triggerSince)player.triggerSince=this.serverTimeMs;
+      if(!input.trigger){player.triggerSince=0;player.chargeSince=0;}
+      if(weapon.charge&&input.trigger&&!player.chargeSince)player.chargeSince=this.serverTimeMs;
+      if(weapon.burst&&edge){player.lastConsumedFireId=input.fireId;player.burstLeft=weapon.burst;}
+      let wants=weapon.burst?player.burstLeft>0:weapon.auto?input.trigger:edge;
+      if(weapon.spinup&&input.trigger&&this.serverTimeMs-player.triggerSince<weapon.spinup*1000)wants=false;
+      if(weapon.charge&&input.trigger&&this.serverTimeMs-player.chargeSince<weapon.charge*1000)wants=false;
+      if(weapon.heat&&this.serverTimeMs<player.heatLockUntil)wants=false;
       if(!wants||player.reloadUntil||this.serverTimeMs<player.nextFireAt)return;
-      if(ammo.ammo<=0){if(edge)player.lastConsumedFireId=input.fireId;this._startReload(player);return;}
-      if(!weapon.auto)player.lastConsumedFireId=input.fireId;
-      ammo.ammo--;player.nextFireAt=this.serverTimeMs+60000/weapon.rpm;this.metrics.shots++;
+      if(weapon.mag>0&&ammo.ammo<=0){if(edge)player.lastConsumedFireId=input.fireId;this._startReload(player);return;}
+      if(!weapon.auto&&!weapon.burst)player.lastConsumedFireId=input.fireId;
+      if(weapon.mag>0)ammo.ammo--;if(weapon.burst)player.burstLeft--;
+      if(weapon.heat){player.heat+=weapon.heat.per;if(player.heat>=100){player.heat=100;player.heatLockUntil=this.serverTimeMs+weapon.heat.lock*1000;this._event('overheat',{playerId:player.id,weapon:weapon.id});}}
+      if(weapon.charge)player.chargeSince=this.serverTimeMs;
+      player.nextFireAt=this.serverTimeMs+60000/weapon.rpm;this.metrics.shots++;
       if(weapon.kind==='rocket')this._spawnRocket(player,weapon);
       else this._fireHitscan(player,weapon);
-      if(ammo.ammo<=0)this._startReload(player);
+      if(weapon.mag>0&&ammo.ammo<=0)this._startReload(player);
     }
 
     _sample(id,atMs){
@@ -338,6 +465,12 @@
           const distance=rayBox(o,d,box);if(distance!==null&&distance<bestDistance){bestDistance=distance;best={player,hit,distance};}
         }
       }
+      for(const pet of this.pets.values()){
+        if(pet.ownerId===shooterId||!pet.alive)continue;const def=PETS[pet.defId],scale=def.scale||1;
+        let hx=.25,hz=.25,height=.5;for(const part of def.parts){hx=Math.max(hx,(Math.abs(part.x)+part.w/2)*scale);hz=Math.max(hz,(Math.abs(part.z)+part.d/2)*scale);height=Math.max(height,(part.y+part.h/2)*scale);}
+        const distance=rayBox(o,d,{x0:pet.x-hx,x1:pet.x+hx,y0:pet.y,y1:pet.y+height,z0:pet.z-hz,z1:pet.z+hz});
+        if(distance!==null&&distance<bestDistance){bestDistance=distance;best={pet,hit:{part:'PET',m:1},distance};}
+      }
       return best;
     }
 
@@ -345,15 +478,26 @@
       const requested=shooter.input.shotAtMs||shooter.inputReceivedAt||this.serverTimeMs;
       const shotAt=clamp(requested,this.serverTimeMs-CFG.maxRewindMs,this.serverTimeMs+CFG.futureShotToleranceMs);
       const past=this._sample(shooter.id,shotAt)||shooter,o={x:past.x,y:past.y+CFG.eye,z:past.z},base=dirFromAngles(shooter.input.yaw,shooter.input.pitch);
+      let spread=weapon.spread||0;
+      if(weapon.hipMult&&!shooter.input.ads)spread*=weapon.hipMult;
+      if(weapon.bipod&&Math.hypot(shooter.vx,shooter.vz)<.15)spread*=weapon.bipod.spread;
+      if(weapon.bloom){shooter.bloom=Math.min(weapon.bloom.max,(shooter.bloom||0)+weapon.bloom.per);spread+=shooter.bloom;}
       const random=mulberry32(hash(`${shooter.id}:${++shooter.shotCounter}:${this.serverTimeMs}`)),rays=[],damages=new Map();
       for(let pellet=0;pellet<(weapon.pellets||1);pellet++){
-        const d=spreadDir(base,weapon.spread,random),worldDistance=rayWorld(this.world,o,d,weapon.range),hit=this._rayPlayers(shooter.id,o,d,worldDistance,shotAt);
+        const d=spreadDir(base,spread,random),worldDistance=rayWorld(this.world,o,d,weapon.range),hit=this._rayPlayers(shooter.id,o,d,worldDistance,shotAt);
         const distance=hit?hit.distance:worldDistance,end={x:o.x+d.x*distance,y:o.y+d.y*distance,z:o.z+d.z*distance};
-        rays.push({end,hit:!!hit,part:hit&&hit.hit.part,targetId:hit&&hit.player.id});
-        if(hit){const damage=weapon.dmg*hit.hit.m*falloff(weapon,hit.distance),current=damages.get(hit.player.id)||{player:hit.player,amount:0,part:hit.hit.part,impact:end};current.amount+=damage;if(hit.hit.part==='HEAD')current.part='HEAD';damages.set(hit.player.id,current);}
+        const target=hit&&(hit.player||hit.pet);rays.push({end,hit:!!hit,part:hit&&hit.hit.part,targetId:target&&target.id,targetType:hit&&hit.pet?'pet':'player'});
+        if(hit){let damage=weapon.dmg*hit.hit.m*falloff(weapon,hit.distance);
+          if(hit.player&&weapon.melee&&weapon.backstab){const toShooter=Math.atan2(-(shooter.x-hit.player.x),-(shooter.z-hit.player.z)),facing=Math.cos(normAngle(toShooter-hit.player.yaw));if(facing<-.35)damage*=weapon.backstab;}
+          const current=damages.get(target.id)||{player:hit.player,pet:hit.pet,amount:0,part:hit.hit.part,impact:end};current.amount+=damage;if(hit.hit.part==='HEAD')current.part='HEAD';damages.set(target.id,current);}
       }
-      this._event('fire',{playerId:shooter.id,weapon:weapon.id,origin:o,rays});
-      for(const item of damages.values())this._damage(item.player,item.amount,shooter,item.part,item.impact,weapon.id);
+      this._event('fire',{playerId:shooter.id,weapon:weapon.id,origin:o,rays,rewindMs:Math.max(0,Math.round(this.serverTimeMs-shotAt))});
+      for(const item of damages.values()){
+        const target=item.player||item.pet,before=target.hp;if(item.pet)this._damagePet(item.pet,item.amount,shooter,weapon.id);else this._damage(item.player,item.amount,shooter,item.part,item.impact,weapon.id);const dealt=Math.max(0,before-target.hp);
+        if(weapon.leech&&dealt>0)shooter.hp=Math.min(CFG.baseHp,shooter.hp+weapon.leech);
+        if(item.player&&weapon.knock&&item.player.alive){const dx=item.player.x-shooter.x,dz=item.player.z-shooter.z,l=Math.hypot(dx,dz)||1;item.player.vx+=dx/l*weapon.knock;item.player.vz+=dz/l*weapon.knock;item.player.vy+=weapon.knock*.24;}
+        if(item.player&&weapon.stun&&item.player.alive)item.player.stunUntil=this.serverTimeMs+weapon.stun*1000;
+      }
     }
 
     _spawnRocket(shooter,weapon){
@@ -371,7 +515,7 @@
         projectile.x+=projectile.vx*dt;projectile.y+=projectile.vy*dt;projectile.z+=projectile.vz*dt;projectile.vy-=3*dt;projectile.life-=dt;
         if(hit||worldDistance<step+.4||projectile.life<=0||projectile.y<-10){
           const point={x:o.x+d.x*Math.min(hit?hit.distance:worldDistance,step),y:o.y+d.y*Math.min(hit?hit.distance:worldDistance,step),z:o.z+d.z*Math.min(hit?hit.distance:worldDistance,step)};
-          const owner=this.players.get(projectile.ownerId);if(hit)this._damage(hit.player,weapon.dmg,owner,hit.hit.part,point,weapon.id);
+          const owner=this.players.get(projectile.ownerId);if(hit){if(hit.pet)this._damagePet(hit.pet,weapon.dmg,owner,weapon.id);else this._damage(hit.player,weapon.dmg,owner,hit.hit.part,point,weapon.id);}
           this._explode(point,weapon,owner,projectile.id);this.projectiles.splice(i,1);
         }
       }
@@ -383,12 +527,21 @@
         const distance=Math.hypot(player.x-point.x,player.y+1-point.y,player.z-point.z);if(distance>=weapon.splashR)continue;
         const factor=(1-distance/weapon.splashR)*(player===owner?.35:1),amount=weapon.splash*factor;
         if(amount>0){this._damage(player,amount,owner,'BODY',{x:player.x,y:player.y+1,z:player.z},weapon.id);victims.push({playerId:player.id,amount:Math.round(amount)});}
+        if(player===owner&&amount>0){const dx=player.x-point.x,dz=player.z-point.z,l=Math.hypot(dx,dz)||1;player.vx+=dx/l*9;player.vz+=dz/l*9;player.vy+=5;}
       }
+      for(const pet of this.pets.values())if(pet.alive){const distance=Math.hypot(pet.x-point.x,pet.y+.6-point.y,pet.z-point.z);if(distance<weapon.splashR)this._damagePet(pet,weapon.splash*(1-distance/weapon.splashR),owner,weapon.id);}
       this._event('explosion',{projectileId,playerId:owner&&owner.id,weapon:weapon.id,point,victims});
     }
 
+    _damagePet(pet,amount,attacker,weapon){
+      if(!pet||!pet.alive)return;const dealt=Math.min(pet.hp,Math.max(0,Math.round(amount)));if(!dealt)return;
+      pet.hp-=dealt;if(pet.hp<=0){pet.hp=0;pet.alive=false;pet.downUntil=this.serverTimeMs+18000;const owner=this.players.get(pet.ownerId);if(owner)owner.petDown=true;}
+      this._event(pet.alive?'pet_hit':'pet_down',{playerId:attacker&&attacker.id,targetId:pet.ownerId,petId:pet.id,pet:pet.defId,weapon,damage:dealt,petHp:pet.hp});
+    }
+
     _damage(target,amount,attacker,part,impact,weapon){
-      if(!target||!target.alive)return;const dealt=Math.min(target.hp,Math.max(0,Math.round(amount)));if(!dealt)return;
+      if(!target||!target.alive)return;const guardian=PETS[target.profile&&target.profile.pet];if(guardian&&guardian.perk==='guardian'&&!target.petDown)amount*=.9;
+      const dealt=Math.min(target.hp,Math.max(0,Math.round(amount)));if(!dealt)return;target.lastDamageAt=this.serverTimeMs;
       target.hp=Math.max(0,target.hp-dealt);if(target.hp===0)target.alive=false;
       if(attacker&&target!==attacker&&target.hp===0){attacker.kills++;}
       this.metrics.hits++;this._event(target.hp===0?'death':'hit',{playerId:attacker&&attacker.id,targetId:target.id,weapon,damage:dealt,targetHp:target.hp,part,impact});
@@ -399,29 +552,30 @@
       this.roundEnded=true;this.winnerId=alive[0]?alive[0].id:null;const event=this._event('round_end',{winnerId:this.winnerId,reason});this.roundEndSeq=event.seq;return event;
     }
 
-    _event(type,data={}){const event={seq:++this.eventSeq,type,serverTimeMs:this.serverTimeMs,...data};this.events.push(event);return event;}
+    _event(type,data={}){const event={seq:++this.eventSeq,serverTimeMs:this.serverTimeMs,...data,type};this.events.push(event);return event;}
 
     createSnapshot(){
       const events=this.events;this.events=[];
-      return {protocol:2,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
-        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,weapon:p.weapon,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
-        projectiles:this.projectiles.map(p=>({id:p.id,ownerId:p.ownerId,weapon:p.weapon,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,life:p.life}))};
+      return {protocol:3,contentVersion:Content.CONTENT_VERSION,world:this.world.id,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
+        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
+        pets:[...this.pets.values()].map(p=>({id:p.id,ownerId:p.ownerId,defId:p.defId,x:p.x,y:p.y,z:p.z,yaw:p.yaw,hp:p.hp,maxHp:p.maxHp,alive:p.alive,targetId:p.targetId})),
+        arenaEvents:this.arenaEvents.map(event=>({...event})),projectiles:this.projectiles.map(p=>({id:p.id,ownerId:p.ownerId,weapon:p.weapon,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,life:p.life}))};
     }
   }
 
   class ClientPredictor{
-    constructor(id,world=makeFoundryWorld()){
-      this.id=safeId(id);this.world=world;this.state=makePlayer(this.id,this.id,{x:0,y:0,z:0});this.history=[];this.lastSnapshotSeq=0;this.metrics={staleSnapshots:0,maxCorrection:0};
+    constructor(id,world=makeArenaWorld('foundry'),profile={}){
+      this.id=safeId(id);this.world=world;this.state=makePlayer(this.id,this.id,{x:0,y:0,z:0},profile);this.history=[];this.lastSnapshotSeq=0;this.metrics={staleSnapshots:0,maxCorrection:0};
     }
     predict(input,dtMs,inputSeq){
       if(!this.state.alive)return false;const clean=sanitizeInput({...input,seq:inputSeq});integrateMovement(this.state,clean,this.world,clamp(dtMs,0,50)/1000);
       this.history.push({seq:inputSeq,input:clean,dtMs:clamp(dtMs,0,50)});if(this.history.length>240)this.history.shift();return true;
     }
     applySnapshot(snapshot){
-      if(!snapshot||snapshot.protocol!==2||snapshot.seq<=this.lastSnapshotSeq){this.metrics.staleSnapshots++;return{accepted:false,reason:'stale_snapshot'};}
+      if(!snapshot||snapshot.protocol!==3||snapshot.contentVersion!==Content.CONTENT_VERSION||snapshot.seq<=this.lastSnapshotSeq){this.metrics.staleSnapshots++;return{accepted:false,reason:'stale_snapshot'};}
       const own=snapshot.players.find(p=>p.id===this.id);if(!own)return{accepted:false,reason:'missing_self'};this.lastSnapshotSeq=snapshot.seq;
       const error=Math.hypot(this.state.x-own.x,this.state.y-own.y,this.state.z-own.z);this.metrics.maxCorrection=Math.max(this.metrics.maxCorrection,error);
-      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,weapon:own.weapon,onGround:Math.abs(own.vy)<.01});
+      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,weapon:own.weapon,loadout:own.loadout,profile:own.profile,heat:own.heat,onGround:Math.abs(own.vy)<.01});
       this.history=this.history.filter(item=>item.seq>own.lastProcessedInput);
       if(!own.alive){this.history=[];return{accepted:true,error};}
       const replay=this.history.slice();this.history=[];
@@ -444,5 +598,5 @@
     }
   }
 
-  return {CFG,WEAPONS,WEAPON_IDS,HITBOX,Authority,ClientPredictor,RemoteBuffer,makeFoundryWorld,makeFlatWorld,sanitizeInput,dirFromAngles,rayBox,rayWorld};
+  return {CFG,CONTENT_VERSION:Content.CONTENT_VERSION,CONTENT:Content,WEAPONS,WEAPON_IDS,PETS,ARENAS,HITBOX,Authority,ClientPredictor,RemoteBuffer,makeArenaWorld,makeFoundryWorld,makeFlatWorld,safeProfile,sanitizeInput,dirFromAngles,rayBox,rayWorld};
 });

@@ -4,6 +4,8 @@ A 3D browser arena shooter, built by Ethan. One life, 200 HP, last block standin
 
 **▶ Play: https://fun-games-ralston.github.io/shooters-royale/**
 
+**▶ Friends PvP: https://fun-games-ralston.github.io/shooters-royale/pvp-real/**
+
 What's changed and when: [RELEASE-LOG.md](RELEASE-LOG.md)
 
 Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
@@ -24,6 +26,9 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
   free before deciding to save up for it.
 - An optional **club leaderboard** — a made-up name and a 4-digit PIN, no email
   and nothing that identifies anyone.
+- **Two-player friends PvP** with room links, host-authoritative movement and
+  combat, and the same maps, weapons, companions, hazards, and saved look as
+  the solo game. PvP does not change solo progress.
 
 ## Controls
 
@@ -48,6 +53,8 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 | `SPEC.md` | Game design and technical spec. |
 | `STATUS.md` | Build status, balance numbers, known issues. |
 | `balance-sim.js` | Balance harness — drives a simulated player inside the live game. |
+| `pvp-real/` | Two-player friends PvP. |
+| `PVP-REAL-GAME-PLAYTEST.md` | PvP architecture, scope, limits, and verification gates. |
 
 ## Running it locally
 

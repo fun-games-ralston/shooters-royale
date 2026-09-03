@@ -13,11 +13,13 @@
     'players', 'rtt', 'messages', 'messageRate', 'viewport', 'arena', 'hp', 'hpFill', 'weaponName',
     'ammo', 'reserve', 'reloadState', 'roundOver', 'roundTitle', 'roundSummary', 'roundSync',
     'connectionLost', 'roomRoster', 'log', 'leaveMatch', 'weaponBar', 'hitMarker',
+    'hostArena', 'hostSlot1', 'hostSlot2', 'hostSlot3', 'hostPet', 'hostPetSkill',
+    'guestSlot1', 'guestSlot2', 'guestSlot3', 'guestPet', 'guestPetSkill',
   ].map(id => [id, document.getElementById(id)]));
 
   const keys = Object.create(null);
   const keyPulseUntil = Object.create(null);
-  const weaponKeys = { Digit1: 'sidearm', Digit2: 'ak47', Digit3: 'scatter', Digit4: 'bazooka' };
+  const weaponKeys = {};
   let room = null;
   let authority = null;
   let predictor = null;
@@ -44,6 +46,8 @@
   let reloadId = 0;
   let trigger = false;
   let activeWeapon = 'sidearm';
+  let localProfile = null;
+  let matchArenaId = 'foundry';
   let localYaw = 0;
   let localPitch = 0;
   let aimInitialized = false;
@@ -64,6 +68,54 @@
   const fighterModels = new Map();
   const projectileModels = new Map();
   const effects = [];
+  const petModels = new Map();
+
+  function savedAppearance() {
+    try {
+      const state = JSON.parse(localStorage.getItem('sr_save_v1') || '{}');
+      return state && state.eq || {};
+    } catch (_) { return {}; }
+  }
+
+  function profileFromControls(prefix) {
+    const appearance = savedAppearance();
+    return PVPRealSim.safeProfile({
+      loadout: [els[`${prefix}Slot1`].value, els[`${prefix}Slot2`].value, els[`${prefix}Slot3`].value],
+      pet: els[`${prefix}Pet`].value || null,
+      hair: appearance.hair,
+      outfit: appearance.outfit,
+      acc: appearance.acc,
+    });
+  }
+
+  function populateSetup() {
+    const appearance = savedAppearance();
+    const defaults = PVPRealSim.safeProfile({ loadout: [appearance.primary, appearance.secondary, appearance.melee], pet: appearance.pet });
+    for (const prefix of ['host', 'guest']) {
+      for (let slot = 1; slot <= 3; slot += 1) {
+        const select = els[`${prefix}Slot${slot}`];
+        for (const weapon of PVPRealSim.CONTENT.WEAPONS) select.add(new Option(`${slot} · ${weapon.name}`, weapon.id));
+        select.value = defaults.loadout[slot - 1];
+      }
+      const petSelect = els[`${prefix}Pet`];
+      petSelect.add(new Option('No companion', ''));
+      for (const pet of PVPRealSim.CONTENT.PETS) petSelect.add(new Option(pet.name, pet.id));
+      petSelect.value = defaults.pet || '';
+      petSelect.addEventListener('change', () => updatePetSkill(prefix));
+      updatePetSkill(prefix);
+    }
+    for (const arena of PVPRealSim.CONTENT.ARENAS) els.hostArena.add(new Option(`${arena.name}${arena.event || arena.hazard || arena.void ? ' ⚠' : ''}`, arena.id));
+    els.hostArena.value = 'foundry';
+  }
+
+  function updatePetSkill(prefix) {
+    const pet = PVPRealSim.PETS[els[`${prefix}Pet`].value];
+    const target = els[`${prefix}PetSkill`];target.replaceChildren();
+    if (!pet) { target.textContent = 'No companion AI or perk.';return; }
+    const role = document.createElement('span');role.className = 'role';role.textContent = `▲ ${pet.tactic.role}`;
+    const perk = document.createElement('span');perk.className = 'perk';perk.textContent = `✦ ${pet.tactic.skill}: ${pet.perkTxt}`;
+    target.append(role, perk);
+  }
 
   function cleanName(value) {
     return (String(value || 'FIGHTER').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'FIGHTER').slice(0, 16);
@@ -97,7 +149,7 @@
 
   async function begin(host) {
     if (room || running) return;
-    if (!window.supabase || !window.THREE || !window.PVPRealtime || !window.PVPRealSim) {
+    if (!window.supabase || !window.THREE || !window.PVPRealtime || !window.PVPRealSim || !window.BlockRoyaleContent || !window.BlockRoyaleWorld) {
       els.connectStatus.textContent = 'A required multiplayer or 3D library did not load. Refresh and try again.';
       return;
     }
@@ -105,6 +157,7 @@
     peerId = PVPRealtime.randomPeerId();
     const code = host ? PVPRealtime.randomRoomCode(12) : els.roomCode.value;
     const name = cleanName(host ? els.hostName.value : els.guestName.value);
+    localProfile = profileFromControls(host ? 'host' : 'guest');
     if (!host && String(code).replace(/[^A-Z2-9]/gi, '').length < 8) {
       els.connectStatus.textContent = 'Enter the host’s room code.';
       return;
@@ -112,16 +165,8 @@
     els.create.disabled = true;
     els.join.disabled = true;
     els.connectStatus.textContent = 'Connecting to the real-game PvP room…';
-    world = PVPRealSim.makeFoundryWorld();
-    if (host) {
-      authority = new PVPRealSim.Authority({ world, startTimeMs: Date.now() });
-      authority.addPlayer(peerId, { name });
-    } else {
-      predictor = new PVPRealSim.ClientPredictor(peerId, world);
-      remoteBuffer = new PVPRealSim.RemoteBuffer(100);
-    }
     room = new PVPRealtime.RealtimeRoom({
-      client: makeClient(), roomCode: code, peerId, name, isHost: host,
+      client: makeClient(), roomCode: code, peerId, name, isHost: host,profile:localProfile,contentVersion:PVPRealSim.CONTENT_VERSION,
       onInput: (id, input, receivedAt) => authority && authority.receiveInput(id, input, receivedAt),
       onRoundAck: handleRoundAck,
       onSnapshot: receiveSnapshot,
@@ -140,7 +185,7 @@
       connected = true;
       els.role.textContent = host ? 'HOST AUTHORITY' : 'GUEST CLIENT';
       els.lobbyCode.textContent = room.roomCode;
-      const base = location.href.split('#')[0];
+      const base = `${location.origin}${location.pathname}`;
       els.invite.value = `${base}#${room.roomCode}`;
       history.replaceState(null, '', `#${room.roomCode}`);
       setStage('lobby');
@@ -158,7 +203,7 @@
       if (room) await room.close();
       room = null;
       authority = null;
-      predictor = null;
+      predictor = null;world=null;
     }
   }
 
@@ -176,7 +221,7 @@
       ids.add(peerId);
       for (const person of admitted) {
         if (!authority.players.has(person.playerId)) {
-          if (authority.addPlayer(person.playerId, { name: person.name })) log(`${person.name} entered the Foundry`, 'good');
+          if (authority.addPlayer(person.playerId, { name: person.name, profile: person.profile })) log(`${person.name} entered ${world.def.name}`, 'good');
         }
       }
       for (const id of [...authority.players.keys()]) {
@@ -222,7 +267,9 @@
         const title = document.createElement('strong');
         const detail = document.createElement('small');
         title.textContent = `${person.playerId === peerId ? '◆' : '◇'} ${person.name}`;
-        detail.textContent = person.role === 'host' ? 'HOST AUTHORITY' : 'GUEST CLIENT';
+        const profile = PVPRealSim.safeProfile(person.profile);
+        const pet = profile.pet ? PVPRealSim.PETS[profile.pet].name : 'NO PET';
+        detail.textContent = `${person.role === 'host' ? 'HOST AUTHORITY' : 'GUEST CLIENT'} · ${profile.loadout.map(id => PVPRealSim.WEAPONS[id].name).join(' / ')} · ${pet}`;
         seat.append(title, detail);
       } else {
         seat.textContent = '◇ OPEN FIGHTER SLOT';
@@ -235,7 +282,7 @@
 
   function canStart() {
     const admitted = admittedPlayers(roster);
-    return isHost && admitted.length === 2 && roster.length === 2 && room && room.canStart();
+    return isHost && admitted.length === 2 && roster.length === 2 && admitted.every(item => item.contentVersion === PVPRealSim.CONTENT_VERSION) && room && room.canStart();
   }
 
   function updateLobbyControls() {
@@ -244,8 +291,9 @@
     if (isHost) {
       const ready = canStart();
       els.startMatch.disabled = !ready;
-      els.startMatch.textContent = ready ? 'Start Foundry duel' : roster.length < 2 ? 'Waiting for fighter' : 'Finishing handshake';
-      els.lobbyState.textContent = ready ? 'Both fighters are synchronized.' : 'Share the invite with one friend.';
+      const mismatch = roster.some(item => item.contentVersion && item.contentVersion !== PVPRealSim.CONTENT_VERSION);
+      els.startMatch.textContent = ready ? `Start ${PVPRealSim.ARENAS[els.hostArena.value].name} duel` : roster.length < 2 ? 'Waiting for fighter' : mismatch ? 'Refresh both players' : 'Finishing handshake';
+      els.lobbyState.textContent = ready ? 'Both fighters have matching game content.' : mismatch ? 'Game versions differ. Refresh both devices.' : 'Share the invite with one friend.';
     } else {
       els.startMatch.disabled = true;
       els.startMatch.textContent = 'Waiting for host';
@@ -255,7 +303,7 @@
 
   async function requestStart() {
     if (!canStart() || running) return;
-    const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 2, world: 'foundry' };
+    const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 3, world: els.hostArena.value, contentVersion: PVPRealSim.CONTENT_VERSION };
     els.startMatch.disabled = true;
     els.startMatch.textContent = 'Starting…';
     if (await room.sendLobby(message)) receiveLobby({ ...message, hostId: peerId });
@@ -263,10 +311,21 @@
   }
 
   function receiveLobby(message) {
-    if (!message || message.type !== 'real_start' || running || roundEnded || message.protocol !== 2) return;
+    if (!message || message.type !== 'real_start' || running || roundEnded || message.protocol !== 3 || message.contentVersion !== PVPRealSim.CONTENT_VERSION || !PVPRealSim.ARENAS[message.world]) return;
+    matchArenaId = message.world;
+    world = PVPRealSim.makeArenaWorld(matchArenaId);
+    if (isHost) {
+      authority = new PVPRealSim.Authority({ world, startTimeMs: Date.now() });
+      for (const person of admittedPlayers(roster)) authority.addPlayer(person.playerId, { name: person.name, profile: person.profile });
+    } else {
+      predictor = new PVPRealSim.ClientPredictor(peerId, world, localProfile);
+      remoteBuffer = new PVPRealSim.RemoteBuffer(100);
+    }
+    activeWeapon = localProfile.loadout[0];
+    buildWeaponBar();
     const hostNow = isHost ? Date.now() : room.toHostTime(Date.now());
     const delay = Math.max(0, Number(message.startsAtMs) - hostNow);
-    els.lobbyState.textContent = `Opening Foundry in ${Math.max(1, Math.ceil(delay / 1000))}…`;
+    els.lobbyState.textContent = `Opening ${world.def.name} in ${Math.max(1, Math.ceil(delay / 1000))}…`;
     setTimeout(startArena, delay);
   }
 
@@ -288,7 +347,7 @@
     }
     lastFrame = performance.now();
     simAccum = inputAccum = snapshotAccum = 0;
-    log('Foundry duel started', 'good');
+    log(`${world.def.name} duel started`, 'good');
     updateWeaponButtons();
     frameHandle = requestAnimationFrame(frame);
   }
@@ -337,6 +396,7 @@
       jump: active('Space'),
       sprint: !!(keys.ShiftLeft || keys.ShiftRight),
       trigger,
+      ads: !!keys.MouseRight,
       fireId,
       reloadId,
       weapon: activeWeapon,
@@ -356,7 +416,7 @@
   }
 
   function receiveSnapshot(snapshot) {
-    if (!snapshot || snapshot.protocol !== 2 || isHost) return;
+    if (!snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== PVPRealSim.CONTENT_VERSION || snapshot.world !== matchArenaId || isHost) return;
     latest = snapshot;
     remoteBuffer.push(snapshot);
     const result = predictor.applySnapshot(snapshot);
@@ -388,7 +448,7 @@
 
   function showCombatEvent(event) {
     if (event.type === 'fire') {
-      for (const ray of event.rays || []) addTracer(event.origin, ray.end, ray.hit);
+      for (const ray of event.rays || []) addTracer(event.origin, ray.end, ray.hit, event.weapon);
       if (event.playerId === peerId) muzzleFlash();
       log(`${shortName(event.playerId)} fired ${PVPRealSim.WEAPONS[event.weapon]?.name || event.weapon}`, 'shot');
       return;
@@ -402,6 +462,28 @@
       addExplosion(event.point);
       return;
     }
+    if (event.type === 'arena_warning') {
+      addArenaWarning(event);
+      log(`${event.label} incoming`, 'bad');
+      return;
+    }
+    if (event.type === 'arena_impact') {
+      addExplosion({ x: event.x, y: PVPRealSim.CONTENT.ARENAS.find(item => item.id === matchArenaId) ? 0.2 : 0, z: event.z });
+      return;
+    }
+    if (event.type === 'pet_attack') {
+      log(`${PVPRealSim.PETS[event.pet].name} bit ${shortName(event.targetId)} · ${event.targetHp} HP`, 'good');
+      if (event.playerId === peerId) showHitMarker();
+      return;
+    }
+    if (event.type === 'pet_hit' || event.type === 'pet_down') {
+      const pet = PVPRealSim.PETS[event.pet];
+      log(`${pet.name} ${event.type === 'pet_down' ? 'was downed' : `took ${event.damage} damage · ${event.petHp} HP`}`, event.type === 'pet_down' ? 'bad' : 'shot');
+      if (event.playerId === peerId) showHitMarker();
+      return;
+    }
+    if (event.type === 'pet_revive') { log(`${PVPRealSim.PETS[event.pet].name} returned`, 'good'); return; }
+    if (event.type === 'overheat') { log(`${shortName(event.playerId)} overheated ${PVPRealSim.WEAPONS[event.weapon].name}`, 'bad'); return; }
     if (event.type === 'hit' || event.type === 'death') {
       const attacker = shortName(event.playerId);
       const target = shortName(event.targetId);
@@ -512,15 +594,31 @@
     els.hp.textContent = Math.max(0, Math.round(local.hp));
     els.hpFill.style.width = `${Math.max(0, local.hp) / PVPRealSim.CFG.baseHp * 100}%`;
     els.hpFill.style.background = local.hp > 70 ? 'var(--green)' : 'var(--red)';
-    els.weaponName.textContent = PVPRealSim.WEAPONS[activeWeapon].name;
-    els.ammo.textContent = equippedWeapon === activeWeapon ? ammo ?? '—' : '…';
-    els.reserve.textContent = equippedWeapon === activeWeapon ? reserve ?? '—' : '…';
-    els.reloadState.textContent = reloadMs > 0 ? `RELOADING ${Math.ceil(reloadMs / 100) / 10}s` : local.alive === false ? 'ELIMINATED' : '';
+    const weapon = PVPRealSim.WEAPONS[activeWeapon];
+    els.weaponName.textContent = weapon.name;
+    els.ammo.textContent = equippedWeapon === activeWeapon ? ammo < 0 ? '∞' : ammo ?? '—' : '…';
+    els.reserve.textContent = equippedWeapon === activeWeapon ? ammo < 0 ? weapon.heat ? `${Math.round(local.heat || 0)}% HEAT` : '∞' : reserve ?? '—' : '…';
+    els.reloadState.textContent = reloadMs > 0 ? `RELOADING ${Math.ceil(reloadMs / 100) / 10}s` : local.alive === false ? 'ELIMINATED' : weapon.charge && trigger ? 'CHARGING' : '';
     updateWeaponButtons();
   }
 
   function updateWeaponButtons() {
     for (const button of els.weaponBar.querySelectorAll('[data-weapon]')) button.classList.toggle('active', button.dataset.weapon === activeWeapon);
+  }
+
+  function buildWeaponBar() {
+    weaponKeys.Digit1 = localProfile.loadout[0];
+    weaponKeys.Digit2 = localProfile.loadout[1];
+    weaponKeys.Digit3 = localProfile.loadout[2];
+    const buttons = localProfile.loadout.map((id, index) => {
+      const weapon = PVPRealSim.WEAPONS[id];
+      const button = document.createElement('button'); button.dataset.weapon = id;
+      const key = document.createElement('kbd'); key.textContent = String(index + 1);
+      const name = document.createElement('b'); name.textContent = weapon.name;
+      const role = document.createElement('span'); role.textContent = weapon.role;
+      button.append(key, name, role); return button;
+    });
+    els.weaponBar.replaceChildren(...buttons); updateWeaponButtons();
   }
 
   function sampleMessageRate() {
@@ -553,6 +651,8 @@
       messagesSent: String(room ? room.metrics.sent : 0),
       messagesReceived: String(room ? room.metrics.received : 0),
       observedRate: String(observedRate),
+      world: world ? world.id : '',
+      contentVersion: PVPRealSim.CONTENT_VERSION,
       localHp: String(local ? Math.round(local.hp) : ''),
       localX: String(local ? Number(local.x).toFixed(3) : ''),
       localY: String(local ? Number(local.y).toFixed(3) : ''),
@@ -570,7 +670,7 @@
     renderer.outputEncoding = THREE.sRGBEncoding;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(world.colors.sky);
-    scene.fog = new THREE.FogExp2(world.colors.fog, 0.012);
+    scene.fog = new THREE.FogExp2(world.colors.fog, world.def.fogD || 0.012);
     camera = new THREE.PerspectiveCamera(74, 16 / 9, 0.05, 180);
     camera.rotation.order = 'YXZ';
     scene.add(camera);
@@ -592,10 +692,11 @@
 
   function addArenaAtmosphere() {
     const points = [];
-    for (let index = 0; index < 180; index += 1) points.push((Math.random() - 0.5) * 72, Math.random() * 12, (Math.random() - 0.5) * 72);
+    const count = Math.min(480, world.def.fx && world.def.fx.n || 180);
+    for (let index = 0; index < count; index += 1) points.push((Math.random() - 0.5) * world.size, Math.random() * 16, (Math.random() - 0.5) * world.size);
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    const material = new THREE.PointsMaterial({ color: world.colors.accent, size: 0.07, transparent: true, opacity: 0.55 });
+    const material = new THREE.PointsMaterial({ color: world.def.fx && world.def.fx.c || world.colors.accent, size: world.def.fx && world.def.fx.type === 'snow' ? .12 : .07, transparent: true, opacity: 0.55 });
     scene.add(new THREE.Points(geometry, material));
   }
 
@@ -618,20 +719,37 @@
   function createFighter(id) {
     const group = new THREE.Group();
     group.userData.id = id;
-    boxPart(group, 0x4a5a3c, 0, 1.12, 0, 0.76, 0.86, 0.42);
-    boxPart(group, 0x2f3a2a, -0.2, 0.44, 0, 0.32, 0.78, 0.34);
-    boxPart(group, 0x2f3a2a, 0.2, 0.44, 0, 0.32, 0.78, 0.34);
-    boxPart(group, 0x1e1a16, -0.2, 0.08, -0.08, 0.34, 0.16, 0.52);
-    boxPart(group, 0x1e1a16, 0.2, 0.08, -0.08, 0.34, 0.16, 0.52);
-    boxPart(group, 0xc98a5e, 0, 1.68, 0, 0.62, 0.52, 0.55);
-    boxPart(group, 0x3b2a1c, 0, 1.96, 0, 0.68, 0.18, 0.61);
-    boxPart(group, 0x4a5a3c, -0.52, 1.13, -0.05, 0.26, 0.82, 0.28);
-    boxPart(group, 0x4a5a3c, 0.52, 1.13, -0.05, 0.26, 0.82, 0.28);
-    const gun = boxPart(group, 0x292d31, 0.32, 1.34, -0.46, 0.18, 0.18, 0.82);
-    gun.userData.gun = true;
+    const state = authority && authority.players.get(id) || latest && latest.players.find(player => player.id === id);
+    const profile = PVPRealSim.safeProfile(state && state.profile);
+    const outfit = PVPRealSim.CONTENT.OUTFITS.find(item => item.id === profile.outfit) || PVPRealSim.CONTENT.OUTFITS[0];
+    const hair = PVPRealSim.CONTENT.HAIRS.find(item => item.id === profile.hair) || PVPRealSim.CONTENT.HAIRS[0];
+    const acc = PVPRealSim.CONTENT.ACCS.find(item => item.id === profile.acc) || PVPRealSim.CONTENT.ACCS[0];
+    boxPart(group, outfit.shirt, 0, 1.12, 0, .76, .86, .42);
+    boxPart(group, outfit.pant, -.2, .44, 0, .32, .78, .34);boxPart(group, outfit.pant, .2, .44, 0, .32, .78, .34);
+    boxPart(group, outfit.shoe, -.2, .08, -.08, .34, .16, .52);boxPart(group, outfit.shoe, .2, .08, -.08, .34, .16, .52);
+    boxPart(group, outfit.skin, 0, 1.68, 0, .62, .52, .55);
+    boxPart(group, outfit.arm, -.52, 1.13, -.05, .26, .82, .28);boxPart(group, outfit.arm, .52, 1.13, -.05, .26, .82, .28);
+    for (const part of hair.parts || []) boxPart(group, part.c, part.x, 1.68 + part.y, part.z, part.w, part.h, part.d);
+    for (const part of acc.parts || []) boxPart(group, part.c, part.x, 1.68 + part.y, part.z, part.w, part.h, part.d);
+    for (const part of acc.back || []) boxPart(group, part.c, part.x, 1.12 + part.y, part.z, part.w, part.h, part.d);
+    if (acc.cape) boxPart(group, acc.cape.c, 0, 1.05, .28, .7, 1.1, .08);
+    if (acc.halo) { const halo = new THREE.Mesh(new THREE.TorusGeometry(.44,.035,6,18),new THREE.MeshBasicMaterial({color:acc.halo.c}));halo.position.set(0,2.2,0);halo.rotation.x=Math.PI/2;group.add(halo); }
+    if (acc.wings) { boxPart(group, acc.wings.c, -.52, 1.2, .3, .55, .16, .7);boxPart(group, acc.wings.c, .52, 1.2, .3, .55, .16, .7); }
+    group.userData.weaponHolder = new THREE.Group();group.userData.weaponHolder.position.set(.32,1.34,-.36);group.userData.weaponHolder.scale.setScalar(.8);group.add(group.userData.weaponHolder);
     scene.add(group);
     fighterModels.set(id, group);
     return group;
+  }
+
+  function addWeaponParts(parent, weaponId) {
+    const weapon = PVPRealSim.WEAPONS[weaponId] || PVPRealSim.WEAPONS.sidearm;
+    for (const part of weapon.parts || []) boxPart(parent, part.c, part.x, part.y, part.z, part.w, part.h, part.d);
+    parent.userData.weapon = weapon.id;
+  }
+
+  function updateFighterWeapon(model, weaponId) {
+    const holder = model.userData.weaponHolder;if (!holder || holder.userData.weapon === weaponId) return;
+    while (holder.children.length) holder.remove(holder.children[0]);addWeaponParts(holder, weaponId);
   }
 
   function buildViewModel(weaponId) {
@@ -641,23 +759,17 @@
     const skin = 0xc98a5e;
     boxPart(viewModel, skin, -0.28, -0.08, 0.1, 0.22, 0.2, 0.55);
     boxPart(viewModel, skin, 0.28, -0.08, 0.1, 0.22, 0.2, 0.55);
-    if (weaponId === 'sidearm') {
-      boxPart(viewModel, 0x30343a, 0, 0.05, -0.2, 0.22, 0.25, 0.72);
-      boxPart(viewModel, 0x1e2228, 0, -0.16, 0.02, 0.18, 0.4, 0.22);
-    } else if (weaponId === 'ak47') {
-      boxPart(viewModel, 0x7a4b24, 0, 0.02, -0.12, 0.26, 0.28, 1.18);
-      boxPart(viewModel, 0x292d31, 0, 0.05, -0.72, 0.16, 0.16, 0.7);
-      boxPart(viewModel, 0x292d31, 0, -0.18, -0.05, 0.19, 0.42, 0.25);
-    } else if (weaponId === 'scatter') {
-      boxPart(viewModel, 0x5b351e, 0, 0.03, -0.15, 0.32, 0.3, 1.05);
-      boxPart(viewModel, 0x20242a, 0, 0.04, -0.82, 0.16, 0.16, 0.8);
-    } else {
-      boxPart(viewModel, 0x38413d, 0, 0.03, -0.2, 0.42, 0.42, 1.25);
-      boxPart(viewModel, 0xe0553a, 0, 0.03, -0.72, 0.48, 0.48, 0.18);
-    }
+    addWeaponParts(viewModel, weaponId);
+    viewModel.scale.setScalar(1.45);
     viewModel.position.set(0.43, -0.4, -0.75);
     viewModel.rotation.set(-0.06, -0.08, 0);
     camera.add(viewModel);
+  }
+
+  function createPetModel(state) {
+    const def = PVPRealSim.PETS[state.defId];const group = new THREE.Group();
+    for (const part of def.parts || []) boxPart(group, part.c, part.x, part.y, part.z, part.w, part.h, part.d);
+    group.scale.setScalar(def.scale || 1);return group;
   }
 
   function visualPlayers(now) {
@@ -682,8 +794,17 @@
       model.visible = person.alive !== false;
       model.position.set(person.x, person.y, person.z);
       model.rotation.y = person.yaw;
+      updateFighterWeapon(model, person.weapon);
     }
     for (const [id, model] of fighterModels) if (!ids.has(id)) { scene.remove(model); fighterModels.delete(id); }
+    const pets = authority ? [...authority.pets.values()] : latest && latest.pets || [];
+    const petIds = new Set();
+    for (const pet of pets) {
+      petIds.add(pet.id);let model = petModels.get(pet.id);
+      if (!model) { model = createPetModel(pet);scene.add(model);petModels.set(pet.id, model); }
+      model.visible = pet.alive !== false;model.position.set(pet.x, pet.y, pet.z);model.rotation.y = pet.yaw;
+    }
+    for (const [id, model] of petModels) if (!petIds.has(id)) { scene.remove(model);petModels.delete(id); }
     const local = authority ? authority.players.get(peerId) : predictor && predictor.state;
     if (local) {
       camera.position.set(local.x, local.y + PVPRealSim.CFG.eye, local.z);
@@ -710,12 +831,13 @@
     animateEffects(now);
   }
 
-  function addTracer(origin, end, hit) {
+  function addTracer(origin, end, hit, weaponId) {
     if (!scene || !origin || !end) return;
     const geometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(origin.x, origin.y, origin.z), new THREE.Vector3(end.x, end.y, end.z),
     ]);
-    const material = new THREE.LineBasicMaterial({ color: hit ? 0x7fd45b : 0xf2b134, transparent: true, opacity: 1 });
+    const weapon = PVPRealSim.WEAPONS[weaponId] || PVPRealSim.WEAPONS.sidearm;
+    const material = new THREE.LineBasicMaterial({ color: hit ? weapon.tracer || 0x7fd45b : weapon.tracer || 0xf2b134, transparent: true, opacity: 1 });
     const line = new THREE.Line(geometry, material);
     scene.add(line);
     effects.push({ kind: 'tracer', object: line, born: performance.now(), life: 220 });
@@ -731,6 +853,14 @@
     light.position.copy(sphere.position);
     scene.add(sphere, light);
     effects.push({ kind: 'explosion', object: sphere, light, born: performance.now(), life: 480 });
+  }
+
+  function addArenaWarning(event) {
+    if (!scene) return;
+    const material = new THREE.MeshBasicMaterial({ color: world.colors.accent, transparent: true, opacity: .72, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(Math.max(.2, event.r - .18), event.r, 40), material);
+    ring.rotation.x = -Math.PI / 2;ring.position.set(event.x, .09, event.z);scene.add(ring);
+    effects.push({ kind: 'warning', object: ring, born: performance.now(), life: Math.max(180, event.impactAt - (authority ? authority.serverTimeMs : room.toHostTime(Date.now()))) });
   }
 
   function muzzleFlash() {
@@ -752,6 +882,7 @@
         continue;
       }
       if (effect.kind === 'tracer') effect.object.material.opacity = 1 - progress;
+      if (effect.kind === 'warning') { effect.object.material.opacity = .35 + Math.sin(progress * Math.PI * 12) * .3;effect.object.scale.setScalar(.92 + progress * .08); }
       if (effect.kind === 'explosion') {
         effect.object.scale.setScalar(0.2 + progress * 4.5);
         effect.object.material.opacity = 0.8 * (1 - progress);
@@ -769,7 +900,7 @@
   }
 
   function chooseWeapon(id) {
-    if (!PVPRealSim.WEAPONS[id] || roundEnded) return;
+    if (!PVPRealSim.WEAPONS[id] || !localProfile || !localProfile.loadout.includes(id) || roundEnded) return;
     activeWeapon = id;
     updateWeaponButtons();
   }
@@ -800,6 +931,7 @@
     aimInitialized = true;
   });
   els.arena.addEventListener('mousedown', event => {
+    if (event.button === 2) { keys.MouseRight = true;event.preventDefault();return; }
     if (event.button !== 0 || !running || roundEnded) return;
     trigger = true;
     fireId += 1;
@@ -811,7 +943,8 @@
       } catch (_) {}
     }
   });
-  addEventListener('mouseup', event => { if (event.button === 0) trigger = false; });
+  addEventListener('mouseup', event => { if (event.button === 0) trigger = false;if (event.button === 2) keys.MouseRight = false; });
+  els.arena.addEventListener('contextmenu', event => event.preventDefault());
   els.weaponBar.addEventListener('click', event => {
     const button = event.target.closest('[data-weapon]');
     if (button) chooseWeapon(button.dataset.weapon);
@@ -829,18 +962,26 @@
   addEventListener('beforeunload', () => room && room.close());
 
   window.__pvpRealTest = {
-    version: 1,
+    version: 3,
     state: () => ({
       stage: document.body.dataset.stage || 'setup', isHost, peerId, roomCode: room && room.roomCode,
       connected, running, roundEnded, roundConfirmed, winnerId: latest && latest.winnerId,
       roster: roster.map(item => ({ ...item })), local: authoritativeLocal() && { ...authoritativeLocal() },
       messages: room ? { ...room.metrics, observedRate } : null, lastEventSeq, lastAckSent,
+      world: world && world.id, contentVersion: PVPRealSim.CONTENT_VERSION,
+      pets: authority ? [...authority.pets.values()].map(item => ({ ...item })) : latest && latest.pets || [],
     }),
     fire: () => { if (running && !roundEnded) fireId += 1; },
     weapon: chooseWeapon,
+    setup: ({ arena, loadout, pet } = {}) => {
+      if (arena && PVPRealSim.ARENAS[arena]) els.hostArena.value = arena;
+      if (Array.isArray(loadout)) for (let index = 0; index < 3; index += 1) for (const prefix of ['host', 'guest']) if (PVPRealSim.WEAPONS[loadout[index]]) els[`${prefix}Slot${index + 1}`].value = loadout[index];
+      if (pet === null || PVPRealSim.PETS[pet]) for (const prefix of ['host', 'guest']) { els[`${prefix}Pet`].value = pet || '';updatePetSkill(prefix); }
+    },
     aim: (yaw, pitch = 0) => { localYaw = Number(yaw) || 0; localPitch = Math.max(-1.1, Math.min(1.1, Number(pitch) || 0)); aimInitialized = true; },
   };
 
+  populateSetup();
   document.body.dataset.stage = 'setup';
   if (location.hash.length > 1) els.roomCode.value = location.hash.slice(1).toUpperCase();
 })();

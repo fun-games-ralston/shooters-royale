@@ -1,9 +1,5 @@
-# PvP friends test deployment
+# Retired PvP lab route
 
-Permanent GitHub Pages staging route for the 2–4 player PvP prototype.
+The old top-down tank netcode lab has been removed. This directory remains only as a compatibility redirect because the live PvE menu already links here.
 
-- Source branch: `pvp-realtime-spike`
-- Source commit: `59673e56b5db95c07f94b260085f9b67984985b7`
-- Public route: `/shooters-royale/pvp-test/`
-
-The root production game is unchanged by this isolated test deployment.
+The supported friends mode lives at `pvp-real/`. Keeping the redirect lets the PvE `index.html` remain byte-for-byte unchanged.

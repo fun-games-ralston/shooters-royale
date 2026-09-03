@@ -3,7 +3,7 @@
 
 const readline = require('node:readline');
 const { createClient } = require('@supabase/supabase-js');
-const PVPRealtime = require('../pvp-test/pvp-realtime.js');
+const PVPRealtime = require('./transport.js');
 const Sim = require('./sim.js');
 
 const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
@@ -11,16 +11,18 @@ const SUPABASE_KEY = 'sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
 const role = process.argv[2];
 const roomCode = String(process.argv[3] || '').toUpperCase();
 const name = String(process.argv[4] || (role === 'host' ? 'NODEHOST' : 'NODEGUEST')).slice(0, 16);
-if (!['host', 'guest'].includes(role) || roomCode.length < 8) {
-  console.error('usage: e2e-peer.js <host|guest> <room-code> [name]');
+const arenaId = String(process.argv[5] || 'foundry');
+if (!['host', 'guest'].includes(role) || roomCode.length < 8 || !Sim.ARENAS[arenaId]) {
+  console.error('usage: e2e-peer.js <host|guest> <room-code> [name] [arena-id]');
   process.exit(2);
 }
 
 const peerId = `${role}-e2e-${process.pid}`;
 const isHost = role === 'host';
-const world = Sim.makeFoundryWorld();
-const authority = isHost ? new Sim.Authority({ world, startTimeMs: Date.now() }) : null;
-const predictor = !isHost ? new Sim.ClientPredictor(peerId, world) : null;
+const profile = Sim.safeProfile({ loadout: ['sidearm', 'ak47', 'knife'], pet: isHost ? 'dog' : 'raptor' });
+let world = null;
+let authority = null;
+let predictor = null;
 const client = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   realtime: { params: { eventsPerSecond: 40 } },
@@ -51,6 +53,16 @@ function out(type, data = {}) {
 function own() {
   if (authority) return authority.players.get(peerId) || null;
   return lastSnapshot && lastSnapshot.players.find(player => player.id === peerId) || predictor.state;
+}
+
+function initializeMatch(arenaId) {
+  if (world) return;
+  world = Sim.makeArenaWorld(arenaId);
+  if (isHost) {
+    authority = new Sim.Authority({ world, startTimeMs: Date.now() });
+    for (const person of roster) authority.addPlayer(person.playerId, { name: person.name, profile: person.profile });
+  } else predictor = new Sim.ClientPredictor(peerId, world, profile);
+  state.weapon = profile.loadout[0];
 }
 
 function aimAtOpponent() {
@@ -112,7 +124,14 @@ function report() {
   const position = { x: Number(me.x.toFixed(3)), y: Number(me.y.toFixed(3)), z: Number(me.z.toFixed(3)) };
   const moved = lastReportPosition ? Math.hypot(position.x - lastReportPosition.x, position.y - lastReportPosition.y, position.z - lastReportPosition.z) : 0;
   lastReportPosition = position;
-  out('state', { position, moved, hp: me.hp, alive: me.alive, weapon: me.weapon, messages: { ...network.metrics } });
+  const players = authority ? [...authority.players.values()] : lastSnapshot && lastSnapshot.players || [];
+  const opponents = players.filter(player => player.id !== peerId).map(player => ({
+    id: player.id,
+    position: { x: Number(player.x.toFixed(3)), y: Number(player.y.toFixed(3)), z: Number(player.z.toFixed(3)) },
+    hp: player.hp,
+    alive: player.alive,
+  }));
+  out('state', { position, moved, hp: me.hp, alive: me.alive, weapon: me.weapon, opponents, messages: { ...network.metrics } });
 }
 
 function finish(snapshot) {
@@ -139,22 +158,25 @@ function updateRoster(next) {
   roster = next;
   if (authority) {
     const guest = next.find(player => player.playerId !== peerId);
-    if (guest && !authority.players.has(guest.playerId)) authority.addPlayer(guest.playerId, { name: guest.name });
+    if (guest && !authority.players.has(guest.playerId)) authority.addPlayer(guest.playerId, { name: guest.name, profile: guest.profile });
     for (const id of [...authority.players.keys()]) if (id !== peerId && (!guest || id !== guest.playerId)) authority.removePlayer(id);
-    maybeStart();
   }
+  maybeStart();
   out('roster', { roster: next.map(player => ({ id: player.playerId, name: player.name, role: player.role })) });
 }
 
 function maybeStart() {
   if (!isHost || startSent || !network || !network.canStart() || roster.length !== 2) return;
   startSent = true;
-  const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 2, world: 'foundry' };
+  initializeMatch(arenaId);
+  const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 3, world: arenaId, contentVersion: Sim.CONTENT_VERSION };
   network.sendLobby(message).then(ok => { if (ok) setTimeout(startLoops, 900); });
 }
 
 function receiveSnapshot(snapshot) {
-  if (isHost || !snapshot || snapshot.protocol !== 2) return;
+  if (isHost || !snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== Sim.CONTENT_VERSION) return;
+  if (!predictor && snapshot.world && Sim.ARENAS[snapshot.world]) initializeMatch(snapshot.world);
+  if (!predictor) return;
   lastSnapshot = snapshot;
   predictor.applySnapshot(snapshot);
   if (snapshot.roundEnded) {
@@ -164,7 +186,8 @@ function receiveSnapshot(snapshot) {
 }
 
 function receiveLobby(message) {
-  if (!isHost && message && message.type === 'real_start' && message.protocol === 2) {
+  if (!isHost && message && message.type === 'real_start' && message.protocol === 3 && message.contentVersion === Sim.CONTENT_VERSION) {
+    initializeMatch(message.world);
     const wait = Math.max(0, Number(message.startsAtMs) - network.toHostTime(Date.now()));
     setTimeout(startLoops, wait);
   }
@@ -200,9 +223,8 @@ async function shutdown(code) {
 }
 
 async function main() {
-  if (authority) authority.addPlayer(peerId, { name });
   network = new PVPRealtime.RealtimeRoom({
-    client, roomCode, peerId, name, isHost,
+    client, roomCode, peerId, name, isHost, profile, contentVersion: Sim.CONTENT_VERSION,
     onInput: (id, input, receivedAt) => authority && authority.receiveInput(id, input, receivedAt),
     onRoundAck: (id, seq) => {
       if (authority && authority.roundEnded && seq === authority.roundEndSeq) roundAcks.add(id);

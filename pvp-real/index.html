@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#09070e">
-  <title>Block Royale · Real-Game PvP Beta</title>
-  <link rel="stylesheet" href="styles.css?v=1">
+  <title>Block Royale · PvP</title>
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <main>
   <header class="masthead">
     <div>
-      <div class="eyebrow">Feature-branch playtest</div>
-      <h1>Real-Game PvP Beta</h1>
-      <p>Two fighters. The Foundry. One host-authoritative round.</p>
+      <div class="eyebrow">Friends mode</div>
+      <h1>Block Royale PvP</h1>
+      <p>Two fighters. Your maps, weapons, companions, and look. One host-authoritative round.</p>
     </div>
-    <a class="back" href="../pvp-test/">Netcode lab</a>
+    <a class="back" href="../">Back to Block Royale</a>
   </header>
 
   <section id="setup" class="panel setup" data-stage="setup">
@@ -24,18 +24,27 @@
       <p>Your device hosts the simulation and decides movement, bullets, damage, death, and the winner.</p>
       <label for="hostName">Fighter name</label>
       <input id="hostName" maxlength="16" value="HOST" autocomplete="off">
+      <div class="loadout-picker" data-player="host">
+        <label for="hostArena">Arena</label><select id="hostArena"></select>
+        <label>Three-weapon loadout</label><div class="slot-picks"><select id="hostSlot1"></select><select id="hostSlot2"></select><select id="hostSlot3"></select></div>
+        <label for="hostPet">Companion</label><select id="hostPet"></select><small id="hostPetSkill" class="skill-copy"></small>
+      </div>
       <button id="create" class="primary">Create PvP room</button>
     </article>
     <article>
       <h2>Join a friend</h2>
-      <p>Open this beta page on a second device and enter the host's room code.</p>
+      <p>Open this page on a second device and enter the host's room code.</p>
       <label for="guestName">Fighter name</label>
       <input id="guestName" maxlength="16" value="GUEST" autocomplete="off">
       <label for="roomCode">Room code</label>
       <input id="roomCode" maxlength="20" placeholder="12 CHARACTER CODE" autocomplete="off">
+      <div class="loadout-picker" data-player="guest">
+        <label>Your three-weapon loadout</label><div class="slot-picks"><select id="guestSlot1"></select><select id="guestSlot2"></select><select id="guestSlot3"></select></div>
+        <label for="guestPet">Companion</label><select id="guestPet"></select><small id="guestPetSkill" class="skill-copy"></small>
+      </div>
       <button id="join">Join PvP room</button>
     </article>
-    <div class="notice"><b>Private beta boundary</b><span>The room is public-but-unlisted and protected only by its random code. This route does not write coins, XP, inventory, or solo-game progress.</span></div>
+    <div class="notice"><b>Safe PvP boundary</b><span>The room is public-but-unlisted and protected only by its random code. PvP reads your saved appearance for convenience but never writes coins, XP, inventory, mastery, or solo-game progress.</span></div>
     <p id="connectStatus" class="status" role="status"></p>
   </section>
 
@@ -46,7 +55,7 @@
     </div>
     <div class="invite"><input id="invite" readonly aria-label="Invite link"><button id="copy">Copy invite</button></div>
     <div id="lobbyRoster" class="seats"></div>
-    <div class="notice"><b>Playtest scope</b><span>Exactly two players. Four real weapons, movement, jumping, collision, HP, death, and one synchronized result. Bots, pets, progression, food, and hazards remain outside this slice.</span></div>
+    <div class="notice"><b>Shared game content</b><span>Exactly two players. All ten arenas, fourteen weapons, seven companions, arena movement rules, lava, void falls, timed map events, and saved cosmetics run under host authority. Food and PvE progression stay out of PvP.</span></div>
     <div class="actions"><button id="startMatch" class="primary" disabled>Waiting for fighter</button><button id="leaveLobby">Leave room</button></div>
   </section>
 
@@ -76,28 +85,25 @@
         </div>
         <div id="connectionLost" class="round-over hidden"><strong>Host lost</strong><span>The authority disconnected, so this round cannot continue.</span></div>
       </div>
-      <div id="weaponBar" class="weapon-bar">
-        <button data-weapon="sidearm"><kbd>1</kbd><b>M9</b><span>accurate</span></button>
-        <button data-weapon="ak47"><kbd>2</kbd><b>AK-47</b><span>automatic</span></button>
-        <button data-weapon="scatter"><kbd>3</kbd><b>Scattergun</b><span>close range</span></button>
-        <button data-weapon="bazooka"><kbd>4</kbd><b>Bazooka</b><span>splash</span></button>
-      </div>
-      <p class="controls">Click arena to capture mouse · WASD move · Shift sprint · Space jump · Mouse aim/fire · R reload · 1–4 switch</p>
+      <div id="weaponBar" class="weapon-bar"></div>
+      <p class="controls">Click arena to capture mouse · WASD move · Shift sprint · Space jump · Mouse aim/fire · Right mouse scope · R reload · 1–3 switch</p>
     </div>
     <aside class="panel side">
       <h2>Room</h2><div id="roomRoster" class="room-roster"></div>
       <h2>Authority log</h2><div id="log" class="log" aria-live="polite"></div>
       <h2>Netcode</h2>
       <dl class="netcode"><div><dt>Host simulation</dt><dd>30 Hz</dd></div><div><dt>Inputs</dt><dd>20 Hz</dd></div><div><dt>Snapshots</dt><dd>15 Hz</dd></div><div><dt>Rewind cap</dt><dd>200 ms</dd></div></dl>
-      <button id="leaveMatch">Leave playtest</button>
+      <button id="leaveMatch">Leave match</button>
     </aside>
   </section>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="../pvp-test/supabase-2.91.1.min.js?v=2.91.1"></script>
-<script src="../pvp-test/pvp-realtime.js?v=3"></script>
-<script src="sim.js?v=1"></script>
-<script src="app.js?v=2"></script>
+<script src="supabase-2.91.1.min.js?v=2.91.1"></script>
+<script src="../shared/pve-content.generated.js?v=3"></script>
+<script src="../shared/world.js?v=3"></script>
+<script src="transport.js?v=4"></script>
+<script src="sim.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

@@ -28,6 +28,8 @@
       this.roomCode=clean(options.roomCode);
       this.peerId=cleanPeer(options.peerId)||randomPeerId();
       this.name=String(options.name||'Fighter').replace(/[<>]/g,'').slice(0,16);
+      this.profile=options.profile&&typeof options.profile==='object'?options.profile:{};
+      this.contentVersion=String(options.contentVersion||'').slice(0,32);
       this.isHost=!!options.isHost;
       this.onInput=options.onInput||(()=>{});
       this.onRoundAck=options.onRoundAck||(()=>{});
@@ -81,7 +83,7 @@
       await this._subscribe(this.stateChannel,'state');
       if(!this.isHost) await this._openClientInput();
       await this.stateChannel.track({
-        playerId:this.peerId,name:this.name,role:this.isHost?'host':'guest',ready:true,joinedAt:Date.now(),
+        playerId:this.peerId,name:this.name,role:this.isHost?'host':'guest',ready:true,joinedAt:Date.now(),profile:this.profile,contentVersion:this.contentVersion,
       });
       this.onStatus({kind:'connected',roomCode:this.roomCode,peerId:this.peerId});
       return this;
@@ -107,6 +109,7 @@
         const playerId=cleanPeer(raw.playerId);
         if(playerId&&!byId.has(playerId)) byId.set(playerId,{
           playerId,name:String(raw.name||'Fighter').slice(0,16),role:raw.role==='host'?'host':'guest',ready:raw.ready===true,
+          profile:raw.profile&&typeof raw.profile==='object'?raw.profile:{},contentVersion:String(raw.contentVersion||'').slice(0,32),
         });
       }
       this.roster=Array.from(byId.values()).sort((a,b)=>a.playerId.localeCompare(b.playerId));

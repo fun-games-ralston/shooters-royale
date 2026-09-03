@@ -7,15 +7,19 @@ const {
   ClientPredictor,
   RemoteBuffer,
   makeFoundryWorld,
+  makeArenaWorld,
   makeFlatWorld,
+  CONTENT,
+  CONTENT_VERSION,
+  PETS,
   dirFromAngles,
   rayWorld,
 } = require('./sim.js');
 
-function setupFlat() {
+function setupFlat(loadout = ['sidearm', 'scatter', 'knife']) {
   const authority = new Authority({ world: makeFlatWorld(), startTimeMs: 1_000 });
-  const host = authority.addPlayer('host', { name: 'Host' });
-  const guest = authority.addPlayer('guest', { name: 'Guest' });
+  const host = authority.addPlayer('host', { name: 'Host', profile: { loadout } });
+  const guest = authority.addPlayer('guest', { name: 'Guest', profile: { loadout } });
   assert.equal(authority.startRound(), true);
   authority.createSnapshot();
   return { authority, host, guest };
@@ -104,7 +108,7 @@ test('sidearm cadence, ammo, head damage, death, and round result are authoritat
 });
 
 test('AK automatic trigger respects fire cadence and stops after release', () => {
-  const { authority, host } = setupFlat();
+  const { authority, host } = setupFlat(['sidearm', 'ak47', 'knife']);
   assert.equal(input(authority, host, 1, { weapon: 'ak47', trigger: true }).accepted, true);
   for (let i = 0; i < 20; i += 1) step(authority, 34);
   const fired = WEAPONS.ak47.mag - host.inventory.ak47.ammo;
@@ -128,7 +132,7 @@ test('scattergun emits nine pellets and aggregates pellet damage', () => {
 });
 
 test('bazooka projectile travels, explodes, and applies authoritative damage', () => {
-  const { authority, host, guest } = setupFlat();
+  const { authority, host, guest } = setupFlat(['sidearm', 'bazooka', 'knife']);
   fireSemi(authority, host, 1, 1, 'bazooka');
   assert.equal(authority.projectiles.length, 1);
   for (let i = 0; i < 20 && authority.projectiles.length; i += 1) step(authority, 34);
@@ -147,7 +151,8 @@ test('client prediction reconciles acknowledged inputs and halts a dead client',
   for (let seq = 1; seq <= 4; seq += 1) predictor.predict({ moveF: 1, yaw: Math.PI / 2 }, 50, seq);
   assert.ok(predictor.history.length === 4);
   const result = predictor.applySnapshot({
-    protocol: 2,
+    protocol: 3,
+    contentVersion: require('./sim.js').CONTENT_VERSION,
     seq: 1,
     players: [{
       id: 'guest', x: 8.5, y: 0, z: 0, vx: -1, vy: 0, vz: 0,
@@ -158,7 +163,8 @@ test('client prediction reconciles acknowledged inputs and halts a dead client',
   assert.equal(predictor.history.length, 2);
   assert.equal(predictor.state.hp, 120);
   const dead = predictor.applySnapshot({
-    protocol: 2,
+    protocol: 3,
+    contentVersion: require('./sim.js').CONTENT_VERSION,
     seq: 2,
     players: [{
       id: 'guest', x: 8, y: 0, z: 0, vx: 0, vy: 0, vz: 0,
@@ -179,4 +185,93 @@ test('remote buffer interpolates between authoritative snapshots', () => {
 
 test('direction helper faces negative Z at zero yaw', () => {
   assert.deepEqual(dirFromAngles(0, 0), { x: -0, y: 0, z: -1 });
+});
+
+test('every PvE arena builds deterministically with valid duel spawns', () => {
+  for (const arena of CONTENT.ARENAS) {
+    const first = makeArenaWorld(arena.id);
+    const second = makeArenaWorld(arena.id);
+    assert.equal(first.id, arena.id);
+    assert.deepEqual(first.boxes, second.boxes, arena.id);
+    assert.deepEqual(first.duelSpawns, second.duelSpawns, arena.id);
+    assert.equal(first.duelSpawns.length, 2, arena.id);
+    assert.ok(first.visuals.length > 100, arena.id);
+  }
+});
+
+test('all fourteen shared weapons are authoritative and serializable', () => {
+  assert.equal(Object.keys(WEAPONS).length, 14);
+  const authority = new Authority({ world: makeFlatWorld(), startTimeMs: 1_000 });
+  const loadout = ['tesla', 'reaper', 'knife'];
+  const host = authority.addPlayer('host', { profile: { loadout } });
+  authority.addPlayer('guest', { profile: { loadout: ['sidearm', 'scatter', 'bat'] } });
+  assert.equal(authority.startRound(), true);
+  assert.deepEqual(host.loadout, loadout);
+  assert.equal(input(authority, host, 1, { weapon: 'ak47' }).accepted, true);
+  step(authority);
+  assert.equal(host.weapon, 'tesla', 'host cannot equip a weapon outside the synchronized loadout');
+  const snapshot = authority.createSnapshot();
+  assert.equal(snapshot.protocol, 3);
+  assert.equal(snapshot.contentVersion, CONTENT_VERSION);
+  assert.doesNotThrow(() => JSON.stringify(snapshot));
+  assert.ok(JSON.stringify(snapshot).length < 256_000);
+});
+
+test('companion AI leaves formation, attacks the enemy, and is included in snapshots', () => {
+  const authority = new Authority({ world: makeFlatWorld(), startTimeMs: 1_000 });
+  const host = authority.addPlayer('host', { profile: { pet: 'raptor' } });
+  const guest = authority.addPlayer('guest', { profile: { pet: 'bear' } });
+  assert.equal(authority.startRound(), true);
+  const pet = authority.pets.get(host.id);
+  const start = { x: pet.x, z: pet.z };
+  for (let index = 0; index < 240 && guest.hp === CFG.baseHp; index += 1) step(authority, 34);
+  assert.ok(Math.hypot(pet.x - start.x, pet.z - start.z) > 1);
+  assert.ok(guest.hp < CFG.baseHp, `raptor never attacked; guest remained at ${guest.hp} HP`);
+  const snapshot = authority.createSnapshot();
+  assert.equal(snapshot.pets.length, 2);
+  assert.ok(snapshot.events.some(event => event.type === 'pet_attack'));
+});
+
+test('enemy companions have authoritative HP, can be downed, and revive after eighteen seconds', () => {
+  const authority = new Authority({ world: makeFlatWorld(), startTimeMs: 1_000 });
+  const host = authority.addPlayer('host', { profile: { loadout: ['reaper', 'sidearm', 'knife'] } });
+  const guest = authority.addPlayer('guest', { profile: { pet: 'dog' } });
+  authority.startRound();authority.createSnapshot();
+  const pet = authority.pets.get(guest.id);pet.x = 0;pet.y = 0;pet.z = -3;
+  host.x = 0;host.y = 0;host.z = 0;host.yaw = 0;host.input.yaw = 0;
+  input(authority, host, 1, { weapon: 'reaper', trigger: true, fireId: 1, pitch: Math.atan2(-1.1, 3) });
+  step(authority, 34);authority.serverTimeMs += 1_100;step(authority, 34);
+  assert.equal(pet.alive, false);
+  assert.ok(authority.createSnapshot().events.some(event => event.type === 'pet_down'));
+  authority.serverTimeMs = pet.downUntil;step(authority, 34);
+  assert.equal(pet.alive, true);
+  assert.equal(pet.hp, pet.maxHp);
+});
+
+test('lava, void falls, and timed arena events are enforced by host authority', () => {
+  const lavaAuthority = new Authority({ world: makeArenaWorld('emberfall'), startTimeMs: 1_000 });
+  const host = lavaAuthority.addPlayer('host');
+  lavaAuthority.addPlayer('guest');
+  lavaAuthority.startRound();
+  const lava = lavaAuthority.world.hazards[0];
+  host.x = (lava.x0 + lava.x1) / 2;host.z = (lava.z0 + lava.z1) / 2;host.y = 0;
+  const hp = host.hp;for (let index = 0; index < 30; index += 1) step(lavaAuthority, 34);
+  assert.ok(host.hp < hp, 'lava must deal authoritative damage');
+  lavaAuthority.nextArenaEventAt = lavaAuthority.serverTimeMs;
+  step(lavaAuthority, 34);
+  assert.ok(lavaAuthority.createSnapshot().events.some(event => event.type === 'arena_warning'));
+
+  const voidAuthority = new Authority({ world: makeArenaWorld('skyport'), startTimeMs: 1_000 });
+  const falling = voidAuthority.addPlayer('falling');voidAuthority.addPlayer('safe');voidAuthority.startRound();
+  falling.y = -9;step(voidAuthority, 34);
+  assert.equal(falling.alive, false);
+});
+
+test('shared pet catalog keeps tactics and highlighted special skills', () => {
+  assert.equal(Object.keys(PETS).length, 7);
+  for (const pet of Object.values(PETS)) {
+    assert.ok(pet.tactic.skill);
+    assert.ok(pet.tactic.role);
+    assert.ok(pet.perkTxt);
+  }
 });

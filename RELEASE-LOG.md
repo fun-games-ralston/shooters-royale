@@ -7,6 +7,13 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.1 — 2 Sep 2026
+
+* New: Friends PvP is now the one supported multiplayer test. Two players can share a room link and fight with the same ten maps, fourteen weapons, seven companions, hazards and saved appearance as the solo game.
+* Fixed: guest movement is predicted locally and reconciled to host-authoritative snapshots without the old snap-back loop. The host remains ground truth for bullets, rockets, pets, hazards, HP, elimination and the winner.
+* Fixed: game over is broadcast and acknowledged by both players, then movement, shooting and network counters stop. The retired top-down tank lab now redirects to Friends PvP.
+* Safe boundary: solo `index.html` is unchanged. PvP reads appearance only and cannot write coins, XP, inventory, mastery or solo progress.
+
 ## 2.0 — 24 Aug 2026
 
 * New: the four signature weapons now build an effect instead of flashing once. Longshot Rail fires a white-hot layered beam through moving cyan pulse rings; Tesla Arc leaves readable forked lightning and chain halos; Bazooka rockets drag a plasma wake into a shock-sphere blast; Obsidian Reaper gathers a spiral charge and tears open a purple soul vortex.
