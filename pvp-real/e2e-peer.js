@@ -5,7 +5,7 @@ const readline = require('node:readline');
 const { createClient } = require('@supabase/supabase-js');
 const PVPRealtime = require('./transport.js');
 const Sim = require('./sim.js');
-const MATCH_VERSION=`${Sim.CONTENT_VERSION}-timed1`;
+const MATCH_VERSION=`${Sim.CONTENT_VERSION}-motion2`;
 const durationMs=Math.max(5000,Number(process.argv[6])||180000);
 let roundId='';let ownReady=false;let guestReady=false;
 

@@ -3,7 +3,7 @@
 
   const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
-  const MATCH_VERSION = `${PVPRealSim.CONTENT_VERSION}-timed1`;
+  const MATCH_VERSION = `${PVPRealSim.CONTENT_VERSION}-motion2`;
   const SIM_MS = 1000 / PVPRealSim.CFG.simulationHz;
   const INPUT_MS = 1000 / PVPRealSim.CFG.inputHz;
   const SNAPSHOT_MS = 1000 / PVPRealSim.CFG.snapshotHz;
@@ -14,12 +14,17 @@
     'players', 'rtt', 'messages', 'messageRate', 'viewport', 'arena', 'hp', 'hpFill', 'weaponName',
     'ammo', 'reserve', 'reloadState', 'roundOver', 'roundTitle', 'roundSummary', 'roundSync',
     'connectionLost', 'roomRoster', 'log', 'leaveMatch', 'weaponBar', 'hitMarker',
-    'hostArena', 'savedKit', 'rematch', 'roundClock', 'scoreLine', 'controlHint', 'respawnHint',
+    'matchMenu', 'closeMenu', 'hostArena', 'savedKit', 'rematch', 'roundClock', 'scoreLine', 'controlHint', 'respawnHint',
   ].map(id => [id, document.getElementById(id)]));
 
   const keys = Object.create(null);
   const keyPulseUntil = Object.create(null);
   const weaponKeys = {};
+  const cameraCorrection = new PVPRealSim.CameraCorrection();
+  let previousHostPose = null;
+  let frameDelta = 0;
+  let lastHudAt = 0;
+  let lastTelemetryAt = 0;
   let roundId = '';
   let starting = false;
   let startTimer = null;
@@ -59,6 +64,8 @@
   let matchArenaId = 'foundry';
   let localYaw = 0;
   let localPitch = 0;
+  let mouseSensitivity = 150;
+  try{mouseSensitivity=Math.max(20,Math.min(600,Number(JSON.parse(localStorage.getItem('sr_save_v1')||'{}').cfg?.sens)||150));}catch(_){}
   let aimInitialized = false;
   let lastEventSeq = 0;
   let lastAckSent = 0;
@@ -116,6 +123,7 @@
   function setStage(stage) {
     for (const name of ['setup', 'lobby', 'play']) els[name].classList.toggle('hidden', name !== stage);
     document.body.dataset.stage = stage;
+    document.body.dataset.menu='closed';
     publishDiagnostics();
   }
 
@@ -333,6 +341,7 @@
     if(startRetryTimer)clearInterval(startRetryTimer);
     if(frameHandle)cancelAnimationFrame(frameHandle);
     readyTimer=roundFinalizeTimer=startRetryTimer=null;
+    cameraCorrection.reset();previousHostPose=null;
     roundId=message.roundId;starting=true;roundEnded=false;roundConfirmed=false;
     roundAcks.clear();readyPlayers.clear();latest=null;lastEventSeq=lastAckSent=0;localLifeId=0;
     inputSeq=fireId=reloadId=0;trigger=false;aimInitialized=false;
@@ -386,6 +395,7 @@
     if (!running) return;
     const elapsed = Math.min(100, Math.max(0, now - lastFrame));
     lastFrame = now;
+    frameDelta = elapsed;
     simAccum += elapsed;
     inputAccum += elapsed;
     snapshotAccum += elapsed;
@@ -394,8 +404,16 @@
     if (keys.ArrowUp) localPitch = Math.min(1.1, localPitch + elapsed * 0.0012);
     if (keys.ArrowDown) localPitch = Math.max(-1.1, localPitch - elapsed * 0.0012);
     while (authority && simAccum >= SIM_MS) {
+      const hostPlayer=authority.players.get(peerId);
+      previousHostPose=hostPlayer?{x:hostPlayer.x,y:hostPlayer.y,z:hostPlayer.z,lifeId:hostPlayer.lifeId||0}:null;
       authority.step(SIM_MS, Date.now());
       simAccum -= SIM_MS;
+    }
+    // Render-rate prediction is independent of the 20 Hz transport budget.
+    if(predictor && localAlive()){
+      let remaining=elapsed;
+      const input=movementInput();
+      while(remaining>0){const dt=Math.min(remaining,SIM_MS);predictor.predict(input,dt,inputSeq+1);remaining-=dt;}
     }
     while (inputAccum >= INPUT_MS && running) {
       sendLocalInput();
@@ -410,14 +428,15 @@
       snapshotAccum -= SNAPSHOT_MS;
     }
     updateScene(now);
-    updateHud();
-    updateTelemetry();
+    if(now-lastHudAt>=50){updateHud();lastHudAt=now;}
+    if(now-lastTelemetryAt>=250){updateTelemetry();lastTelemetryAt=now;}
     renderer.render(scene, camera);
     if(running)frameHandle = requestAnimationFrame(frame);
   }
 
   function movementInput() {
-    const active = code => !!keys[code] || performance.now() < (keyPulseUntil[code] || 0);
+    const menuOpen=document.body.dataset.menu==='open';
+    const active = code => !menuOpen && (!!keys[code] || performance.now() < (keyPulseUntil[code] || 0));
     return {
       moveF: (active('KeyW') ? 1 : 0) - (active('KeyS') ? 1 : 0),
       moveR: (active('KeyD') ? 1 : 0) - (active('KeyA') ? 1 : 0),
@@ -425,7 +444,7 @@
       pitch: localPitch,
       jump: active('Space'),
       sprint: !!(keys.ShiftLeft || keys.ShiftRight),
-      trigger,
+      trigger: !menuOpen && trigger,
       ads: !!keys.MouseRight,
       fireId,
       reloadId,
@@ -441,15 +460,16 @@
     input.roundId=roundId;
     if (authority) authority.receiveInput(peerId, input, authority.serverTimeMs);
     else if (predictor) {
-      if (alive) predictor.predict(input, INPUT_MS, input.seq);
       room.sendInput(input);
     }
   }
 
   function receiveSnapshot(snapshot) {
     if (!snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== PVPRealSim.CONTENT_VERSION || snapshot.world !== matchArenaId || snapshot.roundId !== roundId || !predictor || !remoteBuffer || isHost) return;
+    const before={...predictor.state};
     const result = predictor.applySnapshot(snapshot);
     if(!result.accepted)return;
+    cameraCorrection.reconcile(before,predictor.state);
     latest = snapshot;
     remoteBuffer.push(snapshot);
     const own = snapshot.players.find(item => item.id === peerId);
@@ -813,11 +833,12 @@
     if (viewModel) camera.remove(viewModel);
     viewWeapon = weaponId;
     viewModel = new THREE.Group();
-    const skin = 0xc98a5e;
-    boxPart(viewModel, skin, -0.28, -0.08, 0.1, 0.22, 0.2, 0.55);
-    boxPart(viewModel, skin, 0.28, -0.08, 0.1, 0.22, 0.2, 0.55);
+    const outfit=PVPRealSim.CONTENT.OUTFITS.find(item=>item.id===localProfile.outfit);
+    const skin = outfit?.skin || 0xc98a5e;
+    boxPart(viewModel, skin, -0.28, -0.08, 0.1, 0.16, 0.16, 0.4);
+    boxPart(viewModel, skin, 0.28, -0.08, 0.1, 0.16, 0.16, 0.4);
     addWeaponParts(viewModel, weaponId);
-    viewModel.scale.setScalar(1.45);
+    viewModel.scale.setScalar(1.0);
     viewModel.position.set(0.43, -0.4, -0.75);
     viewModel.rotation.set(-0.06, -0.08, 0);
     camera.add(viewModel);
@@ -864,7 +885,18 @@
     for (const [id, model] of petModels) if (!petIds.has(id)) { scene.remove(model);petModels.delete(id); }
     const local = authority ? authority.players.get(peerId) : predictor && predictor.state;
     if (local) {
-      camera.position.set(local.x, local.y + PVPRealSim.CFG.eye, local.z);
+      let pose=local;
+      if(predictor)pose=cameraCorrection.sample(local,frameDelta);
+      else if(previousHostPose && previousHostPose.lifeId===(local.lifeId||0)){
+        const alpha=Math.min(1,simAccum/SIM_MS);
+        pose={x:previousHostPose.x+(local.x-previousHostPose.x)*alpha,y:previousHostPose.y+(local.y-previousHostPose.y)*alpha,z:previousHostPose.z+(local.z-previousHostPose.z)*alpha};
+      }
+      const dx=pose.x-local.x,dy=pose.y-local.y,dz=pose.z-local.z,distance=Math.hypot(dx,dy,dz);
+      if(distance>0.001){
+        const clear=PVPRealSim.rayWorld(world,{x:local.x,y:local.y+PVPRealSim.CFG.eye,z:local.z},{x:dx/distance,y:dy/distance,z:dz/distance},distance);
+        if(clear<distance){const fraction=Math.max(0,clear-.05)/distance;pose={x:local.x+dx*fraction,y:local.y+dy*fraction,z:local.z+dz*fraction};}
+      }
+      camera.position.set(pose.x, pose.y + PVPRealSim.CFG.eye, pose.z);
       camera.rotation.set(localPitch, localYaw, 0, 'YXZ');
       const speed = Math.hypot(local.vx || 0, local.vz || 0);
       if (viewWeapon !== activeWeapon) buildViewModel(activeWeapon);
@@ -981,6 +1013,7 @@
   }
 
   addEventListener('keydown', event => {
+    if(event.code==='Escape'&&running){document.body.dataset.menu=document.pointerLockElement===els.arena?'open':document.body.dataset.menu==='open'?'closed':'open';}
     keys[event.code] = true;
     if (!event.repeat && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(event.code)) keyPulseUntil[event.code] = performance.now() + 110;
     if (weaponKeys[event.code]) chooseWeapon(weaponKeys[event.code]);
@@ -990,8 +1023,8 @@
   addEventListener('keyup', event => { keys[event.code] = false; });
   addEventListener('mousemove', event => {
     if (document.pointerLockElement !== els.arena || !running || roundEnded) return;
-    localYaw -= event.movementX * 0.0024;
-    localPitch = Math.max(-1.1, Math.min(1.1, localPitch - event.movementY * 0.0022));
+    localYaw -= event.movementX * mouseSensitivity * 0.000022 * (keys.MouseRight ? 0.55 : 1);
+    localPitch = Math.max(-1.1, Math.min(1.1, localPitch - event.movementY * mouseSensitivity * 0.000022 * (keys.MouseRight ? 0.55 : 1)));
     aimInitialized = true;
   });
   els.arena.addEventListener('mousedown', event => {
@@ -1013,12 +1046,14 @@
     const button = event.target.closest('[data-weapon]');
     if (button) chooseWeapon(button.dataset.weapon);
   });
+  els.matchMenu.addEventListener('click',()=>{document.body.dataset.menu='open';document.exitPointerLock?.();});
+  els.closeMenu.addEventListener('click',()=>{document.body.dataset.menu='closed';try{const p=els.arena.requestPointerLock?.();p?.catch?.(()=>{});}catch(_){} });
   els.create.addEventListener('click', () => begin(true));
   els.join.addEventListener('click', () => begin(false));
   els.startMatch.addEventListener('click', requestStart);
   els.rematch.addEventListener('click',readyAgain);
   document.addEventListener('pointerlockerror',()=>{trigger=false;els.controlHint.textContent='Mouse capture blocked. Open this game in Chrome or Edge to play.';});
-  document.addEventListener('pointerlockchange',()=>{trigger=false;for(const code of Object.keys(keys))keys[code]=false;});
+  document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement===els.arena)document.body.dataset.menu='closed';trigger=false;for(const code of Object.keys(keys))keys[code]=false;});
   addEventListener('blur',()=>{trigger=false;for(const code of Object.keys(keys))keys[code]=false;});
   els.copy.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(els.invite.value); els.copy.textContent = 'Copied'; }

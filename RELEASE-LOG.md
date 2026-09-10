@@ -7,6 +7,14 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.3 — 9 Sep 2026
+
+* PvP combat now uses a full-window arena with the PvE typeface, top-center score, bottom-left health, and bottom-right ammo and compact weapon slots. Room controls move into an in-game menu.
+* Guest movement predicts every rendered frame while inputs still send at 20 Hz. Small authoritative corrections ease out over a short interval; respawns and major corrections reset immediately. Camera smoothing does not change collision or combat state.
+* Host camera movement interpolates between simulation ticks. Snapshots preserve grounded/jump-latch state, avoiding false landings at jump apexes. Mouse sensitivity follows the solo setting.
+* Reduced HUD/diagnostic updates and first-person weapon size. No motion-blur postprocessing or increase in network message rates was added.
+* Added moving-camera regression tests under simulated latency, jitter, and loss, alongside respawn and jump-state checks.
+
 ## 2.2 — 9 Sep 2026
 
 * Friends PvP now runs three-minute rounds with unlimited respawns, a live kill score, and explicit draws on equal scores. Both fighters can play again in the same room; the visit keeps a round-win tally.

@@ -584,9 +584,28 @@
     createSnapshot(){
       const events=this.events;this.events=[];
       return {protocol:3,roundId:this.roundId,remainingMs:this.durationMs?Math.max(0,this.endsAtMs-this.serverTimeMs):null,roundReason:this.roundReason,contentVersion:Content.CONTENT_VERSION,world:this.world.id,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
-        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,kills:p.kills,deaths:p.deaths||0,lifeId:p.lifeId||0,respawnMs:Math.max(0,(p.respawnAt||0)-this.serverTimeMs),protectedMs:Math.max(0,(p.protectedUntil||0)-this.serverTimeMs),weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
+        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,onGround:p.onGround,jumpLatch:p.jumpLatch,kills:p.kills,deaths:p.deaths||0,lifeId:p.lifeId||0,respawnMs:Math.max(0,(p.respawnAt||0)-this.serverTimeMs),protectedMs:Math.max(0,(p.protectedUntil||0)-this.serverTimeMs),weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
         pets:[...this.pets.values()].map(p=>({id:p.id,ownerId:p.ownerId,defId:p.defId,x:p.x,y:p.y,z:p.z,yaw:p.yaw,hp:p.hp,maxHp:p.maxHp,alive:p.alive,targetId:p.targetId})),
         arenaEvents:this.arenaEvents.map(event=>({...event})),projectiles:this.projectiles.map(p=>({id:p.id,ownerId:p.ownerId,weapon:p.weapon,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,life:p.life}))};
+    }
+  }
+
+  // Presentation only: never feed this offset back into combat or collision.
+  class CameraCorrection {
+    constructor(){this.reset();}
+    reset(){this.offset={x:0,y:0,z:0};}
+    reconcile(before,after){
+      if(before.alive!==after.alive || before.lifeId!==after.lifeId){this.reset();return;}
+      const delta={x:before.x-after.x,y:before.y-after.y,z:before.z-after.z};
+      const next={x:this.offset.x+delta.x,y:this.offset.y+delta.y,z:this.offset.z+delta.z};
+      // A respawn/teleport or serious divergence must snap to the truth.
+      if(Math.hypot(next.x,next.y,next.z)>1.5){this.reset();return;}
+      this.offset=next;
+    }
+    sample(state,dtMs){
+      const decay=Math.exp(-Math.max(0,dtMs)/80);
+      for(const axis of ['x','y','z'])this.offset[axis]*=decay;
+      return{x:state.x+this.offset.x,y:state.y+this.offset.y,z:state.z+this.offset.z};
     }
   }
 
@@ -603,7 +622,7 @@
       const own=snapshot.players.find(p=>p.id===this.id);if(!own)return{accepted:false,reason:'missing_self'};this.lastSnapshotSeq=snapshot.seq;
       const respawned=(own.lifeId||0)!==(this.state.lifeId||0);if(respawned)this.history=[];
       const error=Math.hypot(this.state.x-own.x,this.state.y-own.y,this.state.z-own.z);this.metrics.maxCorrection=Math.max(this.metrics.maxCorrection,error);
-      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,lifeId:own.lifeId||0,weapon:own.weapon,loadout:own.loadout,profile:own.profile,heat:own.heat,onGround:Math.abs(own.vy)<.01});
+      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,lifeId:own.lifeId||0,weapon:own.weapon,loadout:own.loadout,profile:own.profile,heat:own.heat,onGround:own.onGround===true,jumpLatch:own.jumpLatch===true});
       this.history=this.history.filter(item=>item.seq>own.lastProcessedInput);
       if(!own.alive){this.history=[];return{accepted:true,error};}
       const replay=this.history.slice();this.history=[];
@@ -627,5 +646,5 @@
     }
   }
 
-  return {CFG,CONTENT_VERSION:Content.CONTENT_VERSION,CONTENT:Content,WEAPONS,WEAPON_IDS,PETS,ARENAS,HITBOX,Authority,ClientPredictor,RemoteBuffer,makeArenaWorld,makeFoundryWorld,makeFlatWorld,safeProfile,sanitizeInput,dirFromAngles,rayBox,rayWorld};
+  return {CFG,CONTENT_VERSION:Content.CONTENT_VERSION,CONTENT:Content,WEAPONS,WEAPON_IDS,PETS,ARENAS,HITBOX,Authority,ClientPredictor,RemoteBuffer,CameraCorrection,makeArenaWorld,makeFoundryWorld,makeFlatWorld,safeProfile,sanitizeInput,dirFromAngles,rayBox,rayWorld};
 });

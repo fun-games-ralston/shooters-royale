@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#09070e">
   <title>Block Royale · PvP</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 <main>
@@ -53,6 +54,7 @@
 
   <section id="play" class="play hidden" data-stage="play">
     <div class="game-column">
+      <button id="matchMenu" class="match-menu">Menu · Esc</button>
       <div class="match-score"><strong id="scoreLine">0 — 0</strong><b id="roundClock">3:00</b></div>
       <div id="viewport" class="viewport">
         <canvas id="arena" tabindex="0" aria-label="First-person PvP arena"></canvas>
@@ -77,6 +79,7 @@
       <p class="controls">Click arena to capture mouse · WASD move · Shift sprint · Space jump · Mouse aim/fire · Right mouse scope · R reload · 1–3 switch</p>
     </div>
     <aside class="panel side">
+      <button id="closeMenu" class="primary">Resume</button><p class="controls-note">The round keeps running while this menu is open.</p>
       <h2>Room</h2><div id="roomRoster" class="room-roster"></div>
       <details><summary>Connection details</summary>      <div class="telemetry">
         <div><span>Role</span><strong id="role">—</strong></div>
@@ -96,10 +99,10 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="supabase-2.91.1.min.js?v=2.91.1"></script>
-<script src="../shared/pve-content.generated.js?v=5"></script>
-<script src="../shared/world.js?v=5"></script>
-<script src="transport.js?v=5"></script>
-<script src="sim.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="../shared/pve-content.generated.js?v=6"></script>
+<script src="../shared/world.js?v=6"></script>
+<script src="transport.js?v=6"></script>
+<script src="sim.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
