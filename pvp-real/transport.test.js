@@ -57,7 +57,7 @@ test('host opens one input subscription and receives guest input and final ackno
   state.emit('presence', 'sync');await new Promise(resolve => setImmediate(resolve));
   const input = client.channels[1];input.emit('broadcast', 'input', { payload: { playerId: 'guest1', input: { seq: 3 } } });
   input.emit('broadcast', 'round_ack', { payload: { playerId: 'guest1', roundEndSeq: 9 } });
-  assert.equal(inputs[0][1].seq, 3);assert.deepEqual(acknowledgements, [['guest1', 9]]);assert.equal(room.canStart(), true);
+  assert.equal(inputs[0][1].seq, 3);assert.deepEqual(acknowledgements, [['guest1', 9, '']]);assert.equal(room.canStart(), true);
 });
 
 test('only host can broadcast snapshots and only the present host can start a lobby', async () => {
@@ -70,4 +70,16 @@ test('only host can broadcast snapshots and only the present host can start a lo
   state.emit('broadcast', 'lobby', { payload: { seq: 2, type: 'real_start', hostId: 'host' } });
   state.emit('broadcast', 'lobby', { payload: { seq: 2, type: 'real_start', hostId: 'host' } });
   assert.deepEqual(starts.map(value => value.seq), [2]);assert.equal(await guest.sendSnapshot({ seq: 1 }), false);assert.equal(await guest.sendLobby({ seq: 3 }), false);
+});
+
+test('rematch readiness and result acknowledgements carry a round identity and reject another sender',async()=>{
+ const client=new FakeClient(),ready=[],acks=[];
+ const host=new RealtimeRoom({client,roomCode:'ABCDEFGH2345',peerId:'host',isHost:true,onReady:(...args)=>ready.push(args),onRoundAck:(...args)=>acks.push(args)});
+ await host.connect();const state=client.channels[0];state.state={host:[{playerId:'host',role:'host'}],guest:[{playerId:'guest',role:'guest'}]};state.emit('presence','sync');await new Promise(r=>setImmediate(r));
+ const input=client.channels[1];input.emit('broadcast','ready',{payload:{playerId:'other',roundId:'r1'}});assert.equal(ready.length,0);
+ input.emit('broadcast','ready',{payload:{playerId:'guest',roundId:'r1'}});input.emit('broadcast','round_ack',{payload:{playerId:'guest',roundId:'r1',roundEndSeq:4}});
+ assert.deepEqual(ready,[['guest','r1']]);assert.deepEqual(acks,[['guest',4,'r1']]);
+ const guestClient=new FakeClient();const guest=new RealtimeRoom({client:guestClient,roomCode:'ABCDEFGH2345',peerId:'guest'});await guest.connect();
+ await guest.sendReady('r1');await guest.sendRoundAck(4,'r1');assert.equal(guestClient.channels[1].sent[0].payload.roundId,'r1');assert.equal(guestClient.channels[1].sent[1].payload.roundId,'r1');
+ await host.close();await guest.close();
 });

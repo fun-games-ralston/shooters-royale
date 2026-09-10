@@ -11,7 +11,7 @@
 :root{
   --void:#0d0a14; --stone:#1b1626; --slate:#2c2439; --edge:#3d3352;
   --gold:#f2b134; --ember:#e0553a; --ench:#a97bff; --leaf:#7fd45b;
-  --bone:#ece3d2; --dim:#8e849e; --text2:#b9afc6;
+  --bone:#ece3d2; --dim:#b5a9c7; --text2:#d0c5db;
   --disp:Anton,Impact,"Haettenschweiler","Arial Narrow Bold",sans-serif;
   --mono:"Courier New",Cousine,"Liberation Mono","DejaVu Sans Mono",ui-monospace,monospace;
   --body:Verdana,"DejaVu Sans",Arimo,Tahoma,"Segoe UI",sans-serif;
@@ -45,8 +45,8 @@ canvas{display:block}
 #ui.pass{pointer-events:none}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;padding:24px;overflow:auto}
 .vignette{position:fixed;inset:0;pointer-events:none;z-index:5;
-  background:radial-gradient(ellipse at center,transparent 45%,rgba(6,4,10,.85) 100%)}
-.grain{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:.12;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(6,4,10,.55) 100%)}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:.05;
   background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.45) 0 1px,transparent 1px 3px)}
 
 /* ---------- title ---------- */
@@ -447,6 +447,15 @@ canvas{display:block}
   .setgrid{grid-template-columns:1fr}.shopnav{width:132px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+
+/* Readable secondary information without changing the visual identity. */
+.weapon-spec .wl{color:var(--dim)}
+.weapon-spec{grid-template-columns:54px minmax(0,1fr)}
+.weapon-spec b{white-space:normal;overflow:visible;text-overflow:clip}
+.item .st,.item .good,.item .bad,.item .mastery{font-size:12px;line-height:1.5}
+.pvinfo,.card .hint,.pagehead .sub{font-size:12px}
+.detailcue,.dailyrow b{font-size:11px}
+#hint{color:var(--text2);text-shadow:0 1px 3px #000}
 </style>
 </head>
 <body>
@@ -502,7 +511,7 @@ canvas{display:block}
       </div>
       <div class="titlecenter">
         <h1 class="gametitle">Block<span>Royale</span></h1>
-        <div class="tagline">One life · Eight fighters · Last block standing</div>
+        <div class="tagline">One life · Last block standing</div>
         <div class="menu-col">
           <button class="btn primary" id="btnPlay">Deploy</button>
           <button class="btn" id="btnFriends">Play with friends <span style="color:var(--gold)">Beta</span></button>
@@ -606,8 +615,8 @@ canvas{display:block}
             <div>Headshots deal <b style="color:var(--ember)">2.5×</b> damage. Legs deal 0.65×.</div>
             <div>Health never regenerates on its own — <b style="color:var(--bone)">eat</b> to heal.</div>
             <div>Enchanted golden apples grant gold absorption on top of 200 HP.</div>
-            <div>Coins: <b style="color:var(--bone)">60</b> per kill, <b style="color:var(--bone)">+25</b> per headshot, <b style="color:var(--bone)">500</b> for a win, plus damage dealt.</div>
-            <div>Your <b style="color:var(--gold)">first win each day pays double</b>. Three <b style="color:var(--leaf)">daily challenges</b> reset every morning.</div>
+            <div>Earn coins for finishing, kills, damage, and fighters outlasted. Active play earns a larger win bonus.</div>
+            <div>Your <b style="color:var(--gold)">first win each day earns up to 250 bonus coins</b>. Three <b style="color:var(--leaf)">daily challenges</b> reset every morning.</div>
             <div>Kills within five seconds of each other stack into <b style="color:var(--gold)">DOUBLE KILL → TRIPLE KILL</b> and pay a bonus.</div>
             <div>Every weapon tracks its own <b style="color:var(--ench)">mastery</b>. Ten kills earns a bronze charm on the gun, 150 earns diamond.</div>
             <div>On the leaderboard, your place is the <b style="color:var(--gold)">hardest difficulty you have ever won on</b>. Ties go to whoever has the most wins at that level. Playing Rookie a hundred times will not move you up — beating Veteran once moves you a whole band.</div>
@@ -3658,18 +3667,17 @@ function trainCycle(dir){
 function timeUp(){
   if(G.training) { G.left=99999; return; }
   const alive=G.ents.filter(e=>e.alive);
-  let top=alive[0];
-  for(const e of alive) if((e.kills||0)>(top.kills||0)) top=e;
-  endMatch(G.pl.alive&&top===G.pl);
+  endMatch(alive.length===1&&G.pl.alive,alive.length>1&&G.pl.alive);
 }
-function endMatch(win){
+function endMatch(win,draw=false){
   if(G.over) return;
   if(G.training){ return; }
   G.over=true;                    // scoring closed; the world keeps running for the outro
   document.exitPointerLock&&document.exitPointerLock();
   const kills=G.kills, hs=G.hs;
   const arena=AR[S.cfg.arena];
-  const place=win?1:(G.ents.filter(e=>e.alive).length+1);
+  G.draw=draw;
+  const place=win?1:(G.ents.filter(e=>e.alive).length+(draw?0:1));
   // No multiplier for opponent skill or lobby size any more. Those are menu settings,
   // and paying differently for them turned the difficulty picker into an arithmetic
   // puzzle: the swing between the cheapest and richest combination was about 7x, so
@@ -3713,7 +3721,7 @@ function endMatch(win){
   S.stats.medals=S.stats.medals||{};
   earned.forEach(m=>S.stats.medals[m.id]=(S.stats.medals[m.id]||0)+1);
 
-  // once a day, your first win pays double
+  // First-win bonus matches earnings up to the advertised cap.
   const D=dailySet();
   let dailyBonus=0;
   if(win&&!D.firstWin){ D.firstWin=true; dailyBonus=Math.min(PAY.dailyCap,coins); coins+=dailyBonus; }
@@ -3755,12 +3763,12 @@ function endMatch(win){
   saveState();
   win?AU.win():AU.lose();
   if(rankedUp) setTimeout(()=>AU.levelup(),700);
-  $('#resTitle').textContent=win?'Victory':'Eliminated';
+  $('#resTitle').textContent=draw?'Draw':win?'Victory':'Eliminated';
   $('#resTitle').className=win?'win':'lose';
   const nextR=rAfter.next;
   const rBarPct = nextR ? clamp((S.xp-RANKS[rAfter.tier].xp)/(nextR.xp-RANKS[rAfter.tier].xp),0,1)*100 : 100;
   $('#resStats').innerHTML=
-    row('Arena',arena.name)+row('Placement','#'+place+' of '+(S.cfg.bots+1))+
+    row('Arena',arena.name)+row('Placement',draw?'Time limit · '+place+' survivors':'#'+place+' of '+(S.cfg.bots+1))+
     row('Survived',fmtTime(S.cfg.time*60-G.left))+
     (res.petKills?row('Companion kills',res.petKills):'')+
     (earned.length?'<div class="medals">'+earned.map(m=>'<span class="md">\u2726 '+m.name+
@@ -3782,7 +3790,7 @@ function endMatch(win){
       (chCoins?row(chDone.length+' daily challenge'+(chDone.length===1?'':'s'),'+'+chCoins):'')+
       (streakMul>1?row((S.stats.streak-1)+'-win streak','\u00D7'+streakMul.toFixed(2)):'')+
       (firstWin?row('First win in '+arena.name,'+'+PAY.firstArena):'')+
-      (dailyBonus?row('First win of the day \u2014 DOUBLED','+'+dailyBonus):'')+
+      (dailyBonus?row('First win bonus','+'+dailyBonus):'')+
     '</div>'+
     '<div class="big"><span>Coins earned</span><b>+'+coins+'</b></div>'+
     '<div class="rankrow"><span style="color:'+rAfter.col+'">'+(rankedUp?'RANK UP \u2014 ':'')+rAfter.name+'</span>'+
@@ -3804,11 +3812,12 @@ function endMatch(win){
 function startOutro(win){
   const k=G.lastKiller, part=G.lastPart;
   let sub;
-  if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
+  if(G.draw) sub='TIME LIMIT · NO LAST FIGHTER';
+  else if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
   else if(k&&!k.isPlayer) sub=String(k.name||'?').toUpperCase()+' · '+W[k.wep].name.toUpperCase()+(part==='HEAD'?' · HEADSHOT':'');
   else if(k&&k.isPlayer) sub='YOUR OWN BLAST';
   else sub=String(part||'THE ARENA').toUpperCase();
-  $('#otTitle').textContent = win?'VICTORY':'ELIMINATED';
+  $('#otTitle').textContent = G.draw?'DRAW':win?'VICTORY':'ELIMINATED';
   $('#otSub').textContent = sub;
   $('#outro').className='on'+(win?' win':'');
   $('#hud').classList.add('dim');
@@ -3898,11 +3907,13 @@ function initInput(){
     if(G.outro){ skipOutro(); return; }
     if(G.on&&!G.paused&&!G.over&&document.pointerLockElement!==cv) cv.requestPointerLock(); });
   document.addEventListener('pointerlockchange',()=>{
+    if(G.on&&!G.over&&document.pointerLockElement===cv){G.paused=false;$('#ovPause').classList.add('hidden');}
     if(G.on&&!G.over&&document.pointerLockElement!==cv){ pauseMatch(true); }
   });
   // Some embedded views and locked-down browsers refuse pointer lock outright. Without this
   // the player gets a match they cannot aim in and no explanation for why.
   document.addEventListener('pointerlockerror',()=>{
+    if(G.on&&!G.over)pauseMatch(true);
     toast('This browser blocked mouse capture — try opening the file in Chrome or Edge',true);
   });
   document.addEventListener('mousemove',e=>{
@@ -4096,8 +4107,8 @@ function renderDaily(){
   }).join('');
   el.classList.remove('click');
   el.innerHTML='<h5>DAILY <em>'+done+'/'+D.ids.length+' DONE</em></h5>'+rows+
-    (D.firstWin?'<div class="tp-foot">DAILY DOUBLE ALREADY CLAIMED</div>'
-              :'<div class="dailyrow" style="color:var(--gold)"><span>First win today pays DOUBLE</span><b>\u00D72</b></div>')+
+    (D.firstWin?'<div class="tp-foot">FIRST WIN BONUS CLAIMED</div>'
+              :'<div class="dailyrow" style="color:var(--gold)"><span>First win bonus: up to 250</span><b>+</b></div>')+
     '<div class="tp-foot">RESETS AT MIDNIGHT</div>';
 }
 /* =====================================================================
@@ -4801,6 +4812,10 @@ function kv(k,v){ return '<div><span class="k">'+k+'</span> · '+v+'</div>'; }
 /* =====================================================================
    flow
    ===================================================================== */
+function captureMouse(){
+  try{const result=$('#gl').requestPointerLock?.();if(result&&result.catch)result.catch(()=>{if(G.on&&!G.over)pauseMatch(true);});}
+  catch(e){if(G.on&&!G.over)pauseMatch(true);}
+}
 function startMatch(){
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
   G.training = (S.cfg.mode==='training');
@@ -4809,13 +4824,14 @@ function startMatch(){
   $('#ui').classList.add('pass'); $('#coinbar').classList.add('hidden');
   $('#ovResult').classList.add('hidden'); $('#ovPause').classList.add('hidden');
   $('#hud').classList.remove('hidden');
-  spawnMatch();
-  try{ const cv=$('#gl'); cv.requestPointerLock&&cv.requestPointerLock(); }catch(e){}
+  spawnMatch();G.draw=false;
+  pauseMatch(true);
+  captureMouse();
   toast('Click to lock the cursor · ESC to release');
 }
 function wireUI(){
   $('#btnPlay').onclick=()=>{AU.ui();S.cfg.mode='trial';startMatch();};
-  $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-test/?build=4';};
+  $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-real/';};
   $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();show('scr-setup');};
@@ -4832,7 +4848,7 @@ function wireUI(){
   };
   $('#btnDeploy2').onclick=()=>{AU.ui();startMatch();};
   $$('[data-back]').forEach(b=>b.onclick=()=>{AU.ui();refreshCoins();show('scr-title');});
-  $('#btnResume').onclick=()=>{ $('#ovPause').classList.add('hidden'); G.paused=false; $('#gl').requestPointerLock(); };
+  $('#btnResume').onclick=()=>{ captureMouse(); };
   $('#btnQuit').onclick=()=>quitMatch();
   $('#btnAgain').onclick=()=>{ $('#ovResult').classList.add('hidden'); S.cfg.mode='trial'; startMatch(); };
   $('#btnToShop').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-shop'); };

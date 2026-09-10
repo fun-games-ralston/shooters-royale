@@ -7,6 +7,15 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.2 — 9 Sep 2026
+
+* Friends PvP now runs three-minute rounds with unlimited respawns, a live kill score, and explicit draws on equal scores. Both fighters can play again in the same room; the visit keeps a round-win tally.
+* PvP carries your saved weapons, companion, and appearance. An empty second weapon slot stays empty. Invite links open a focused join screen; manual join accepts either a code or the full link.
+* Respawns restore health and ammo, clear status effects, and briefly protect the returning fighter. Old-round inputs and snapshots cannot leak into a rematch.
+* Fixed solo trials running before mouse capture succeeds. Failed capture leaves the match paused; successful capture resumes it.
+* Fixed solo timer results: multiple survivors produce a draw instead of a winner selected by kills and array order. Corrected first-win bonus and stale help text.
+* Improved text contrast and weapon-card readability, reduced screen darkening/grain, compacted the in-match PvP header, and moved network diagnostics into optional details.
+
 ## 2.1 — 2 Sep 2026
 
 * New: Friends PvP is now the one supported multiplayer test. Two players can share a room link and fight with the same ten maps, fourteen weapons, seven companions, hazards and saved appearance as the solo game.

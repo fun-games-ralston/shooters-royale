@@ -176,9 +176,8 @@
 
   function safeProfile(raw={}){
     const defaults=['sidearm','scatter','knife'];
-    const loadout=[];
-    for(const id of Array.isArray(raw.loadout)?raw.loadout:defaults)if(WEAPONS[id]&&!loadout.includes(id)&&loadout.length<3)loadout.push(id);
-    for(const id of defaults)if(!loadout.includes(id)&&loadout.length<3)loadout.push(id);
+    const slots=Array.isArray(raw.loadout)?raw.loadout:defaults;
+    const loadout=[WEAPONS[slots[0]]?slots[0]:'sidearm',WEAPONS[slots[1]]?slots[1]:null,WEAPONS[slots[2]]?slots[2]:'knife'];
     const pick=(list,id,fallback)=>list.some(item=>item.id===id)?id:fallback;
     return {loadout,pet:PETS[raw.pet]?raw.pet:null,
       hair:pick(Content.HAIRS,raw.hair,'crop'),outfit:pick(Content.OUTFITS,raw.outfit,'recruit'),acc:pick(Content.ACCS,raw.acc,'none')};
@@ -267,6 +266,7 @@
     constructor(options={}){
       this.world=options.world||makeArenaWorld('foundry');this.players=new Map();this.pets=new Map();this.projectiles=[];this.events=[];
       this.serverTimeMs=finite(options.startTimeMs,0);this.snapshotSeq=0;this.eventSeq=0;this.projectileSeq=0;
+      this.roundId=String(options.roundId||'');this.durationMs=Math.max(0,finite(options.durationMs,0));this.endsAtMs=Infinity;this.respawnMs=3000;
       this.roundActive=false;this.roundEnded=false;this.roundEndSeq=0;this.winnerId=null;
       this.random=mulberry32((this.world.def&&this.world.def.seed||11)^0x51ed270b);this.nextArenaEventAt=Infinity;this.arenaEvents=[];
       this.metrics={acceptedInputs:0,droppedInputs:0,shots:0,hits:0,rockets:0,petHits:0,hazardHits:0};
@@ -293,7 +293,7 @@
     }
 
     startRound(){
-      if(this.players.size!==2||this.roundEnded)return false;this.roundActive=true;
+      if(this.players.size!==2||this.roundEnded||this.roundActive)return false;this.roundActive=true;this.endsAtMs=this.serverTimeMs+this.durationMs;
       const event=this.world.def&&this.world.def.event;if(event)this.nextArenaEventAt=this.serverTimeMs+(event.every[0]+this.random()*(event.every[1]-event.every[0]))*1000;
       return true;
     }
@@ -301,12 +301,16 @@
     receiveInput(id,raw,receivedAtMs=this.serverTimeMs){
       const player=this.players.get(safeId(id));if(!player||!player.alive)return{accepted:false,reason:'unknown_or_dead'};
       if(this.roundEnded)return{accepted:false,reason:'round_ended'};
+      if(this.roundId&&raw?.roundId!==this.roundId)return{accepted:false,reason:'wrong_round'};
       const input=sanitizeInput(raw);if(input.seq<=player.lastInputSeq){this.metrics.droppedInputs++;return{accepted:false,reason:'stale_input'};}
       player.lastInputSeq=input.seq;player.input=input;player.inputReceivedAt=finite(receivedAtMs,this.serverTimeMs);this.metrics.acceptedInputs++;return{accepted:true};
     }
 
     step(dtMs,nowMs){
       dtMs=clamp(finite(dtMs),0,50);this.serverTimeMs=Math.max(this.serverTimeMs,finite(nowMs,this.serverTimeMs+dtMs));const dt=dtMs/1000;
+      if(this.roundEnded)return;
+      if(this.roundActive&&this.durationMs&&this.serverTimeMs>=this.endsAtMs){this._checkRoundEnd('timer');return;}
+      for(const player of this.players.values())if(!player.alive&&this.durationMs&&this.serverTimeMs>=player.respawnAt)this._respawn(player);
       for(const player of this.players.values())if(player.alive&&!this.roundEnded){
         player.nowMs=this.serverTimeMs;this._weaponInput(player);this._tickStatus(player,dt);integrateMovement(player,player.input,this.world,dt);this._applyWorldRules(player,dt);this._record(player,this.serverTimeMs);
         this._tryFire(player);
@@ -354,7 +358,7 @@
           if(this.serverTimeMs>=pet.downUntil&&owner.alive){pet.alive=true;pet.hp=pet.maxHp;owner.petDown=false;pet.x=owner.x;pet.y=owner.y;pet.z=owner.z;this._event('pet_revive',{playerId:owner.id,petId:pet.id,pet:def.id});}
           continue;
         }
-        if(!owner.alive)continue;
+        if(!owner.alive||this.serverTimeMs<(owner.protectedUntil||0))continue;
         const enemies=[...this.players.values()].filter(player=>player.id!==owner.id&&player.alive);
         let target=this.players.get(pet.targetId),targetDistance=target?Math.hypot(target.x-owner.x,target.z-owner.z):Infinity;
         if(!target||!target.alive||targetDistance>tactic.leash)target=null;
@@ -369,7 +373,7 @@
         if(Math.hypot(pet.x-owner.x,pet.z-owner.z)>tactic.leash+6){pet.x=formation.x;pet.z=formation.z;pet.y=owner.y;}
         else if(length>stop){const step=Math.min(length-stop,def.speed*dt),nx=pet.x+dx/length*step,nz=pet.z+dz/length*step,ny=groundAt(this.world.boxes,nx,nz,pet.y+3);if(SharedWorld.freeAt(this.world,nx,ny+.02,nz,.3,Math.max(.7,def.scale||1))){pet.x=nx;pet.z=nz;pet.y=ny;}}
         pet.yaw=Math.atan2(-dx,-dz);
-        if(target&&this._petCanSee(pet,target)&&Math.hypot(target.x-pet.x,target.z-pet.z)<reach&&this.serverTimeMs>=pet.nextAttackAt){
+        if(target&&this.serverTimeMs>=(target.protectedUntil||0)&&this._petCanSee(pet,target)&&Math.hypot(target.x-pet.x,target.z-pet.z)<reach&&this.serverTimeMs>=pet.nextAttackAt){
           pet.nextAttackAt=this.serverTimeMs+def.cd*1000;this.metrics.petHits++;
           this._damage(target,def.dmg,owner,'BODY',{x:target.x,y:target.y+1,z:target.z},'pet');
           if(def.poison&&target.alive){target.poisonUntil=this.serverTimeMs+def.poison.t*1000;target.poisonNextAt=this.serverTimeMs+1000;target.poisonOwnerId=owner.id;}
@@ -420,6 +424,7 @@
     }
 
     _tryFire(player){
+      if(!player.alive||this.roundEnded)return;
       const weapon=WEAPONS[player.weapon],input=player.input,ammo=player.inventory[player.weapon];
       const edge=input.fireId>player.lastConsumedFireId;
       if(input.trigger&&!player.triggerSince)player.triggerSince=this.serverTimeMs;
@@ -436,7 +441,7 @@
       if(weapon.mag>0)ammo.ammo--;if(weapon.burst)player.burstLeft--;
       if(weapon.heat){player.heat+=weapon.heat.per;if(player.heat>=100){player.heat=100;player.heatLockUntil=this.serverTimeMs+weapon.heat.lock*1000;this._event('overheat',{playerId:player.id,weapon:weapon.id});}}
       if(weapon.charge)player.chargeSince=this.serverTimeMs;
-      player.nextFireAt=this.serverTimeMs+60000/weapon.rpm;this.metrics.shots++;
+      player.nextFireAt=this.serverTimeMs+60000/weapon.rpm;this.metrics.shots++;player.protectedUntil=0;
       if(weapon.kind==='rocket')this._spawnRocket(player,weapon);
       else this._fireHitscan(player,weapon);
       if(weapon.mag>0&&ammo.ammo<=0)this._startReload(player);
@@ -540,24 +545,46 @@
     }
 
     _damage(target,amount,attacker,part,impact,weapon){
-      if(!target||!target.alive)return;const guardian=PETS[target.profile&&target.profile.pet];if(guardian&&guardian.perk==='guardian'&&!target.petDown)amount*=.9;
+      if(this.roundEnded||!target||!target.alive||this.serverTimeMs<(target.protectedUntil||0))return;const guardian=PETS[target.profile&&target.profile.pet];if(guardian&&guardian.perk==='guardian'&&!target.petDown)amount*=.9;
       const dealt=Math.min(target.hp,Math.max(0,Math.round(amount)));if(!dealt)return;target.lastDamageAt=this.serverTimeMs;
-      target.hp=Math.max(0,target.hp-dealt);if(target.hp===0)target.alive=false;
+      target.hp=Math.max(0,target.hp-dealt);if(target.hp===0){target.alive=false;target.deaths=(target.deaths||0)+1;target.respawnAt=this.serverTimeMs+this.respawnMs;}
       if(attacker&&target!==attacker&&target.hp===0){attacker.kills++;}
       this.metrics.hits++;this._event(target.hp===0?'death':'hit',{playerId:attacker&&attacker.id,targetId:target.id,weapon,damage:dealt,targetHp:target.hp,part,impact});
     }
 
+    _respawn(player){
+      const enemies=[...this.players.values()].filter(p=>p.id!==player.id&&p.alive);
+      const candidates=[...(this.world.spawns||[]),...this.world.duelSpawns];
+      const safe=candidates.filter(s=>SharedWorld.freeAt(this.world,s.x,s.y+.02,s.z)&&!(this.world.hazards||[]).some(h=>s.x>=h.x0&&s.x<=h.x1&&s.z>=h.z0&&s.z<=h.z1));
+      const spawns=safe.length?safe:this.world.duelSpawns;
+      const distance=s=>Math.min(...enemies.map(p=>Math.hypot(s.x-p.x,s.z-p.z)),Infinity);
+      const spawn=spawns.reduce((best,s)=>distance(s)>distance(best)?s:best,spawns[0]);
+      const keep={kills:player.kills,deaths:player.deaths,lastInputSeq:player.lastInputSeq,lastConsumedFireId:player.input.fireId,lastReloadId:player.input.reloadId,lifeId:(player.lifeId||0)+1};
+      const fresh=makePlayer(player.id,player.name,spawn,player.profile);
+      Object.assign(player,fresh,keep,{protectedUntil:this.serverTimeMs+1500,respawnAt:0});
+      const enemy=enemies[0];if(enemy)player.yaw=Math.atan2(-(enemy.x-player.x),-(enemy.z-player.z));
+      player.input=sanitizeInput({yaw:player.yaw,weapon:player.weapon,fireId:keep.lastConsumedFireId,reloadId:keep.lastReloadId});
+      player.history=[];this._record(player,this.serverTimeMs);this.pets.delete(player.id);this._makePet(player);
+      this._event('respawn',{playerId:player.id});
+    }
+
     _checkRoundEnd(reason){
-      if(!this.roundActive||this.roundEnded)return null;const alive=[...this.players.values()].filter(p=>p.alive);if(alive.length>1)return null;
-      this.roundEnded=true;this.winnerId=alive[0]?alive[0].id:null;const event=this._event('round_end',{winnerId:this.winnerId,reason});this.roundEndSeq=event.seq;return event;
+      if(!this.roundActive||this.roundEnded)return null;
+      const players=[...this.players.values()],alive=players.filter(p=>p.alive);
+      if(this.durationMs){
+        if(reason!=='last_connected'&&this.serverTimeMs<this.endsAtMs)return null;
+        const sorted=players.slice().sort((a,b)=>b.kills-a.kills);
+        this.winnerId=sorted.length===1?sorted[0].id:sorted.length===2&&sorted[0].kills>sorted[1].kills?sorted[0].id:null;
+      }else{if(alive.length>1)return null;this.winnerId=alive[0]?alive[0].id:null;}
+      this.roundEnded=true;this.roundReason=reason;const event=this._event('round_end',{winnerId:this.winnerId,reason});this.roundEndSeq=event.seq;return event;
     }
 
     _event(type,data={}){const event={seq:++this.eventSeq,serverTimeMs:this.serverTimeMs,...data,type};this.events.push(event);return event;}
 
     createSnapshot(){
       const events=this.events;this.events=[];
-      return {protocol:3,contentVersion:Content.CONTENT_VERSION,world:this.world.id,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
-        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
+      return {protocol:3,roundId:this.roundId,remainingMs:this.durationMs?Math.max(0,this.endsAtMs-this.serverTimeMs):null,roundReason:this.roundReason,contentVersion:Content.CONTENT_VERSION,world:this.world.id,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
+        players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,kills:p.kills,deaths:p.deaths||0,lifeId:p.lifeId||0,respawnMs:Math.max(0,(p.respawnAt||0)-this.serverTimeMs),protectedMs:Math.max(0,(p.protectedUntil||0)-this.serverTimeMs),weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
         pets:[...this.pets.values()].map(p=>({id:p.id,ownerId:p.ownerId,defId:p.defId,x:p.x,y:p.y,z:p.z,yaw:p.yaw,hp:p.hp,maxHp:p.maxHp,alive:p.alive,targetId:p.targetId})),
         arenaEvents:this.arenaEvents.map(event=>({...event})),projectiles:this.projectiles.map(p=>({id:p.id,ownerId:p.ownerId,weapon:p.weapon,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,life:p.life}))};
     }
@@ -574,8 +601,9 @@
     applySnapshot(snapshot){
       if(!snapshot||snapshot.protocol!==3||snapshot.contentVersion!==Content.CONTENT_VERSION||snapshot.seq<=this.lastSnapshotSeq){this.metrics.staleSnapshots++;return{accepted:false,reason:'stale_snapshot'};}
       const own=snapshot.players.find(p=>p.id===this.id);if(!own)return{accepted:false,reason:'missing_self'};this.lastSnapshotSeq=snapshot.seq;
+      const respawned=(own.lifeId||0)!==(this.state.lifeId||0);if(respawned)this.history=[];
       const error=Math.hypot(this.state.x-own.x,this.state.y-own.y,this.state.z-own.z);this.metrics.maxCorrection=Math.max(this.metrics.maxCorrection,error);
-      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,weapon:own.weapon,loadout:own.loadout,profile:own.profile,heat:own.heat,onGround:Math.abs(own.vy)<.01});
+      Object.assign(this.state,{x:own.x,y:own.y,z:own.z,vx:own.vx,vy:own.vy,vz:own.vz,yaw:own.yaw,pitch:own.pitch,hp:own.hp,alive:own.alive,lifeId:own.lifeId||0,weapon:own.weapon,loadout:own.loadout,profile:own.profile,heat:own.heat,onGround:Math.abs(own.vy)<.01});
       this.history=this.history.filter(item=>item.seq>own.lastProcessedInput);
       if(!own.alive){this.history=[];return{accepted:true,error};}
       const replay=this.history.slice();this.history=[];
@@ -594,6 +622,7 @@
       const list=this.byId.get(id);if(!list||!list.length)return null;const target=hostTimeMs-this.delayMs;
       if(target<=list[0].t)return{...list[0].state};if(target>=list.at(-1).t)return{...list.at(-1).state};
       let a=list[0],b=list.at(-1);for(let i=1;i<list.length;i++)if(list[i].t>=target){a=list[i-1];b=list[i];break;}
+      if(a.state.lifeId!==b.state.lifeId||a.state.alive!==b.state.alive)return{...b.state};
       const t=(target-a.t)/Math.max(1,b.t-a.t),out={...b.state};for(const key of ['x','y','z','vx','vy','vz','yaw','pitch'])out[key]=lerp(a.state[key],b.state[key],t);return out;
     }
   }

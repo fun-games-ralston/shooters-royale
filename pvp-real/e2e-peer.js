@@ -5,6 +5,9 @@ const readline = require('node:readline');
 const { createClient } = require('@supabase/supabase-js');
 const PVPRealtime = require('./transport.js');
 const Sim = require('./sim.js');
+const MATCH_VERSION=`${Sim.CONTENT_VERSION}-timed1`;
+const durationMs=Math.max(5000,Number(process.argv[6])||180000);
+let roundId='';let ownReady=false;let guestReady=false;
 
 const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
@@ -55,11 +58,11 @@ function own() {
   return lastSnapshot && lastSnapshot.players.find(player => player.id === peerId) || predictor.state;
 }
 
-function initializeMatch(arenaId) {
-  if (world) return;
+function initializeMatch(arenaId,id) {
+  stopGameplay();roundId=id;roundEnded=false;inputSeq=fireId=reloadId=0;lastSnapshot=null;roundAcks.clear();ownReady=guestReady=false;
   world = Sim.makeArenaWorld(arenaId);
   if (isHost) {
-    authority = new Sim.Authority({ world, startTimeMs: Date.now() });
+    authority = new Sim.Authority({ world, startTimeMs: Date.now(),durationMs,roundId });
     for (const person of roster) authority.addPlayer(person.playerId, { name: person.name, profile: person.profile });
   } else predictor = new Sim.ClientPredictor(peerId, world, profile);
   state.weapon = profile.loadout[0];
@@ -79,7 +82,7 @@ function aimAtOpponent() {
 
 function makeInput() {
   const hostTime = authority ? authority.serverTimeMs : network.toHostTime(Date.now());
-  return Sim.sanitizeInput({ ...state, seq: ++inputSeq, fireId, reloadId, clientTimeMs: Date.now(), shotAtMs: hostTime });
+  return {...Sim.sanitizeInput({ ...state, seq: ++inputSeq, fireId, reloadId, clientTimeMs: Date.now(), shotAtMs: hostTime }),roundId};
 }
 
 function sendInput() {
@@ -95,12 +98,13 @@ function sendInput() {
 
 function startLoops() {
   if (running) return;
+  if(authority)authority.serverTimeMs=Date.now();
   if (authority && !authority.startRound()) return;
   running = true;
   out('started', { players: roster.length });
   inputTimer = setInterval(sendInput, 1000 / Sim.CFG.inputHz);
   if (authority) {
-    simTimer = setInterval(() => authority.step(1000 / Sim.CFG.simulationHz, authority.serverTimeMs + 1000 / Sim.CFG.simulationHz), 1000 / Sim.CFG.simulationHz);
+    simTimer = setInterval(() => authority.step(1000 / Sim.CFG.simulationHz, Date.now()), 1000 / Sim.CFG.simulationHz);
     snapshotTimer = setInterval(() => {
       const snapshot = authority.createSnapshot();
       lastSnapshot = snapshot;
@@ -128,19 +132,19 @@ function report() {
   const opponents = players.filter(player => player.id !== peerId).map(player => ({
     id: player.id,
     position: { x: Number(player.x.toFixed(3)), y: Number(player.y.toFixed(3)), z: Number(player.z.toFixed(3)) },
-    hp: player.hp,
+    hp: player.hp,kills:player.kills,lifeId:player.lifeId||0,
     alive: player.alive,
   }));
-  out('state', { position, moved, hp: me.hp, alive: me.alive, weapon: me.weapon, opponents, messages: { ...network.metrics } });
+  out('state', { roundId,kills:me.kills,lifeId:me.lifeId||0,remainingMs:lastSnapshot?.remainingMs,position, moved, hp: me.hp, alive: me.alive, weapon: me.weapon, opponents, messages: { ...network.metrics } });
 }
 
 function finish(snapshot) {
   if (!snapshot || !snapshot.roundEnded) return;
-  if (!isHost && snapshot.roundEndSeq) network.sendRoundAck(snapshot.roundEndSeq);
+  if (!isHost && snapshot.roundEndSeq) network.sendRoundAck(snapshot.roundEndSeq,roundId);
   if (roundEnded) return;
   roundEnded = true;
   stopGameplay();
-  out('round_end', { winnerId: snapshot.winnerId, roundEndSeq: snapshot.roundEndSeq, messages: { ...network.metrics } });
+  out('round_end', { roundId,winnerId: snapshot.winnerId, roundEndSeq: snapshot.roundEndSeq, messages: { ...network.metrics } });
   if (isHost) {
     const deadline = Date.now() + 3000;
     const retry = setInterval(() => {
@@ -168,26 +172,26 @@ function updateRoster(next) {
 function maybeStart() {
   if (!isHost || startSent || !network || !network.canStart() || roster.length !== 2) return;
   startSent = true;
-  initializeMatch(arenaId);
-  const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 3, world: arenaId, contentVersion: Sim.CONTENT_VERSION };
+  const nextId=`${peerId}-${Date.now()}`;initializeMatch(arenaId,nextId);
+  const message = { seq: Date.now(), roundId,type: 'real_start', startsAtMs: Date.now() + 900, protocol: 3, world: arenaId, contentVersion: MATCH_VERSION };
   network.sendLobby(message).then(ok => { if (ok) setTimeout(startLoops, 900); });
 }
 
 function receiveSnapshot(snapshot) {
-  if (isHost || !snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== Sim.CONTENT_VERSION) return;
-  if (!predictor && snapshot.world && Sim.ARENAS[snapshot.world]) initializeMatch(snapshot.world);
+  if (isHost || !snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== Sim.CONTENT_VERSION || snapshot.roundId!==roundId) return;
+  if (!predictor && snapshot.world && Sim.ARENAS[snapshot.world]) initializeMatch(snapshot.world,snapshot.roundId);
   if (!predictor) return;
   lastSnapshot = snapshot;
   predictor.applySnapshot(snapshot);
   if (snapshot.roundEnded) {
-    if (snapshot.roundEndSeq) network.sendRoundAck(snapshot.roundEndSeq);
+    if (snapshot.roundEndSeq) network.sendRoundAck(snapshot.roundEndSeq,roundId);
     finish(snapshot);
   }
 }
 
 function receiveLobby(message) {
-  if (!isHost && message && message.type === 'real_start' && message.protocol === 3 && message.contentVersion === Sim.CONTENT_VERSION) {
-    initializeMatch(message.world);
+  if (!isHost && message && message.type === 'real_start' && message.protocol === 3 && message.contentVersion === MATCH_VERSION && message.roundId!==roundId) {
+    initializeMatch(message.world,message.roundId);
     const wait = Math.max(0, Number(message.startsAtMs) - network.toHostTime(Date.now()));
     setTimeout(startLoops, wait);
   }
@@ -210,6 +214,11 @@ function command(raw) {
     setTimeout(() => { state.trigger = false; }, Number(message.duration) || 100);
   } else if (message.type === 'weapon' && Sim.WEAPONS[message.weapon]) state.weapon = message.weapon;
   else if (message.type === 'reload') reloadId += 1;
+  else if (message.type === 'test_eliminate' && authority && running) {
+    const target=[...authority.players.values()].find(p=>p.id!==peerId);
+    if(target)authority._damage(target,999,own(),'BODY',{x:target.x,y:target.y+1,z:target.z},'test-fixture');
+  }
+  else if (message.type === 'rematch') {ownReady=true;if(isHost&&guestReady){startSent=false;maybeStart();}else if(!isHost)network.sendReady(roundId);}
   else if (message.type === 'report') report();
   else if (message.type === 'quit') shutdown(0);
   out('command', { command: message });
@@ -224,10 +233,11 @@ async function shutdown(code) {
 
 async function main() {
   network = new PVPRealtime.RealtimeRoom({
-    client, roomCode, peerId, name, isHost, profile, contentVersion: Sim.CONTENT_VERSION,
+    client, roomCode, peerId, name, isHost, profile, contentVersion: MATCH_VERSION,
     onInput: (id, input, receivedAt) => authority && authority.receiveInput(id, input, receivedAt),
-    onRoundAck: (id, seq) => {
-      if (authority && authority.roundEnded && seq === authority.roundEndSeq) roundAcks.add(id);
+    onReady:(id,forRound)=>{if(isHost&&roundEnded&&forRound===roundId){guestReady=true;if(ownReady){startSent=false;maybeStart();}}},
+    onRoundAck: (id, seq,forRound) => {
+      if (forRound===roundId && authority && authority.roundEnded && seq === authority.roundEndSeq) roundAcks.add(id);
     },
     onSnapshot: receiveSnapshot,
     onLobby: receiveLobby,

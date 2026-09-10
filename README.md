@@ -27,8 +27,9 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 - An optional **club leaderboard** — a made-up name and a 4-digit PIN, no email
   and nothing that identifies anyone.
 - **Two-player friends PvP** with room links, host-authoritative movement and
-  combat, and the same maps, weapons, companions, hazards, and saved look as
-  the solo game. PvP does not change solo progress.
+  combat, and the same maps and hazards as the solo game. Bring your saved
+  weapons, companion, and look. Three-minute rounds have unlimited respawns,
+  a kills scoreboard, and same-room rematches. PvP does not change solo progress.
 
 ## Controls
 

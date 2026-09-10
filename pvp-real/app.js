@@ -3,6 +3,7 @@
 
   const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
+  const MATCH_VERSION = `${PVPRealSim.CONTENT_VERSION}-timed1`;
   const SIM_MS = 1000 / PVPRealSim.CFG.simulationHz;
   const INPUT_MS = 1000 / PVPRealSim.CFG.inputHz;
   const SNAPSHOT_MS = 1000 / PVPRealSim.CFG.snapshotHz;
@@ -13,13 +14,21 @@
     'players', 'rtt', 'messages', 'messageRate', 'viewport', 'arena', 'hp', 'hpFill', 'weaponName',
     'ammo', 'reserve', 'reloadState', 'roundOver', 'roundTitle', 'roundSummary', 'roundSync',
     'connectionLost', 'roomRoster', 'log', 'leaveMatch', 'weaponBar', 'hitMarker',
-    'hostArena', 'hostSlot1', 'hostSlot2', 'hostSlot3', 'hostPet', 'hostPetSkill',
-    'guestSlot1', 'guestSlot2', 'guestSlot3', 'guestPet', 'guestPetSkill',
+    'hostArena', 'savedKit', 'rematch', 'roundClock', 'scoreLine', 'controlHint', 'respawnHint',
   ].map(id => [id, document.getElementById(id)]));
 
   const keys = Object.create(null);
   const keyPulseUntil = Object.create(null);
   const weaponKeys = {};
+  let roundId = '';
+  let starting = false;
+  let startTimer = null;
+  let startRetryTimer = null;
+  let readyTimer = null;
+  const readyPlayers = new Set();
+  let localLifeId = 0;
+  let roomWins = {};
+  let roomDraws = 0;
   let room = null;
   let authority = null;
   let predictor = null;
@@ -77,44 +86,22 @@
     } catch (_) { return {}; }
   }
 
-  function profileFromControls(prefix) {
-    const appearance = savedAppearance();
-    return PVPRealSim.safeProfile({
-      loadout: [els[`${prefix}Slot1`].value, els[`${prefix}Slot2`].value, els[`${prefix}Slot3`].value],
-      pet: els[`${prefix}Pet`].value || null,
-      hair: appearance.hair,
-      outfit: appearance.outfit,
-      acc: appearance.acc,
-    });
+  function profileFromSave() {
+    const eq = savedAppearance();
+    return PVPRealSim.safeProfile({loadout:[eq.primary || 'sidearm',eq.secondary || null,eq.melee || 'knife'],pet:eq.pet,hair:eq.hair,outfit:eq.outfit,acc:eq.acc});
   }
 
   function populateSetup() {
-    const appearance = savedAppearance();
-    const defaults = PVPRealSim.safeProfile({ loadout: [appearance.primary, appearance.secondary, appearance.melee], pet: appearance.pet });
-    for (const prefix of ['host', 'guest']) {
-      for (let slot = 1; slot <= 3; slot += 1) {
-        const select = els[`${prefix}Slot${slot}`];
-        for (const weapon of PVPRealSim.CONTENT.WEAPONS) select.add(new Option(`${slot} · ${weapon.name}`, weapon.id));
-        select.value = defaults.loadout[slot - 1];
-      }
-      const petSelect = els[`${prefix}Pet`];
-      petSelect.add(new Option('No companion', ''));
-      for (const pet of PVPRealSim.CONTENT.PETS) petSelect.add(new Option(pet.name, pet.id));
-      petSelect.value = defaults.pet || '';
-      petSelect.addEventListener('change', () => updatePetSkill(prefix));
-      updatePetSkill(prefix);
-    }
-    for (const arena of PVPRealSim.CONTENT.ARENAS) els.hostArena.add(new Option(`${arena.name}${arena.event || arena.hazard || arena.void ? ' ⚠' : ''}`, arena.id));
-    els.hostArena.value = 'foundry';
+    const profile = profileFromSave();
+    els.savedKit.textContent = profile.loadout.map((id,index) => `${index+1}: ${id ? PVPRealSim.WEAPONS[id].name : 'Empty'}`).join(' · ') + ' · ' + (profile.pet ? PVPRealSim.PETS[profile.pet].name : 'No companion');
+    for (const arena of PVPRealSim.CONTENT.ARENAS) els.hostArena.add(new Option(arena.name, arena.id));
+    try { const saved=JSON.parse(localStorage.getItem('sr_save_v1')||'{}');els.hostArena.value=PVPRealSim.ARENAS[saved.cfg?.arena]?saved.cfg.arena:'foundry'; } catch (_) { els.hostArena.value='foundry'; }
   }
 
-  function updatePetSkill(prefix) {
-    const pet = PVPRealSim.PETS[els[`${prefix}Pet`].value];
-    const target = els[`${prefix}PetSkill`];target.replaceChildren();
-    if (!pet) { target.textContent = 'No companion AI or perk.';return; }
-    const role = document.createElement('span');role.className = 'role';role.textContent = `▲ ${pet.tactic.role}`;
-    const perk = document.createElement('span');perk.className = 'perk';perk.textContent = `✦ ${pet.tactic.skill}: ${pet.perkTxt}`;
-    target.append(role, perk);
+  function parseRoom(value) {
+    const text=String(value||'').trim();
+    const code=text.includes('#')?text.split('#').pop():text;
+    return code.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,20);
   }
 
   function cleanName(value) {
@@ -155,19 +142,22 @@
     }
     isHost = host;
     peerId = PVPRealtime.randomPeerId();
-    const code = host ? PVPRealtime.randomRoomCode(12) : els.roomCode.value;
+    const code = host ? PVPRealtime.randomRoomCode(12) : parseRoom(els.roomCode.value);
     const name = cleanName(host ? els.hostName.value : els.guestName.value);
-    localProfile = profileFromControls(host ? 'host' : 'guest');
+    localProfile = profileFromSave();
     if (!host && String(code).replace(/[^A-Z2-9]/gi, '').length < 8) {
       els.connectStatus.textContent = 'Enter the host’s room code.';
       return;
     }
     els.create.disabled = true;
     els.join.disabled = true;
-    els.connectStatus.textContent = 'Connecting to the real-game PvP room…';
+    els.connectStatus.textContent = 'Connecting…';
     room = new PVPRealtime.RealtimeRoom({
-      client: makeClient(), roomCode: code, peerId, name, isHost: host,profile:localProfile,contentVersion:PVPRealSim.CONTENT_VERSION,
-      onInput: (id, input, receivedAt) => authority && authority.receiveInput(id, input, receivedAt),
+      client: makeClient(), roomCode: code, peerId, name, isHost: host,profile:localProfile,contentVersion:MATCH_VERSION,
+      onInput: (id, input, receivedAt) => {
+        if(authority && authority.receiveInput(id,input,receivedAt).accepted && startRetryTimer){clearInterval(startRetryTimer);startRetryTimer=null;}
+      },
+      onReady: handleReady,
       onRoundAck: handleRoundAck,
       onSnapshot: receiveSnapshot,
       onLobby: receiveLobby,
@@ -245,6 +235,11 @@
         }, 1500);
       }
     }
+    if(roundEnded&&admittedPlayers(roster).length<2){
+      if(readyTimer)clearInterval(readyTimer);readyTimer=null;
+      els.rematch.disabled=true;els.rematch.textContent='Your friend left';
+      els.roundSync.textContent='Leave this room to invite someone again.';
+    }
     renderRosters();
     updateLobbyControls();
     updateTelemetry();
@@ -269,7 +264,7 @@
         title.textContent = `${person.playerId === peerId ? '◆' : '◇'} ${person.name}`;
         const profile = PVPRealSim.safeProfile(person.profile);
         const pet = profile.pet ? PVPRealSim.PETS[profile.pet].name : 'NO PET';
-        detail.textContent = `${person.role === 'host' ? 'HOST AUTHORITY' : 'GUEST CLIENT'} · ${profile.loadout.map(id => PVPRealSim.WEAPONS[id].name).join(' / ')} · ${pet}`;
+        detail.textContent = `${profile.loadout.filter(Boolean).map(id => PVPRealSim.WEAPONS[id].name).join(' / ')} · ${pet}`;
         seat.append(title, detail);
       } else {
         seat.textContent = '◇ OPEN FIGHTER SLOT';
@@ -282,7 +277,7 @@
 
   function canStart() {
     const admitted = admittedPlayers(roster);
-    return isHost && admitted.length === 2 && roster.length === 2 && admitted.every(item => item.contentVersion === PVPRealSim.CONTENT_VERSION) && room && room.canStart();
+    return isHost && admitted.length === 2 && roster.length === 2 && admitted.every(item => item.contentVersion === MATCH_VERSION) && room && room.canStart();
   }
 
   function updateLobbyControls() {
@@ -291,53 +286,88 @@
     if (isHost) {
       const ready = canStart();
       els.startMatch.disabled = !ready;
-      const mismatch = roster.some(item => item.contentVersion && item.contentVersion !== PVPRealSim.CONTENT_VERSION);
-      els.startMatch.textContent = ready ? `Start ${PVPRealSim.ARENAS[els.hostArena.value].name} duel` : roster.length < 2 ? 'Waiting for fighter' : mismatch ? 'Refresh both players' : 'Finishing handshake';
-      els.lobbyState.textContent = ready ? 'Both fighters have matching game content.' : mismatch ? 'Game versions differ. Refresh both devices.' : 'Share the invite with one friend.';
+      const mismatch = roster.some(item => item.contentVersion && item.contentVersion !== MATCH_VERSION);
+      els.startMatch.textContent = ready ? `Start 3-minute round` : roster.length < 2 ? 'Waiting for fighter' : mismatch ? 'Refresh both players' : 'Connecting your friend';
+      els.lobbyState.textContent = ready ? 'Your friend is here. Ready to play.' : mismatch ? 'Game versions differ. Refresh both devices.' : 'Share the invite with one friend.';
     } else {
       els.startMatch.disabled = true;
       els.startMatch.textContent = 'Waiting for host';
-      els.lobbyState.textContent = hostPresent ? 'Connected. The host starts the round.' : 'Finding host authority…';
+      els.lobbyState.textContent = hostPresent ? 'Connected. The host starts the round.' : 'Finding your friend…';
     }
   }
 
   async function requestStart() {
-    if (!canStart() || running) return;
-    const message = { seq: Date.now(), type: 'real_start', startsAtMs: Date.now() + 900, protocol: 3, world: els.hostArena.value, contentVersion: PVPRealSim.CONTENT_VERSION };
-    els.startMatch.disabled = true;
-    els.startMatch.textContent = 'Starting…';
-    if (await room.sendLobby(message)) receiveLobby({ ...message, hostId: peerId });
-    else updateLobbyControls();
+    if (!canStart() || running || starting) return;
+    if (roundEnded && !admittedPlayers(roster).every(p=>readyPlayers.has(p.playerId))) return;
+    const message = { seq: Date.now(), roundId: `${peerId}-${Date.now()}`, type:'real_start', startsAtMs:Date.now()+1200, durationMs:180000, protocol:3, world:els.hostArena.value, contentVersion:MATCH_VERSION };
+    starting=true;els.startMatch.disabled=true;els.startMatch.textContent='Starting…';
+    if (await room.sendLobby(message)) {
+      receiveLobby({...message,hostId:peerId});
+      let attempts=0;
+      startRetryTimer=setInterval(()=>{if(!room||++attempts>12){clearInterval(startRetryTimer);startRetryTimer=null;return;}room.sendLobby(message);},500);
+    } else { starting=false;updateLobbyControls(); }
+  }
+
+  function handleReady(id, forRound) {
+    if(!isHost || !roundEnded || forRound!==roundId || !admittedPlayers(roster).some(p=>p.playerId===id))return;
+    readyPlayers.add(id);
+    if(readyPlayers.has(peerId))requestStart();
+    else els.roundSync.textContent='Your friend wants another round.';
+  }
+
+  async function readyAgain() {
+    if(!roundEnded || !room || readyPlayers.has(peerId))return;
+    readyPlayers.add(peerId);els.rematch.disabled=true;els.rematch.textContent='Waiting for your friend…';
+    if(isHost)requestStart();
+    else {
+      const send=()=>room&&roundEnded&&room.sendReady(roundId);
+      await send();readyTimer=setInterval(send,1000);
+    }
   }
 
   function receiveLobby(message) {
-    if (!message || message.type !== 'real_start' || running || roundEnded || message.protocol !== 3 || message.contentVersion !== PVPRealSim.CONTENT_VERSION || !PVPRealSim.ARENAS[message.world]) return;
-    matchArenaId = message.world;
-    world = PVPRealSim.makeArenaWorld(matchArenaId);
-    if (isHost) {
-      authority = new PVPRealSim.Authority({ world, startTimeMs: Date.now() });
-      for (const person of admittedPlayers(roster)) authority.addPlayer(person.playerId, { name: person.name, profile: person.profile });
-    } else {
-      predictor = new PVPRealSim.ClientPredictor(peerId, world, localProfile);
-      remoteBuffer = new PVPRealSim.RemoteBuffer(100);
+    if (!message || message.type!=='real_start' || running || message.roundId===roundId || !message.roundId || message.protocol!==3 || message.contentVersion!==MATCH_VERSION || !PVPRealSim.ARENAS[message.world])return;
+    if(startTimer)clearTimeout(startTimer);
+    if(readyTimer)clearInterval(readyTimer);
+    if(roundFinalizeTimer)clearInterval(roundFinalizeTimer);
+    if(startRetryTimer)clearInterval(startRetryTimer);
+    if(frameHandle)cancelAnimationFrame(frameHandle);
+    readyTimer=roundFinalizeTimer=startRetryTimer=null;
+    roundId=message.roundId;starting=true;roundEnded=false;roundConfirmed=false;
+    roundAcks.clear();readyPlayers.clear();latest=null;lastEventSeq=lastAckSent=0;localLifeId=0;
+    inputSeq=fireId=reloadId=0;trigger=false;aimInitialized=false;
+    for(const code of Object.keys(keys))keys[code]=false;
+    for(const code of Object.keys(keyPulseUntil))keyPulseUntil[code]=0;
+    els.roundOver.classList.add('hidden');els.connectionLost.classList.add('hidden');
+    els.rematch.disabled=false;els.rematch.textContent='Play again';
+    matchArenaId=message.world;world=PVPRealSim.makeArenaWorld(matchArenaId);
+    if(isHost){
+      authority=new PVPRealSim.Authority({world,startTimeMs:Date.now(),durationMs:180000,roundId});
+      for(const person of admittedPlayers(roster))authority.addPlayer(person.playerId,{name:person.name,profile:person.profile});
+    }else{
+      predictor=new PVPRealSim.ClientPredictor(peerId,world,localProfile);remoteBuffer=new PVPRealSim.RemoteBuffer(100);
+      if(clockTimer)clearInterval(clockTimer);
+      clockTimer=setInterval(()=>room&&!roundEnded&&room.syncClock(),2500);
     }
-    activeWeapon = localProfile.loadout[0];
-    buildWeaponBar();
-    const hostNow = isHost ? Date.now() : room.toHostTime(Date.now());
-    const delay = Math.max(0, Number(message.startsAtMs) - hostNow);
-    els.lobbyState.textContent = `Opening ${world.def.name} in ${Math.max(1, Math.ceil(delay / 1000))}…`;
-    setTimeout(startArena, delay);
+    activeWeapon=localProfile.loadout[0];buildWeaponBar();
+    const hostNow=isHost?Date.now():room.toHostTime(Date.now());
+    const delay=Math.max(0,Math.min(2000,Number(message.startsAtMs)-hostNow));
+    setStage('lobby');els.lobbyState.textContent=`Opening ${world.def.name}…`;
+    startTimer=setTimeout(startArena,delay);
   }
 
   function startArena() {
     if (running || roundEnded) return;
+    if(authority)authority.serverTimeMs=Date.now();
     if (authority && !authority.startRound()) {
       log('Round requires exactly two admitted players', 'bad');
       updateLobbyControls();
       return;
     }
+    starting = false;
     running = true;
     setStage('play');
+    resetScene();
     initThree();
     const local = authoritativeLocal();
     if (local) {
@@ -364,7 +394,7 @@
     if (keys.ArrowUp) localPitch = Math.min(1.1, localPitch + elapsed * 0.0012);
     if (keys.ArrowDown) localPitch = Math.max(-1.1, localPitch - elapsed * 0.0012);
     while (authority && simAccum >= SIM_MS) {
-      authority.step(SIM_MS, authority.serverTimeMs + SIM_MS);
+      authority.step(SIM_MS, Date.now());
       simAccum -= SIM_MS;
     }
     while (inputAccum >= INPUT_MS && running) {
@@ -383,7 +413,7 @@
     updateHud();
     updateTelemetry();
     renderer.render(scene, camera);
-    frameHandle = requestAnimationFrame(frame);
+    if(running)frameHandle = requestAnimationFrame(frame);
   }
 
   function movementInput() {
@@ -408,6 +438,7 @@
     const base = alive ? movementInput() : { ...movementInput(), moveF: 0, moveR: 0, jump: false, trigger: false };
     const hostTime = authority ? authority.serverTimeMs : room.toHostTime(Date.now());
     const input = PVPRealSim.sanitizeInput({ ...base, seq: ++inputSeq, clientTimeMs: Date.now(), shotAtMs: hostTime });
+    input.roundId=roundId;
     if (authority) authority.receiveInput(peerId, input, authority.serverTimeMs);
     else if (predictor) {
       if (alive) predictor.predict(input, INPUT_MS, input.seq);
@@ -416,12 +447,16 @@
   }
 
   function receiveSnapshot(snapshot) {
-    if (!snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== PVPRealSim.CONTENT_VERSION || snapshot.world !== matchArenaId || isHost) return;
+    if (!snapshot || snapshot.protocol !== 3 || snapshot.contentVersion !== PVPRealSim.CONTENT_VERSION || snapshot.world !== matchArenaId || snapshot.roundId !== roundId || !predictor || !remoteBuffer || isHost) return;
+    const result = predictor.applySnapshot(snapshot);
+    if(!result.accepted)return;
     latest = snapshot;
     remoteBuffer.push(snapshot);
-    const result = predictor.applySnapshot(snapshot);
     const own = snapshot.players.find(item => item.id === peerId);
-    if (own && !aimInitialized) {
+    if (own && (!aimInitialized || (own.lifeId||0)!==localLifeId)) {
+      localLifeId=own.lifeId||0;
+      activeWeapon=own.weapon;
+      trigger=false;
       localYaw = own.yaw;
       localPitch = own.pitch;
       aimInitialized = true;
@@ -431,7 +466,7 @@
       const seq = Math.max(0, Number(snapshot.roundEndSeq) || 0);
       if (seq) {
         lastAckSent = seq;
-        room.sendRoundAck(seq);
+        room.sendRoundAck(seq,roundId);
       }
       finishRound(snapshot);
     }
@@ -491,7 +526,7 @@
       if (event.playerId === peerId) showHitMarker();
       return;
     }
-    if (event.type === 'round_end') finishRound(event);
+    // Finalize from the complete snapshot, after the final scores arrive.
   }
 
   function authoritativeLocal() {
@@ -509,7 +544,7 @@
     const roundEndSeq = Math.max(0, Number(source && (source.roundEndSeq || source.seq)) || 0);
     if (!isHost && room && roundEndSeq && lastAckSent !== roundEndSeq) {
       lastAckSent = roundEndSeq;
-      room.sendRoundAck(roundEndSeq);
+      room.sendRoundAck(roundEndSeq,roundId);
     }
     if (roundEnded) return;
     roundEnded = true;
@@ -521,10 +556,14 @@
     if (clockTimer) clearInterval(clockTimer);
     clockTimer = null;
     const won = winnerId === peerId;
-    els.roundTitle.textContent = won ? 'Victory' : 'Game over';
+    document.exitPointerLock?.();
+    if(winnerId)roomWins[winnerId]=(roomWins[winnerId]||0)+1;else roomDraws++;
+    els.roundTitle.textContent = winnerId ? won ? 'Victory' : 'Defeat' : 'Draw';
     els.roundTitle.classList.toggle('win', won);
-    els.roundSummary.textContent = winnerId ? `${shortName(winnerId)} is the last fighter alive.` : 'No fighter survived.';
-    els.roundSync.textContent = isHost ? 'Waiting for the guest to confirm this result…' : 'Result received from host authority.';
+    const scores=source.players||latest?.players||[];
+    els.roundSummary.textContent=scores.map(p=>`${shortName(p.id)}: ${p.kills||0} kills`).join(' · ');
+    els.roundSync.textContent='Round wins: '+admittedPlayers(roster).map(p=>`${shortName(p.playerId)} ${roomWins[p.playerId]||0}`).join(' — ') + ` · ${roomDraws} ${roomDraws===1?'draw':'draws'} this visit`;
+
     els.roundOver.classList.remove('hidden');
     log(winnerId ? `${shortName(winnerId)} won the round` : 'Round ended with no survivor', won ? 'good' : 'bad');
     if (isHost && authority) startRoundFinalizer();
@@ -537,8 +576,8 @@
     return admittedPlayers(roster).filter(item => item.playerId !== peerId).map(item => item.playerId);
   }
 
-  function handleRoundAck(playerId, roundEndSeq) {
-    if (!isHost || !authority || !authority.roundEnded || roundEndSeq !== authority.roundEndSeq) return;
+  function handleRoundAck(playerId, roundEndSeq, forRound) {
+    if (forRound!==roundId || !isHost || !authority || !authority.roundEnded || roundEndSeq !== authority.roundEndSeq) return;
     roundAcks.add(playerId);
     if (expectedGuestIds().every(id => roundAcks.has(id))) completeRoundConfirmation(true);
   }
@@ -562,7 +601,7 @@
     if (roundFinalizeTimer) clearInterval(roundFinalizeTimer);
     roundFinalizeTimer = null;
     roundConfirmed = confirmed;
-    els.roundSync.textContent = confirmed ? 'Both players confirmed the same result. Network traffic stopped.' : 'Confirmation timed out. This result remains host-authoritative.';
+
     log(confirmed ? 'Round result confirmed by both players' : 'Round confirmation timed out', confirmed ? 'good' : 'bad');
     updateTelemetry();
     publishDiagnostics();
@@ -581,6 +620,15 @@
   function updateHud() {
     const local = authoritativeLocal();
     if (!local) return;
+    const states=authority?[...authority.players.values()]:latest?.players||[];
+    const remaining=authority?Math.max(0,authority.endsAtMs-authority.serverTimeMs):latest?.remainingMs||0;
+    const seconds=Math.ceil(remaining/1000);els.roundClock.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+    els.scoreLine.textContent=states.map(p=>`${shortName(p.id)} ${p.kills||0}`).join(' — ');
+    const respawn=authority?Math.max(0,(local.respawnAt||0)-authority.serverTimeMs):local.respawnMs||0;
+    els.respawnHint.classList.toggle('hidden',local.alive!==false||roundEnded);
+    els.respawnHint.textContent=`Back in ${Math.ceil(respawn/1000)}…`;
+    if(authority&&(local.lifeId||0)!==localLifeId){localLifeId=local.lifeId||0;localYaw=local.yaw;localPitch=local.pitch;activeWeapon=local.weapon;trigger=false;}
+    els.controlHint.classList.toggle('hidden',document.pointerLockElement===els.arena||roundEnded||local.alive===false);
     const equippedWeapon = local.weapon || 'sidearm';
     let ammo = local.ammo;
     let reserve = local.reserve;
@@ -612,10 +660,10 @@
     weaponKeys.Digit3 = localProfile.loadout[2];
     const buttons = localProfile.loadout.map((id, index) => {
       const weapon = PVPRealSim.WEAPONS[id];
-      const button = document.createElement('button'); button.dataset.weapon = id;
+      const button = document.createElement('button'); button.dataset.weapon = id || '';button.disabled=!weapon;
       const key = document.createElement('kbd'); key.textContent = String(index + 1);
-      const name = document.createElement('b'); name.textContent = weapon.name;
-      const role = document.createElement('span'); role.textContent = weapon.role;
+      const name = document.createElement('b'); name.textContent = weapon ? weapon.name : 'Empty';
+      const role = document.createElement('span'); role.textContent = '';
       button.append(key, name, role); return button;
     });
     els.weaponBar.replaceChildren(...buttons); updateWeaponButtons();
@@ -660,13 +708,22 @@
     });
   }
 
-  function initThree() {
-    if (renderer) {
-      resizeRenderer();
-      return;
+  function resetScene(){
+    if(scene){
+      const geometries=new Set(),materials=new Set();
+      scene.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)for(const m of Array.isArray(object.material)?object.material:[object.material])materials.add(m);});
+      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());
     }
-    renderer = new THREE.WebGLRenderer({ canvas: els.arena, antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    renderer?.renderLists.dispose();
+    fighterModels.clear();projectileModels.clear();petModels.clear();effects.length=0;viewModel=null;viewWeapon='';
+  }
+
+  function initThree() {
+    if(!renderer){
+      renderer = new THREE.WebGLRenderer({canvas:els.arena,antialias:true,powerPreference:'high-performance'});
+      renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+      addEventListener('resize',resizeRenderer);
+    }
     renderer.outputEncoding = THREE.sRGBEncoding;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(world.colors.sky);
@@ -687,7 +744,7 @@
     }
     addArenaAtmosphere();
     resizeRenderer();
-    addEventListener('resize', resizeRenderer);
+
   }
 
   function addArenaAtmosphere() {
@@ -878,6 +935,9 @@
       if (progress >= 1) {
         if (effect.object.parent) effect.object.parent.remove(effect.object);
         if (effect.light && effect.light.parent) effect.light.parent.remove(effect.light);
+        effect.object.geometry?.dispose();
+        effect.object.material?.dispose();
+        effect.light?.dispose?.();
         effects.splice(index, 1);
         continue;
       }
@@ -912,6 +972,10 @@
     if (clockTimer) clearInterval(clockTimer);
     if (rateTimer) clearInterval(rateTimer);
     if (roundFinalizeTimer) clearInterval(roundFinalizeTimer);
+    if(readyTimer)clearInterval(readyTimer);
+    if(startRetryTimer)clearInterval(startRetryTimer);
+    if(startTimer)clearTimeout(startTimer);
+    if(hostLossTimer)clearTimeout(hostLossTimer);
     if (room) await room.close();
     location.href = location.href.split('#')[0];
   }
@@ -932,7 +996,7 @@
   });
   els.arena.addEventListener('mousedown', event => {
     if (event.button === 2) { keys.MouseRight = true;event.preventDefault();return; }
-    if (event.button !== 0 || !running || roundEnded) return;
+    if (event.button !== 0 || !running || roundEnded || !localAlive()) return;
     trigger = true;
     fireId += 1;
     els.arena.focus();
@@ -952,6 +1016,10 @@
   els.create.addEventListener('click', () => begin(true));
   els.join.addEventListener('click', () => begin(false));
   els.startMatch.addEventListener('click', requestStart);
+  els.rematch.addEventListener('click',readyAgain);
+  document.addEventListener('pointerlockerror',()=>{trigger=false;els.controlHint.textContent='Mouse capture blocked. Open this game in Chrome or Edge to play.';});
+  document.addEventListener('pointerlockchange',()=>{trigger=false;for(const code of Object.keys(keys))keys[code]=false;});
+  addEventListener('blur',()=>{trigger=false;for(const code of Object.keys(keys))keys[code]=false;});
   els.copy.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(els.invite.value); els.copy.textContent = 'Copied'; }
     catch (_) { els.invite.select(); }
@@ -973,15 +1041,10 @@
     }),
     fire: () => { if (running && !roundEnded) fireId += 1; },
     weapon: chooseWeapon,
-    setup: ({ arena, loadout, pet } = {}) => {
-      if (arena && PVPRealSim.ARENAS[arena]) els.hostArena.value = arena;
-      if (Array.isArray(loadout)) for (let index = 0; index < 3; index += 1) for (const prefix of ['host', 'guest']) if (PVPRealSim.WEAPONS[loadout[index]]) els[`${prefix}Slot${index + 1}`].value = loadout[index];
-      if (pet === null || PVPRealSim.PETS[pet]) for (const prefix of ['host', 'guest']) { els[`${prefix}Pet`].value = pet || '';updatePetSkill(prefix); }
-    },
     aim: (yaw, pitch = 0) => { localYaw = Number(yaw) || 0; localPitch = Math.max(-1.1, Math.min(1.1, Number(pitch) || 0)); aimInitialized = true; },
   };
 
   populateSetup();
   document.body.dataset.stage = 'setup';
-  if (location.hash.length > 1) els.roomCode.value = location.hash.slice(1).toUpperCase();
+  if(location.hash.length>1){els.roomCode.value=parseRoom(location.hash.slice(1));els.setup.classList.add('invited');els.join.textContent='Join your friend';}
 })();
