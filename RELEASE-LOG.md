@@ -7,6 +7,13 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.4 — 9 Sep 2026
+
+* PvP bullet trails and muzzle flashes now originate at each weapon's barrel, using the same barrel geometry convention as PvE. Short 90 ms trails follow the rendered muzzle while the camera moves; confirmed hit endpoints remain authoritative.
+* Delayed local shot effects are suppressed after a substantial aim change, death, respawn, weapon change, or excessive delay. Other fighters' guns now follow vertical aim.
+* Hitscan rewinds targets only, preserving the shooter's current firing position. Rockets no longer spawn behind the shooter.
+* Validated with 51 automated tests, Three.js muzzle-transform checks, and connected browser host/guest firing checks. Physical-device mouse feel remains a manual check.
+
 ## 2.3 — 9 Sep 2026
 
 * PvP combat now uses a full-window arena with the PvE typeface, top-center score, bottom-left health, and bottom-right ammo and compact weapon slots. Room controls move into an in-game menu.

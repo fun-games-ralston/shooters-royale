@@ -257,6 +257,18 @@
     const l=Math.hypot(d.x,d.y,d.z)||1;return{x:d.x/l,y:d.y/l,z:d.z/l};
   }
 
+  function muzzlePoint(weaponId){
+    const parts=(WEAPONS[weaponId]||WEAPONS.sidearm).parts||[];
+    return {x:0,y:.03,z:parts.reduce((z,p)=>Math.min(z,p.z-p.d/2),0)-.1};
+  }
+
+  function shotVisualAllowed(event,state,hostTimeMs){
+    if(!state||state.alive===false||event.lifeId!==(state.lifeId||0))return false;
+    if(hostTimeMs-event.serverTimeMs>400)return false;
+    if(event.aim){const aim=dirFromAngles(state.yaw,state.pitch);if(aim.x*event.aim.x+aim.y*event.aim.y+aim.z*event.aim.z<.985)return false;}
+    return true;
+  }
+
   function falloff(weapon,distance){
     if(!weapon.fall)return 1;const [near,far,min]=weapon.fall;
     if(distance<=near)return 1;if(distance>=far)return min;return 1-(1-min)*((distance-near)/(far-near));
@@ -482,7 +494,8 @@
     _fireHitscan(shooter,weapon){
       const requested=shooter.input.shotAtMs||shooter.inputReceivedAt||this.serverTimeMs;
       const shotAt=clamp(requested,this.serverTimeMs-CFG.maxRewindMs,this.serverTimeMs+CFG.futureShotToleranceMs);
-      const past=this._sample(shooter.id,shotAt)||shooter,o={x:past.x,y:past.y+CFG.eye,z:past.z},base=dirFromAngles(shooter.input.yaw,shooter.input.pitch);
+      // Rewind targets only. The firing player has already moved this tick.
+      const o={x:shooter.x,y:shooter.y+CFG.eye,z:shooter.z},base=dirFromAngles(shooter.input.yaw,shooter.input.pitch);
       let spread=weapon.spread||0;
       if(weapon.hipMult&&!shooter.input.ads)spread*=weapon.hipMult;
       if(weapon.bipod&&Math.hypot(shooter.vx,shooter.vz)<.15)spread*=weapon.bipod.spread;
@@ -496,7 +509,7 @@
           if(hit.player&&weapon.melee&&weapon.backstab){const toShooter=Math.atan2(-(shooter.x-hit.player.x),-(shooter.z-hit.player.z)),facing=Math.cos(normAngle(toShooter-hit.player.yaw));if(facing<-.35)damage*=weapon.backstab;}
           const current=damages.get(target.id)||{player:hit.player,pet:hit.pet,amount:0,part:hit.hit.part,impact:end};current.amount+=damage;if(hit.hit.part==='HEAD')current.part='HEAD';damages.set(target.id,current);}
       }
-      this._event('fire',{playerId:shooter.id,weapon:weapon.id,origin:o,rays,rewindMs:Math.max(0,Math.round(this.serverTimeMs-shotAt))});
+      this._event('fire',{playerId:shooter.id,weapon:weapon.id,lifeId:shooter.lifeId||0,aim:base,origin:o,rays,rewindMs:Math.max(0,Math.round(this.serverTimeMs-shotAt))});
       for(const item of damages.values()){
         const target=item.player||item.pet,before=target.hp;if(item.pet)this._damagePet(item.pet,item.amount,shooter,weapon.id);else this._damage(item.player,item.amount,shooter,item.part,item.impact,weapon.id);const dealt=Math.max(0,before-target.hp);
         if(weapon.leech&&dealt>0)shooter.hp=Math.min(CFG.baseHp,shooter.hp+weapon.leech);
@@ -507,9 +520,9 @@
 
     _spawnRocket(shooter,weapon){
       const d=spreadDir(dirFromAngles(shooter.input.yaw,shooter.input.pitch),weapon.spread,mulberry32(hash(`${shooter.id}:rocket:${this.serverTimeMs}`)));
-      const origin={x:shooter.x-d.x*.8,y:shooter.y+1.55,z:shooter.z-d.z*.8},id=`r${++this.projectileSeq}`;
+      const origin={x:shooter.x,y:shooter.y+CFG.eye,z:shooter.z},id=`r${++this.projectileSeq}`;
       const projectile={id,ownerId:shooter.id,weapon:weapon.id,x:origin.x,y:origin.y,z:origin.z,vx:d.x*weapon.projectileSpeed,vy:d.y*weapon.projectileSpeed,vz:d.z*weapon.projectileSpeed,life:5};
-      this.projectiles.push(projectile);this.metrics.rockets++;this._event('rocket_spawn',{playerId:shooter.id,projectileId:id,origin,d,weapon:weapon.id});
+      this.projectiles.push(projectile);this.metrics.rockets++;this._event('rocket_spawn',{playerId:shooter.id,projectileId:id,origin,d,aim:dirFromAngles(shooter.input.yaw,shooter.input.pitch),lifeId:shooter.lifeId||0,weapon:weapon.id});
     }
 
     _stepProjectiles(dt){
@@ -646,5 +659,5 @@
     }
   }
 
-  return {CFG,CONTENT_VERSION:Content.CONTENT_VERSION,CONTENT:Content,WEAPONS,WEAPON_IDS,PETS,ARENAS,HITBOX,Authority,ClientPredictor,RemoteBuffer,CameraCorrection,makeArenaWorld,makeFoundryWorld,makeFlatWorld,safeProfile,sanitizeInput,dirFromAngles,rayBox,rayWorld};
+  return {CFG,CONTENT_VERSION:Content.CONTENT_VERSION,CONTENT:Content,WEAPONS,WEAPON_IDS,PETS,ARENAS,HITBOX,Authority,ClientPredictor,RemoteBuffer,CameraCorrection,makeArenaWorld,makeFoundryWorld,makeFlatWorld,safeProfile,sanitizeInput,dirFromAngles,muzzlePoint,shotVisualAllowed,rayBox,rayWorld};
 });

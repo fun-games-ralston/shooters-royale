@@ -3,7 +3,7 @@
 
   const SUPABASE_URL = 'https://ctzjitzkolqghvonjtnx.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_L7lbsM1-zMaOxfIASXIMCQ_0EeF20mq';
-  const MATCH_VERSION = `${PVPRealSim.CONTENT_VERSION}-motion2`;
+  const MATCH_VERSION = `${PVPRealSim.CONTENT_VERSION}-muzzle3`;
   const SIM_MS = 1000 / PVPRealSim.CFG.simulationHz;
   const INPUT_MS = 1000 / PVPRealSim.CFG.inputHz;
   const SNAPSHOT_MS = 1000 / PVPRealSim.CFG.snapshotHz;
@@ -59,6 +59,7 @@
   let fireId = 0;
   let reloadId = 0;
   let trigger = false;
+  let pendingShotVisuals = [];
   let activeWeapon = 'sidearm';
   let localProfile = null;
   let matchArenaId = 'foundry';
@@ -386,6 +387,7 @@
     }
     lastFrame = performance.now();
     simAccum = inputAccum = snapshotAccum = 0;
+    pendingShotVisuals = [];
     log(`${world.def.name} duel started`, 'good');
     updateWeaponButtons();
     frameHandle = requestAnimationFrame(frame);
@@ -503,13 +505,12 @@
 
   function showCombatEvent(event) {
     if (event.type === 'fire') {
-      for (const ray of event.rays || []) addTracer(event.origin, ray.end, ray.hit, event.weapon);
-      if (event.playerId === peerId) muzzleFlash();
+      pendingShotVisuals.push(event);
       log(`${shortName(event.playerId)} fired ${PVPRealSim.WEAPONS[event.weapon]?.name || event.weapon}`, 'shot');
       return;
     }
     if (event.type === 'rocket_spawn') {
-      if (event.playerId === peerId) muzzleFlash();
+      pendingShotVisuals.push(event);
       log(`${shortName(event.playerId)} launched a bazooka`, 'shot');
       return;
     }
@@ -840,7 +841,7 @@
     addWeaponParts(viewModel, weaponId);
     viewModel.scale.setScalar(1.0);
     viewModel.position.set(0.43, -0.4, -0.75);
-    viewModel.rotation.set(-0.06, -0.08, 0);
+    viewModel.rotation.set(0, 0.06, 0);
     camera.add(viewModel);
   }
 
@@ -873,6 +874,7 @@
       model.position.set(person.x, person.y, person.z);
       model.rotation.y = person.yaw;
       updateFighterWeapon(model, person.weapon);
+      model.userData.weaponHolder.rotation.x=person.pitch||0;
     }
     for (const [id, model] of fighterModels) if (!ids.has(id)) { scene.remove(model); fighterModels.delete(id); }
     const pets = authority ? [...authority.pets.values()] : latest && latest.pets || [];
@@ -917,10 +919,30 @@
       model.position.set(item.x, item.y, item.z);
     }
     for (const [id, model] of projectileModels) if (!projectileIds.has(id)) { scene.remove(model); projectileModels.delete(id); }
+    // Resolve muzzle transforms only after the current camera and fighters are placed.
+    scene.updateMatrixWorld(true);
+    for(const event of pendingShotVisuals){
+      if(event.playerId===peerId){
+        if(event.weapon!==activeWeapon||!PVPRealSim.shotVisualAllowed(event,{...local,yaw:localYaw,pitch:localPitch},authority?authority.serverTimeMs:room.toHostTime(Date.now())))continue;
+        if(!PVPRealSim.WEAPONS[event.weapon]?.melee)muzzleFlash();
+      }
+      const muzzle=renderedMuzzle(event.playerId,event.weapon);
+      if(!muzzle)continue;
+      const weapon=PVPRealSim.WEAPONS[event.weapon];
+      if(!weapon?.melee)for(const ray of event.rays||[])addTracer(muzzle,ray.end,ray.hit,event.weapon,event);
+    }
+    pendingShotVisuals=[];
     animateEffects(now);
   }
 
-  function addTracer(origin, end, hit, weaponId) {
+  function renderedMuzzle(playerId,weaponId){
+    const holder=playerId===peerId?viewModel:fighterModels.get(playerId)?.userData.weaponHolder;
+    if(!holder||holder.userData.weapon!==weaponId||!holder.parent?.visible)return null;
+    const p=PVPRealSim.muzzlePoint(weaponId);
+    return holder.localToWorld(new THREE.Vector3(p.x,p.y,p.z));
+  }
+
+  function addTracer(origin, end, hit, weaponId, event) {
     if (!scene || !origin || !end) return;
     const geometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(origin.x, origin.y, origin.z), new THREE.Vector3(end.x, end.y, end.z),
@@ -929,7 +951,7 @@
     const material = new THREE.LineBasicMaterial({ color: hit ? weapon.tracer || 0x7fd45b : weapon.tracer || 0xf2b134, transparent: true, opacity: 1 });
     const line = new THREE.Line(geometry, material);
     scene.add(line);
-    effects.push({ kind: 'tracer', object: line, born: performance.now(), life: 220 });
+    effects.push({ kind: 'tracer', object: line, born: performance.now(), life: 90, event });
   }
 
   function addExplosion(point) {
@@ -955,8 +977,9 @@
   function muzzleFlash() {
     if (!camera) return;
     const light = new THREE.PointLight(PVPRealSim.WEAPONS[activeWeapon].color, 3, 4);
-    light.position.set(0.25, -0.2, -1.2);
-    camera.add(light);
+    const p=PVPRealSim.muzzlePoint(activeWeapon);
+    light.position.set(p.x,p.y,p.z);
+    (viewModel||camera).add(light);
     effects.push({ kind: 'muzzle', object: light, born: performance.now(), life: 65 });
   }
 
@@ -973,7 +996,13 @@
         effects.splice(index, 1);
         continue;
       }
-      if (effect.kind === 'tracer') effect.object.material.opacity = 1 - progress;
+      if (effect.kind === 'tracer') {
+        const event=effect.event,muzzle=renderedMuzzle(event.playerId,event.weapon);
+        const local=authority?authority.players.get(peerId):predictor?.state;
+        effect.object.visible=!!muzzle&&(event.playerId!==peerId||PVPRealSim.shotVisualAllowed(event,{...local,yaw:localYaw,pitch:localPitch},authority?authority.serverTimeMs:room.toHostTime(Date.now())));
+        if(muzzle){const points=effect.object.geometry.attributes.position;points.setXYZ(0,muzzle.x,muzzle.y,muzzle.z);points.needsUpdate=true;effect.object.geometry.computeBoundingSphere();}
+        effect.object.material.opacity = 1 - progress;
+      }
       if (effect.kind === 'warning') { effect.object.material.opacity = .35 + Math.sin(progress * Math.PI * 12) * .3;effect.object.scale.setScalar(.92 + progress * .08); }
       if (effect.kind === 'explosion') {
         effect.object.scale.setScalar(0.2 + progress * 4.5);
