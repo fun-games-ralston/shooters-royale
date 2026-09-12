@@ -9,7 +9,7 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ## 2.5 beta — Season 1 candidate
 
-* The main menu now separates **Seasonal Challenge** from **Custom Battle**. Challenge uses 7 opponents and 3 minutes, automatically advances through the five opponent tiers, and opens with a three-second ladder briefing instead of a setup form. Custom keeps the familiar 1–11 opponent, opponent presets, and 1–6 minute controls. Training stays inside Match Setup.
+* The main menu now separates **Seasonal Challenge** from **Custom Battle**. Challenge uses 7 opponents and 3 minutes, automatically advances through the five opponent tiers, and opens with a six-second ladder briefing instead of a setup form. It then reveals the live arena directly, removing the redundant Ready screen; one click on the arena captures the mouse. Custom keeps the familiar 1–11 opponent, opponent presets, and 1–6 minute controls. Training stays inside Match Setup.
 * A Challenge only clears with a win and at least 3 eliminations. Custom still earns personal coins, XP, mastery, and challenges, but never changes the seasonal leaderboard.
 * Added four-week seasons with a two-week Preseason transition. Season 1 starts 25 September 2026. Coins, Fighter Level, unlocks, mastery, lifetime statistics, accounts, and old match history never reset.
 * The database change is additive and versioned. Existing matches are marked Preseason/legacy, existing saves are preserved, and the live `main` client continues using its unchanged RPCs until this branch is approved.

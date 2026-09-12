@@ -59,7 +59,7 @@ A 3D browser arena shooter with blocky Minecraft-style fighters. One life, 200 H
 
 Mouse and keyboard only — pointer lock has no touch equivalent, so there is no mobile control scheme.
 
-**Modes.** *Seasonal Challenge* is the competitive mode: seven opponents, three minutes, and the next uncleared opponent tier. A win needs at least three eliminations to clear and reach the seasonal board. It opens with a three-second ladder briefing, not a setup form. *Custom Battle* preserves the familiar opponent presets, 1–11 opponent slider and 1–6 minute control; it earns personal progress but never changes the board. *Training Range* stays inside Custom Battle setup and pays nothing.
+**Modes.** *Seasonal Challenge* is the competitive mode: seven opponents, three minutes, and the next uncleared opponent tier. A win needs at least three eliminations to clear and reach the seasonal board. It opens with a six-second ladder briefing, not a setup form, then enters combat without a second Ready screen. *Custom Battle* preserves the familiar opponent presets, 1–11 opponent slider and 1–6 minute control; it earns personal progress but never changes the board. *Training Range* stays inside Custom Battle setup and pays nothing.
 
 ---
 

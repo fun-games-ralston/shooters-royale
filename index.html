@@ -555,7 +555,7 @@ canvas{display:block}
       <div class="brieftarget" id="briefTarget">Loading your next target.</div>
       <div class="brieftip" id="briefTip">Three eliminations makes the clear count.</div>
       <div class="briefpills" id="briefPills"></div>
-      <div class="briefcount" id="briefCount">Deploying in 3</div>
+      <div class="briefcount" id="briefCount">Deploying in 6</div>
       <div class="briefbar"><i id="briefBar"></i></div>
       <div class="orow" style="justify-content:center">
         <button class="btn primary" id="btnBriefDeploy">Deploy now</button>
@@ -2023,7 +2023,7 @@ const HITBOX=[
  {n:'LEGS',y0:0.00,y1:0.84,hx:.32,hz:.24,m:LEG_MULT},
 ];
 const G = {
-  on:false,paused:false,over:false,ready:false,world:null,fx:null,ents:[],pl:null,rules:null,
+  on:false,paused:false,over:false,world:null,fx:null,ents:[],pl:null,rules:null,softCapture:false,
   t:0,left:0,cam:'first',yaw:0,pitch:0,shake:0,camD:5.2,
   tracers:[],trIdx:0,projs:[],mapBoxes:[],dmgEls:[],fxp:[],plight:null,plightT:0,vm:null,vmGun:null,muzzle:null,
   ads:false,adsT:0,recoil:0,recoilV:0,spinup:0,scoreOpen:false,lastDamageT:-99,
@@ -4055,16 +4055,21 @@ function initInput(){
   const cv=$('#gl');
   cv.addEventListener('click',()=>{
     if(G.outro){ skipOutro(); return; }
-    if(G.on&&!G.paused&&!G.over&&document.pointerLockElement!==cv) cv.requestPointerLock(); });
+    if(G.on&&!G.over&&document.pointerLockElement!==cv) captureMouse(true); });
   document.addEventListener('pointerlockchange',()=>{
-    if(G.on&&!G.over&&document.pointerLockElement===cv){G.ready=false;G.paused=false;$('#ovPause').classList.add('hidden');}
+    if(G.on&&!G.over&&document.pointerLockElement===cv){G.softCapture=false;G.paused=false;$('#ovPause').classList.add('hidden');}
     if(G.on&&!G.over&&document.pointerLockElement!==cv){ pauseMatch(true); }
   });
   // Some embedded views and locked-down browsers refuse pointer lock outright. Without this
   // the player gets a match they cannot aim in and no explanation for why.
   document.addEventListener('pointerlockerror',()=>{
-    if(G.on&&!G.over)pauseMatch(true);
-    toast('This browser blocked mouse capture — try opening the file in Chrome or Edge',true);
+    if(G.on&&!G.over){
+      if(G.softCapture){
+        G.paused=true; $('#ovPause').classList.add('hidden');
+        toast('Click the arena to take control · Chrome or Edge works best',true);
+      } else pauseMatch(true);
+    }
+    G.softCapture=false;
   });
   document.addEventListener('mousemove',e=>{
     if(document.pointerLockElement!==cv||!G.on||G.paused) return;
@@ -4134,8 +4139,8 @@ function pauseMatch(on){
   $('#ovPause').classList.toggle('hidden',!on);
   if(on){
     document.exitPointerLock&&document.exitPointerLock();
-    $('#ovPause h3').textContent=G.ready?'Ready':'Paused';
-    $('#btnResume').textContent=G.ready?'Enter arena':'Resume';
+    $('#ovPause h3').textContent='Paused';
+    $('#btnResume').textContent='Resume';
     $('#pauseStats').innerHTML=row('Arena',G.world.def.name)+row('Alive',G.ents.filter(e=>e.alive).length)+
       row('Your kills',G.kills)+row('Time left',fmtTime(G.left));
   }
@@ -4232,6 +4237,7 @@ function pvShow(kind,data){
 /* =====================================================================
    screens
    ===================================================================== */
+const CHALLENGE_BRIEF_MS=6000;
 let challengeBriefTimer=null, challengeBriefToken=0, challengeBriefDeadline=0;
 function cancelChallengeBriefing(){
   if(challengeBriefTimer) clearInterval(challengeBriefTimer);
@@ -4305,12 +4311,12 @@ async function showChallengeBriefing(){
   show('scr-challenge');
   $('#briefSeason').textContent=challengeBriefSeason();
   updateChallengeStanding(null);
-  challengeBriefDeadline=Date.now()+3000;
+  challengeBriefDeadline=Date.now()+CHALLENGE_BRIEF_MS;
   const tick=()=>{
     if(token!==challengeBriefToken) return;
     const left=Math.max(0,challengeBriefDeadline-Date.now());
     $('#briefCount').textContent=left?'DEPLOYING IN '+Math.max(1,Math.ceil(left/1000)):'DEPLOYING';
-    $('#briefBar').style.transform='scaleX('+(left/3000)+')';
+    $('#briefBar').style.transform='scaleX('+(left/CHALLENGE_BRIEF_MS)+')';
     if(left<=0) deployChallengeBrief(token,false);
   };
   tick(); challengeBriefTimer=setInterval(tick,100);
@@ -5114,9 +5120,19 @@ function kv(k,v){ return '<div><span class="k">'+k+'</span> · '+v+'</div>'; }
 /* =====================================================================
    flow
    ===================================================================== */
-function captureMouse(){
-  try{const result=$('#gl').requestPointerLock?.();if(result&&result.catch)result.catch(()=>{if(G.on&&!G.over)pauseMatch(true);});}
-  catch(e){if(G.on&&!G.over)pauseMatch(true);}
+function captureMouse(soft){
+  G.softCapture=!!soft;
+  const failed=()=>{
+    if(!G.on||G.over) return;
+    if(soft){
+      G.paused=true; $('#ovPause').classList.add('hidden');
+      toast('Click the arena to take control · Chrome or Edge works best',true);
+    } else pauseMatch(true);
+  };
+  const request=$('#gl').requestPointerLock;
+  if(!request){ failed(); return; }
+  try{const result=request.call($('#gl'));if(result&&result.catch)result.catch(failed);}
+  catch(e){failed();}
 }
 function startMatch(capture){
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
@@ -5127,10 +5143,11 @@ function startMatch(capture){
   $('#ui').classList.add('pass'); $('#coinbar').classList.add('hidden');
   $('#ovResult').classList.add('hidden'); $('#ovPause').classList.add('hidden');
   $('#hud').classList.remove('hidden');
-  spawnMatch();G.draw=false;G.ready=(capture===false);
-  pauseMatch(true);
-  if(capture!==false) captureMouse();
-  else toast('The arena is ready · click Enter arena');
+  spawnMatch();G.draw=false;
+  G.paused=document.pointerLockElement!==$('#gl');
+  if(!G.paused){ G.softCapture=false; toast('Fight!'); }
+  else if(capture!==false) captureMouse(true);
+  else toast('Click the arena to take control');
 }
 function wireUI(){
   $('#btnPlay').onclick=()=>{AU.ui();showChallengeBriefing();};
@@ -5140,7 +5157,7 @@ function wireUI(){
   $('#btnSetup').onclick=()=>{AU.ui();S.cfg.mode='custom';renderSetup();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
   $('#btnBriefDeploy').onclick=()=>{AU.ui();deployChallengeBrief(undefined,true);};
-  $('#btnBriefBack').onclick=()=>{AU.ui();show('scr-title');};
+  $('#btnBriefBack').onclick=()=>{AU.ui();G.softCapture=false;document.exitPointerLock&&document.exitPointerLock();show('scr-title');};
   $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
   $('#pvBackdrop').onclick=()=>closeArmoryDetails(true);
   let resetArmed=0;

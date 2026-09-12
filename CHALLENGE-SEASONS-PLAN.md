@@ -26,7 +26,7 @@ The familiar combat, Armory, opponent slider, maps, pets, weapons, coins, XP, ma
 
 Training Range remains inside Match Setup or a secondary tools area. It does not become a top-level menu item.
 
-The main menu stays short: **Seasonal Challenge**, **Custom Battle**, **Play with Friends**, **Armory**, and **How to Play**. Seasonal Challenge shows a three-second, read-only launch briefing with the player's current place, next target, and loadout; Custom Battle opens the familiar adjustable setup. Rematches skip the briefing.
+The main menu stays short: **Seasonal Challenge**, **Custom Battle**, **Play with Friends**, **Armory**, and **How to Play**. Seasonal Challenge shows a six-second, read-only launch briefing with the player's current place, next target, and loadout; Custom Battle opens the familiar adjustable setup. Rematches skip the briefing.
 
 The existing opponent slider and presets stay exactly as players know them in Custom Battle. Seasonal Challenge has no setup form; its launch briefing shows the fixed rules as read-only pills.
 

@@ -128,4 +128,8 @@ test('main menu uses a read-only Challenge briefing and Custom owns Match Setup'
   assert.match(source, /btnAgain'\)\.onclick=.*startMatch\(\)/);
   assert.match(source, /CHALLENGE CLEAR \\u2014 NEXT TARGET/);
   assert.doesNotMatch(functionSource('stepUpHint'), /Match setup/);
+  assert.match(source, /const CHALLENGE_BRIEF_MS=6000/);
+  assert.doesNotMatch(functionSource('startMatch'), /pauseMatch\(true\)/);
+  assert.doesNotMatch(functionSource('startMatch'), /arena is ready/i);
+  assert.doesNotMatch(source.match(/btnPlay'\)\.onclick[^\n]+/)[0], /captureMouse/);
 });

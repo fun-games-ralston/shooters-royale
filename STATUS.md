@@ -10,9 +10,9 @@
 
 ## Summary
 
-The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules, automatically advances through opponent tiers, requires a win plus 3 eliminations, and opens with a three-second ladder briefing. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Season 1 starts 25 September 2026; old results remain Preseason and permanent fighter progress is never reset.
+The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules, automatically advances through opponent tiers, requires a win plus 3 eliminations, and opens with a six-second ladder briefing that launches directly into combat. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Season 1 starts 25 September 2026; old results remain Preseason and permanent fighter progress is never reset.
 
-The database migration is additive and versioned. It passed preservation, eligibility, tier-order, permissions, lint, and security-advisor checks on disposable local Supabase. The full 57-test game/PvP suite and shared-content drift check pass. Browser validation confirmed the main menu, countdown briefing, automatic arena load, 7 opponents, and 3-minute clock. Pointer lock still requires the player's post-countdown click because browsers do not grant it from an automatic timer.
+The database migration is additive and versioned. It passed preservation, eligibility, tier-order, permissions, lint, and security-advisor checks on disposable local Supabase. The full 57-test game/PvP suite and shared-content drift check pass. Browser validation confirmed the main menu, countdown briefing, automatic arena load, 7 opponents, and 3-minute clock. After the briefing, the live arena appears directly and one canvas click captures the mouse, which browsers require; there is no second Ready modal.
 
 0.5 is a weapon-design and retention pass, and it fixed two bugs that were quietly gutting the game.
 
