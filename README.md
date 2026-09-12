@@ -21,7 +21,7 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
   on its shop card.
 - **10 procedural arenas** with ice, lava, low gravity and killable drops.
 - **7 pets** that fight alongside you and can be shot down.
-- **Daily challenges, ranks, weapon mastery, medals and multi-kill banners.**
+- **Daily challenges, Fighter Levels, weapon mastery, medals and multi-kill banners.**
 - A **training range** where you can test-fire every weapon in the game for
   free before deciding to save up for it.
 - An optional **club leaderboard** — a made-up name and a 4-digit PIN, no email
@@ -49,7 +49,8 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 | --- | --- |
 | `index.html` | The whole game. One file, no build step. |
 | `RELEASE-LOG.md` | Every change, newest first. Start here. |
-| `supabase-setup.sql` | Database for the leaderboard. Paste into Supabase once. |
+| `supabase-setup.sql` | Original database setup for the leaderboard. |
+| `supabase/migrations/` | Additive, versioned leaderboard and season changes. |
 | `ONLINE-SETUP.md` | How to switch the leaderboard on. |
 | `SPEC.md` | Game design and technical spec. |
 | `STATUS.md` | Build status, balance numbers, known issues. |

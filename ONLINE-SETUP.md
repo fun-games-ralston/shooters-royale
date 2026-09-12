@@ -1,6 +1,6 @@
 # Getting the leaderboard running
 
-Three steps, about ten minutes, and it costs nothing.
+Three steps, about ten minutes, and it costs nothing. The Season 1 candidate also has one additive dated migration after the original setup.
 
 ---
 
@@ -9,9 +9,9 @@ Three steps, about ten minutes, and it costs nothing.
 1. Open the **ethan-game** project at [supabase.com](https://supabase.com)
 2. Left sidebar → **SQL Editor** → **New query**
 3. Open `supabase-setup.sql`, copy the whole file, paste it in, press **Run**
+4. For seasonal Challenges, run `supabase/migrations/20260912065528_challenge_seasons.sql` once afterward
 
-You should see `Success. No rows returned`. That is it — you never have to
-touch SQL again unless you want to kick someone off the board.
+You should see `Success. No rows returned`. The seasonal migration preserves every existing player, save, and match, and labels old matches as Preseason history.
 
 ---
 
@@ -85,7 +85,7 @@ Pages redeploys on its own, usually within a minute. Send that link to the class
 3. Types a made-up fighter name and picks any 4 digits
 4. Plays
 
-Every finished trial goes to the board. Their coins, unlocks and weapon
+Only eligible Seasonal Challenges go to the current board. Custom Battles still save coins, unlocks and weapon
 mastery are saved to the server too, so they can play on a different computer
 by signing in with the same name and PIN.
 
