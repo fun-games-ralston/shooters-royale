@@ -21,7 +21,7 @@ The familiar combat, Armory, opponent slider, maps, pets, weapons, coins, XP, ma
 | Mode | Purpose | Rules | Progress |
 | --- | --- | --- | --- |
 | **Challenge** | Climb the leaderboard | Standard opponent count and time; the next opponent tier is automatic; arena and loadout come from the Armory | Coins, XP, mastery, challenges, and seasonal leaderboard |
-| **Custom Battle** | Play by your own rules | Keep the existing 1 to 11 opponent slider, skill choices, arena, and time controls | Coins, XP, mastery, and challenges; **never changes the leaderboard** |
+| **Custom Battle** | Play by your own rules | Keep the existing 1 to 11 opponent slider, skill choices, arena, and time controls; optional Most Wanted rule makes every bot hunt the player | Coins, XP, mastery, and challenges; **never changes the leaderboard** |
 | **Training Range** | Internal evaluation and optional weapon testing | Current safe-range behavior | No rewards and no leaderboard |
 
 Training Range remains inside Match Setup or a secondary tools area. It does not become a top-level menu item.
@@ -81,7 +81,7 @@ This is part of the current battle-royale identity. The AI is also intentionally
 
 The 3-elimination requirement solves the hiding problem with a visible rule instead of changing the whole combat model.
 
-Do not add a bot-combat switch in the first release. It does not help leaderboard fairness once Custom is unranked, and it adds another setting to explain. If players later request it, it can be added to Custom Battle only, with the current free-for-all behavior as the default.
+Custom Battle has one optional, plainly named exception: **Most Wanted**. It is off by default. When enabled, every living bot targets the player and ignores other bots and pets as targets. The red warning control says exactly what will happen before the match starts. Because Custom is unranked, this does not change Challenge fairness or seasonal standing.
 
 ## 5. Clarify progression
 
@@ -148,7 +148,7 @@ At the Season 1 launch:
 - No opponent-slider redesign
 - No weapon, pet, map, or economy rebalance
 - No loss of player progress
-- No removal of bot-on-bot combat
+- No removal of bot-on-bot combat from Challenge or default Custom play
 - No server-authoritative combat rewrite
 - No new season pass or reward currency
 - No Friends PvP ranking

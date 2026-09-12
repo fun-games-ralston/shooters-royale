@@ -117,6 +117,19 @@ canvas{display:block}
 .chip.on{background:var(--bone);color:#150f22;box-shadow:inset 0 0 0 2px #fff, 0 0 14px rgba(236,227,210,.25);font-weight:bold}
 .chip.locked{opacity:.45;cursor:not-allowed}
 .chip.locked::after{content:" 🔒"}
+.togglebtn{width:100%;border:0;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:#171222;box-shadow:inset 0 0 0 2px #2a2239;color:var(--dim);font-family:var(--mono);font-size:12px;
+  letter-spacing:.09em;text-transform:uppercase;cursor:pointer;text-align:left}
+.togglebtn:hover{background:#221a33;color:var(--bone)}
+.togglebtn b{font-family:var(--disp);font-size:18px;letter-spacing:.12em;color:var(--bone);font-weight:400}
+.togglebtn.on{background:var(--bone);color:#150f22;box-shadow:inset 0 0 0 2px #fff,0 0 14px rgba(236,227,210,.22)}
+.togglebtn.on b{color:#150f22}
+.togglebtn.danger{color:#ee9b8e;background:#251219;box-shadow:inset 0 0 0 2px #7e2e2e}
+.togglebtn.danger:hover{color:#fff;background:#35171c;box-shadow:inset 0 0 0 2px var(--ember),0 0 14px rgba(224,85,58,.2)}
+.togglebtn.danger b{color:var(--ember)}
+.togglebtn.danger.on{color:#fff;background:linear-gradient(#a2382d,#6c201e);box-shadow:inset 0 0 0 2px #f47b66,0 0 18px rgba(224,85,58,.38)}
+.togglebtn.danger.on b{color:#fff}
+.togglebtn[disabled]{opacity:.4;cursor:not-allowed;filter:grayscale(.35)}
 .sliderow{display:flex;align-items:center;gap:14px}
 .track{position:relative;flex:1;height:26px;display:flex;align-items:center;cursor:pointer}
 .track .rail{position:absolute;left:0;right:0;height:6px;background:#0f0b18;box-shadow:inset 1px 1px 0 rgba(0,0,0,.8)}
@@ -1337,7 +1350,7 @@ const DEFAULT_STATE = {
   own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
-  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge' },
+  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', mostWanted:false },
   challenge:{season:'',bestTier:0},
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
@@ -1389,6 +1402,7 @@ function adoptSave(p){
   S.cfg.time = clamp(Math.round(S.cfg.time||3), 1, 6);
   S.cfg.bots = clamp(Math.round(S.cfg.bots||5), 1, 11);
   S.cfg.mode = normalizeMode(S.cfg.mode);
+  S.cfg.mostWanted = !!S.cfg.mostWanted;
   S.challenge=Object.assign({},DEFAULT_STATE.challenge,p.challenge||{});
   S.stats=Object.assign({}, DEFAULT_STATE.stats,p.stats||{});
   S.food = p.food||{};
@@ -1435,6 +1449,7 @@ function matchRules(cfg){
     skill:mode==='challenge'?challengeTargetSkill():cfg.skill,
     bots:mode==='challenge'?CHALLENGE_RULES.bots:clamp(Math.round(cfg.bots||5),1,11),
     time:mode==='challenge'?CHALLENGE_RULES.time:clamp(Math.round(cfg.time||3),1,6),
+    mostWanted:mode==='custom'&&!!cfg.mostWanted,
   };
 }
 function challengeCleared(res,rules){
@@ -3117,7 +3132,10 @@ function damage(t,amount,part,attacker,pt,source){
     setTimeout(()=>$('#hurt').style.opacity=0,140);
     G.shake=Math.max(G.shake,0.12+amount/900);
   }
-  if(petDamage&&t.ai&&petUp()){
+  const marked=t.ai?mostWantedTarget():null;
+  if(marked){
+    t.ai.target=marked; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=marked.pos.x; t.ai.lz=marked.pos.z;
+  } else if(petDamage&&t.ai&&petUp()){
     t.ai.target=G.pet; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=G.pet.pos.x; t.ai.lz=G.pet.pos.z;
   } else if(attacker&&!attacker.isPlayer&&!t.isPlayer&&t.ai) { t.ai.target=attacker; t.ai.react=0; }
   if(t.hp<=0){ t.hp=0; kill(t,attacker,part,source); }
@@ -3302,6 +3320,9 @@ function swapSlot(i){
 /* =====================================================================
    bots
    ===================================================================== */
+function mostWantedTarget(){
+  return G.rules&&G.rules.mostWanted&&G.pl&&G.pl.alive ? G.pl : null;
+}
 function botDesired(wp){
   if(wp.melee) return 1.5;
   if(wp.id==='sniper'||wp.id==='reaper') return 30;
@@ -3313,27 +3334,33 @@ function updateBot(b,dt){
   if(!b.alive) return;
   const K=b.K||SKILLS.regular, wp=W[b.wep], mod=G.world.def.mod||{};
   if(b.ai.target&&!b.ai.target.alive) b.ai.target=null;
+  const marked=mostWantedTarget();
+  if(marked&&b.ai.target!==marked){
+    b.ai.target=marked; b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0;
+  }
   const think=K.think||0.35, focus=K.focus||1.25, memory=K.memory||1.2;
   b.ai.think-=dt;
   if(b.ai.think<=0){
     b.ai.think=think+Math.random()*think*0.6;
-    let best=null,bd=1e9;
-    const candidates=G.ents.slice(); if(petUp()) candidates.push(G.pet);
-    for(const o of candidates){
-      if(!o.alive||o===b) continue;
-      const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
-      const vis=los(b,o);
-      // focus>1 pushes the player down the list, so low tiers mostly brawl with each
-      // other and a beginner is not swarmed by seven bots at once.
-      let petFocus=1;
-      if(o.isPet){
-        // A pet that just bit this bot becomes the obvious threat. The bear also
-        // wins attention from enemies already pressuring its owner; other pets
-        // remain valid targets without turning every lobby into a pet firing squad.
-        petFocus=o.target===b?0.42:(o.def.perk==='guardian'&&b.ai.target===G.pl?0.62:1.9);
+    let best=marked,bd=marked?0:1e9;
+    if(!marked){
+      const candidates=G.ents.slice(); if(petUp()) candidates.push(G.pet);
+      for(const o of candidates){
+        if(!o.alive||o===b) continue;
+        const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
+        const vis=los(b,o);
+        // focus>1 pushes the player down the list, so low tiers mostly brawl with each
+        // other and a beginner is not swarmed by seven bots at once.
+        let petFocus=1;
+        if(o.isPet){
+          // A pet that just bit this bot becomes the obvious threat. The bear also
+          // wins attention from enemies already pressuring its owner; other pets
+          // remain valid targets without turning every lobby into a pet firing squad.
+          petFocus=o.target===b?0.42:(o.def.perk==='guardian'&&b.ai.target===G.pl?0.62:1.9);
+        }
+        const score=d*(vis?1:2.8)*(o.isPlayer?focus:1)*petFocus;
+        if(score<bd){bd=score;best=o;}
       }
-      const score=d*(vis?1:2.8)*(o.isPlayer?focus:1)*petFocus;
-      if(score<bd){bd=score;best=o;}
     }
     if(best!==b.ai.target){ b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0; }
     b.ai.target=best;
@@ -3347,7 +3374,7 @@ function updateBot(b,dt){
     // Bots used to walk straight to a target's exact position through walls, at every
     // difficulty. Now they remember where it was and give up when memory runs out —
     // a Rookie loses you almost immediately, a Nightmare keeps coming for 4.5 s.
-    if(vis){ b.ai.seen=G.t; b.ai.lx=t.pos.x; b.ai.lz=t.pos.z; }
+    if(vis||marked){ b.ai.seen=G.t; b.ai.lx=t.pos.x; b.ai.lz=t.pos.z; }
     else if(G.t-(b.ai.seen||-99) > memory){ b.ai.target=null; t=null; }
   }
   if(t){
@@ -4670,6 +4697,20 @@ function chipCard(label,hint,opts,cur,cb){
   });
   return w;
 }
+function toggleCard(label,hint,on,cb,opts){
+  opts=opts||{};
+  const w=document.createElement('div'); w.className='card blk';
+  w.innerHTML='<div class="lab">'+label+'</div><div class="hint">'+hint+'</div>';
+  const b=document.createElement('button'); b.type='button';
+  function paint(){
+    b.className='togglebtn'+(opts.danger?' danger':'')+(on?' on':'');
+    b.disabled=!!opts.disabled;
+    b.setAttribute('aria-pressed',on?'true':'false');
+    b.innerHTML='<span>'+esc(on?(opts.onText||'Enabled'):(opts.offText||'Disabled'))+'</span><b>'+(on?'ON':'OFF')+'</b>';
+  }
+  b.onclick=()=>{ if(b.disabled) return; AU.ui(); on=!on; paint(); cb(on); saveState(); };
+  paint(); w.appendChild(b); return w;
+}
 function fixedCard(label,hint,value){
   const w=document.createElement('div'); w.className='card blk';
   w.innerHTML='<div class="lab">'+label+'</div><div class="hint">'+hint+'</div>'+
@@ -4680,38 +4721,26 @@ function renderSetup(){
   const g=$('#setupGrid'); g.innerHTML='';
   S.cfg.mode=normalizeMode(S.cfg.mode);
   if(S.cfg.mode==='challenge') S.cfg.mode='custom';
-  g.appendChild(chipCard('Mode','Custom keeps your familiar controls. Training lets you safely test every weapon.',
-    [{id:'custom',name:'Custom Battle'},{id:'training',name:'Training Range'}],
-    S.cfg.mode,v=>{S.cfg.mode=v;renderSetup();}));
   g.appendChild(chipCard('Arena','Where the battle runs — unlock more in the armory',
     ARENAS.map(a=>({id:a.id,name:a.name+(a.event?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
     S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();}));
-  if(S.cfg.mode==='challenge') g.appendChild(fixedCard('Opponents','Every Challenge uses the same lobby','7'));
-  else g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
+  g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
+  g.appendChild(toggleCard('Most Wanted','Every bot hunts you. Bots ignore each other. Custom Battle only.',
+    !!S.cfg.mostWanted,v=>{S.cfg.mostWanted=v;summary();},
+    {danger:true,disabled:S.cfg.mode==='training',onText:'All bots hunt you',offText:'Free-for-all'}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
-  if(S.cfg.mode==='challenge') g.appendChild(fixedCard('Time limit','Every Challenge uses the same clock','3 min'));
-  else g.appendChild(slider('Time limit','Minutes before the battle ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
-  g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
+  g.appendChild(slider('Time limit','Minutes before the battle ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
   g.appendChild(chipCard('Camera','Switch any time with V — third person shows your skins',
     [{id:'first',name:'First person'},{id:'third',name:'Third person'}],S.cfg.cam,v=>{S.cfg.cam=v;}));
+  g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
   g.appendChild(chipCard('Sound','Synthesised gunfire, hits and footsteps',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.sound?'on':'off',v=>{S.cfg.sound=(v==='on');}));
   g.appendChild(chipCard('Nametags','Show names and health above opponents',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.nametags?'on':'off',v=>{S.cfg.nametags=(v==='on');}));
-  const lo=document.createElement('div'); lo.className='card blk';
-  const carried=Object.keys(S.food).filter(k=>S.food[k]>0).reduce((a,k)=>a+S.food[k],0);
-  const kit=[W[S.eq.primary||'sidearm'].name,
-             S.eq.secondary?W[S.eq.secondary].name:'no second gun',
-             W[S.eq.melee||'knife'].name,
-             S.eq.pet?PE[S.eq.pet].name:'no pet',
-             carried?plural(carried,'food item'):'NO FOOD — you will not be able to heal'].join(' · ');
-  lo.innerHTML='<div class="lab">Taking in</div><div class="hint">Everything you are carrying</div>'+
-    '<div style="font-family:var(--mono);font-size:11.5px;line-height:1.9;color:'+
-      (carried?'var(--bone)':'var(--ember)')+'">'+esc(kit)+'</div>'+
-    '<button class="btn sm" style="margin-top:12px" id="btnFighter">See your fighter \u25B8</button>';
-  g.appendChild(lo);
-  $('#btnFighter').onclick=()=>{AU.ui();shopTab='fighter';show('scr-shop');};
+  g.appendChild(toggleCard('Training Range','Safe weapon testing: no damage, infinite ammo, and no rewards.',
+    S.cfg.mode==='training',v=>{S.cfg.mode=v?'training':'custom'; if(v) S.cfg.mostWanted=false; renderSetup();},
+    {onText:'Safe practice',offText:'Custom Battle'}));
   summary();
 }
 function summary(){
@@ -4719,7 +4748,7 @@ function summary(){
   $('#setupSummary').textContent = mode==='training'
     ? 'TRAINING RANGE · NOTHING CAN HURT YOU · NO COINS'
     : mode==='custom'
-      ? 'CUSTOM BATTLE · PERSONAL PROGRESS · NO LEADERBOARD'
+      ? (S.cfg.mostWanted?'CUSTOM BATTLE · MOST WANTED · EVERY BOT HUNTS YOU · NO LEADERBOARD':'CUSTOM BATTLE · PERSONAL PROGRESS · NO LEADERBOARD')
       : 'CHALLENGE · 7 OPPONENTS · 3 MINUTES · 3 ELIMINATIONS TO CLEAR';
   if(btn) btn.textContent=mode==='training'?'Enter training':mode==='custom'?'Deploy custom':'Deploy challenge';
 }

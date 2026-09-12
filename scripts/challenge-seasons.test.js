@@ -53,16 +53,22 @@ test('old Trial saves migrate to Challenge without changing custom controls', ()
     context
   );
   assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
-    mode: 'challenge', arena: 'foundry', skill: 'veteran', bots: 7, time: 3,
+    mode: 'challenge', arena: 'foundry', skill: 'veteran', bots: 7, time: 3, mostWanted: false,
   });
 
   vm.runInNewContext(
-    "result=matchRules({mode:'custom',arena:'grid',skill:'rookie',bots:1,time:6})",
+    "result=matchRules({mode:'custom',arena:'grid',skill:'rookie',bots:1,time:6,mostWanted:true})",
     context
   );
   assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
-    mode: 'custom', arena: 'grid', skill: 'rookie', bots: 1, time: 6,
+    mode: 'custom', arena: 'grid', skill: 'rookie', bots: 1, time: 6, mostWanted: true,
   });
+
+  vm.runInNewContext(
+    "result=matchRules({mode:'training',arena:'grid',skill:'rookie',bots:1,time:6,mostWanted:true})",
+    context
+  );
+  assert.equal(context.result.mostWanted, false);
 });
 
 test('a Challenge needs a win and three eliminations', () => {
@@ -132,4 +138,42 @@ test('main menu uses a read-only Challenge briefing and Custom owns Match Setup'
   assert.doesNotMatch(functionSource('startMatch'), /pauseMatch\(true\)/);
   assert.doesNotMatch(functionSource('startMatch'), /arena is ready/i);
   assert.doesNotMatch(source.match(/btnPlay'\)\.onclick[^\n]+/)[0], /captureMouse/);
+});
+
+test('Custom setup prioritizes match choices and keeps Training last', () => {
+  const setup = functionSource('renderSetup');
+  const labels = ['Arena', 'Opponents', 'Most Wanted', 'Opponent skill', 'Time limit', 'Camera', 'Mouse sensitivity', 'Sound', 'Nametags', 'Training Range'];
+  let previous = -1;
+  for (const label of labels) {
+    const current = setup.indexOf(`'${label}'`);
+    assert.ok(current > previous, `${label} is out of order or missing`);
+    previous = current;
+  }
+  assert.doesNotMatch(setup, /chipCard\('Mode'/);
+  assert.doesNotMatch(setup, /Taking in|btnFighter/);
+  assert.match(setup, /danger:true/);
+  assert.match(setup, /Every bot hunts you\. Bots ignore each other\./);
+  assert.match(source, /mostWanted:false/);
+});
+
+test('Most Wanted forces every living bot to target the player', () => {
+  const player = { alive: true };
+  const context = { G: { rules: { mostWanted: true }, pl: player }, result: null };
+  vm.runInNewContext(functionSource('mostWantedTarget'), context);
+  vm.runInNewContext('result=mostWantedTarget()', context);
+  assert.equal(context.result, player);
+
+  context.G.rules.mostWanted = false;
+  vm.runInNewContext('result=mostWantedTarget()', context);
+  assert.equal(context.result, null);
+
+  context.G.rules.mostWanted = true;
+  player.alive = false;
+  vm.runInNewContext('result=mostWantedTarget()', context);
+  assert.equal(context.result, null);
+
+  const ai = functionSource('updateBot');
+  assert.match(ai, /let best=marked/);
+  assert.match(ai, /if\(!marked\)/);
+  assert.match(functionSource('damage'), /const marked=t\.ai\?mostWantedTarget\(\):null/);
 });
