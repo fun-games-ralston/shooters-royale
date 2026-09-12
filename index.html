@@ -108,6 +108,7 @@ canvas{display:block}
 /* ---------- setup grid ---------- */
 .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;overflow:auto;width:100%;align-content:start}
 .card{padding:14px 16px}
+.card.setup-wide{grid-column:1/-1}
 .card .lab{font-family:var(--disp);letter-spacing:.14em;font-size:17px;text-transform:uppercase}
 .card .hint{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin:3px 0 12px;letter-spacing:.06em}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -1350,7 +1351,7 @@ const DEFAULT_STATE = {
   own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
-  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', mostWanted:false },
+  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', hunted:false },
   challenge:{season:'',bestTier:0},
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
@@ -1402,7 +1403,10 @@ function adoptSave(p){
   S.cfg.time = clamp(Math.round(S.cfg.time||3), 1, 6);
   S.cfg.bots = clamp(Math.round(S.cfg.bots||5), 1, 11);
   S.cfg.mode = normalizeMode(S.cfg.mode);
-  S.cfg.mostWanted = !!S.cfg.mostWanted;
+  // The first feature preview called this Most Wanted. Keep that one preview's
+  // local choice when it loads, then use the clearer Hunted name from now on.
+  S.cfg.hunted = !!(p.cfg&&p.cfg.hunted!==undefined?p.cfg.hunted:p.cfg&&p.cfg.mostWanted);
+  delete S.cfg.mostWanted;
   S.challenge=Object.assign({},DEFAULT_STATE.challenge,p.challenge||{});
   S.stats=Object.assign({}, DEFAULT_STATE.stats,p.stats||{});
   S.food = p.food||{};
@@ -1449,7 +1453,7 @@ function matchRules(cfg){
     skill:mode==='challenge'?challengeTargetSkill():cfg.skill,
     bots:mode==='challenge'?CHALLENGE_RULES.bots:clamp(Math.round(cfg.bots||5),1,11),
     time:mode==='challenge'?CHALLENGE_RULES.time:clamp(Math.round(cfg.time||3),1,6),
-    mostWanted:mode==='custom'&&!!cfg.mostWanted,
+    hunted:mode==='custom'&&!!cfg.hunted,
   };
 }
 function challengeCleared(res,rules){
@@ -3132,7 +3136,7 @@ function damage(t,amount,part,attacker,pt,source){
     setTimeout(()=>$('#hurt').style.opacity=0,140);
     G.shake=Math.max(G.shake,0.12+amount/900);
   }
-  const marked=t.ai?mostWantedTarget():null;
+  const marked=t.ai?huntedTarget():null;
   if(marked){
     t.ai.target=marked; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=marked.pos.x; t.ai.lz=marked.pos.z;
   } else if(petDamage&&t.ai&&petUp()){
@@ -3320,8 +3324,8 @@ function swapSlot(i){
 /* =====================================================================
    bots
    ===================================================================== */
-function mostWantedTarget(){
-  return G.rules&&G.rules.mostWanted&&G.pl&&G.pl.alive ? G.pl : null;
+function huntedTarget(){
+  return G.rules&&G.rules.hunted&&G.pl&&G.pl.alive ? G.pl : null;
 }
 function botDesired(wp){
   if(wp.melee) return 1.5;
@@ -3334,7 +3338,7 @@ function updateBot(b,dt){
   if(!b.alive) return;
   const K=b.K||SKILLS.regular, wp=W[b.wep], mod=G.world.def.mod||{};
   if(b.ai.target&&!b.ai.target.alive) b.ai.target=null;
-  const marked=mostWantedTarget();
+  const marked=huntedTarget();
   if(marked&&b.ai.target!==marked){
     b.ai.target=marked; b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0;
   }
@@ -4699,7 +4703,7 @@ function chipCard(label,hint,opts,cur,cb){
 }
 function toggleCard(label,hint,on,cb,opts){
   opts=opts||{};
-  const w=document.createElement('div'); w.className='card blk';
+  const w=document.createElement('div'); w.className='card blk'+(opts.wide?' setup-wide':'');
   w.innerHTML='<div class="lab">'+label+'</div><div class="hint">'+hint+'</div>';
   const b=document.createElement('button'); b.type='button';
   function paint(){
@@ -4725,12 +4729,12 @@ function renderSetup(){
     ARENAS.map(a=>({id:a.id,name:a.name+(a.event?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
     S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();}));
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
-  g.appendChild(toggleCard('Most Wanted','Every bot hunts you. Bots ignore each other. Custom Battle only.',
-    !!S.cfg.mostWanted,v=>{S.cfg.mostWanted=v;summary();},
-    {danger:true,disabled:S.cfg.mode==='training',onText:'All bots hunt you',offText:'Free-for-all'}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
   g.appendChild(slider('Time limit','Minutes before the battle ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
+  g.appendChild(toggleCard('Hunted mode','Want every bot chasing you? Turn this on... if you dare.',
+    !!S.cfg.hunted,v=>{S.cfg.hunted=v;summary();},
+    {danger:true,wide:true,disabled:S.cfg.mode==='training',onText:"They're all coming",offText:'Bots fight everyone'}));
   g.appendChild(chipCard('Camera','Switch any time with V — third person shows your skins',
     [{id:'first',name:'First person'},{id:'third',name:'Third person'}],S.cfg.cam,v=>{S.cfg.cam=v;}));
   g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
@@ -4739,8 +4743,8 @@ function renderSetup(){
   g.appendChild(chipCard('Nametags','Show names and health above opponents',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.nametags?'on':'off',v=>{S.cfg.nametags=(v==='on');}));
   g.appendChild(toggleCard('Training Range','Safe weapon testing: no damage, infinite ammo, and no rewards.',
-    S.cfg.mode==='training',v=>{S.cfg.mode=v?'training':'custom'; if(v) S.cfg.mostWanted=false; renderSetup();},
-    {onText:'Safe practice',offText:'Custom Battle'}));
+    S.cfg.mode==='training',v=>{S.cfg.mode=v?'training':'custom'; if(v) S.cfg.hunted=false; renderSetup();},
+    {wide:true,onText:'Safe practice',offText:'Custom Battle'}));
   summary();
 }
 function summary(){
@@ -4748,7 +4752,7 @@ function summary(){
   $('#setupSummary').textContent = mode==='training'
     ? 'TRAINING RANGE · NOTHING CAN HURT YOU · NO COINS'
     : mode==='custom'
-      ? (S.cfg.mostWanted?'CUSTOM BATTLE · MOST WANTED · EVERY BOT HUNTS YOU · NO LEADERBOARD':'CUSTOM BATTLE · PERSONAL PROGRESS · NO LEADERBOARD')
+      ? (S.cfg.hunted?"CUSTOM BATTLE · HUNTED · THEY'RE ALL COMING · NO LEADERBOARD":'CUSTOM BATTLE · PERSONAL PROGRESS · NO LEADERBOARD')
       : 'CHALLENGE · 7 OPPONENTS · 3 MINUTES · 3 ELIMINATIONS TO CLEAR';
   if(btn) btn.textContent=mode==='training'?'Enter training':mode==='custom'?'Deploy custom':'Deploy challenge';
 }

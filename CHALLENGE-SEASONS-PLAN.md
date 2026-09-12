@@ -21,7 +21,7 @@ The familiar combat, Armory, opponent slider, maps, pets, weapons, coins, XP, ma
 | Mode | Purpose | Rules | Progress |
 | --- | --- | --- | --- |
 | **Challenge** | Climb the leaderboard | Standard opponent count and time; the next opponent tier is automatic; arena and loadout come from the Armory | Coins, XP, mastery, challenges, and seasonal leaderboard |
-| **Custom Battle** | Play by your own rules | Keep the existing 1 to 11 opponent slider, skill choices, arena, and time controls; optional Most Wanted rule makes every bot hunt the player | Coins, XP, mastery, and challenges; **never changes the leaderboard** |
+| **Custom Battle** | Play by your own rules | Keep the existing 1 to 11 opponent slider, skill choices, arena, and time controls; optional Hunted rule makes every bot hunt the player | Coins, XP, mastery, and challenges; **never changes the leaderboard** |
 | **Training Range** | Internal evaluation and optional weapon testing | Current safe-range behavior | No rewards and no leaderboard |
 
 Training Range remains inside Match Setup or a secondary tools area. It does not become a top-level menu item.
@@ -81,7 +81,7 @@ This is part of the current battle-royale identity. The AI is also intentionally
 
 The 3-elimination requirement solves the hiding problem with a visible rule instead of changing the whole combat model.
 
-Custom Battle has one optional, plainly named exception: **Most Wanted**. It is off by default. When enabled, every living bot targets the player and ignores other bots and pets as targets. The red warning control says exactly what will happen before the match starts. Because Custom is unranked, this does not change Challenge fairness or seasonal standing.
+Custom Battle has one optional, plainly named exception: **Hunted Mode**. It is off by default and sits after the four core match choices instead of interrupting Opponents and Opponent Skill. When enabled, every living bot targets the player and ignores other bots and pets as targets. The red warning asks, "Want every bot chasing you? Turn this on... if you dare." Because Custom is unranked, this does not change Challenge fairness or seasonal standing.
 
 ## 5. Clarify progression
 

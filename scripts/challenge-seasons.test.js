@@ -53,22 +53,30 @@ test('old Trial saves migrate to Challenge without changing custom controls', ()
     context
   );
   assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
-    mode: 'challenge', arena: 'foundry', skill: 'veteran', bots: 7, time: 3, mostWanted: false,
+    mode: 'challenge', arena: 'foundry', skill: 'veteran', bots: 7, time: 3, hunted: false,
   });
 
   vm.runInNewContext(
-    "result=matchRules({mode:'custom',arena:'grid',skill:'rookie',bots:1,time:6,mostWanted:true})",
+    "result=matchRules({mode:'custom',arena:'grid',skill:'rookie',bots:1,time:6,hunted:true})",
     context
   );
   assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
-    mode: 'custom', arena: 'grid', skill: 'rookie', bots: 1, time: 6, mostWanted: true,
+    mode: 'custom', arena: 'grid', skill: 'rookie', bots: 1, time: 6, hunted: true,
   });
 
   vm.runInNewContext(
-    "result=matchRules({mode:'training',arena:'grid',skill:'rookie',bots:1,time:6,mostWanted:true})",
+    "result=matchRules({mode:'custom',arena:'grid',skill:'rookie',bots:1,time:6,hunted:false})",
     context
   );
-  assert.equal(context.result.mostWanted, false);
+  assert.equal(context.result.hunted, false);
+
+  for (const mode of ['challenge', 'training']) {
+    vm.runInNewContext(
+      `result=matchRules({mode:'${mode}',arena:'grid',skill:'rookie',bots:1,time:6,hunted:true})`,
+      context
+    );
+    assert.equal(context.result.hunted, false, `${mode} must ignore the Custom-only hunt rule`);
+  }
 });
 
 test('a Challenge needs a win and three eliminations', () => {
@@ -142,7 +150,7 @@ test('main menu uses a read-only Challenge briefing and Custom owns Match Setup'
 
 test('Custom setup prioritizes match choices and keeps Training last', () => {
   const setup = functionSource('renderSetup');
-  const labels = ['Arena', 'Opponents', 'Most Wanted', 'Opponent skill', 'Time limit', 'Camera', 'Mouse sensitivity', 'Sound', 'Nametags', 'Training Range'];
+  const labels = ['Arena', 'Opponents', 'Opponent skill', 'Time limit', 'Hunted mode', 'Camera', 'Mouse sensitivity', 'Sound', 'Nametags', 'Training Range'];
   let previous = -1;
   for (const label of labels) {
     const current = setup.indexOf(`'${label}'`);
@@ -152,28 +160,39 @@ test('Custom setup prioritizes match choices and keeps Training last', () => {
   assert.doesNotMatch(setup, /chipCard\('Mode'/);
   assert.doesNotMatch(setup, /Taking in|btnFighter/);
   assert.match(setup, /danger:true/);
-  assert.match(setup, /Every bot hunts you\. Bots ignore each other\./);
-  assert.match(source, /mostWanted:false/);
+  assert.match(setup, /Want every bot chasing you\? Turn this on\.\.\. if you dare\./);
+  assert.match(setup, /danger:true,wide:true/);
+  assert.match(source, /hunted:false/);
+  assert.match(functionSource('adoptSave'), /p\.cfg\.mostWanted/);
+  assert.match(functionSource('adoptSave'), /delete S\.cfg\.mostWanted/);
 });
 
-test('Most Wanted forces every living bot to target the player', () => {
+test('Hunted mode forces every living bot to target the player', () => {
   const player = { alive: true };
-  const context = { G: { rules: { mostWanted: true }, pl: player }, result: null };
-  vm.runInNewContext(functionSource('mostWantedTarget'), context);
-  vm.runInNewContext('result=mostWantedTarget()', context);
+  const context = rulesContext();
+  context.G = { rules: null, pl: player };
+  vm.runInNewContext(functionSource('huntedTarget'), context);
+  const targetFor = (mode, hunted) => {
+    vm.runInNewContext(
+      `G.rules=matchRules({mode:'${mode}',arena:'foundry',skill:'rookie',bots:5,time:3,hunted:${hunted}});result=huntedTarget()`,
+      context
+    );
+    return context.result;
+  };
+
+  assert.equal(targetFor('custom', true), player);
+  assert.equal(targetFor('custom', false), null);
+  assert.equal(targetFor('challenge', true), null);
+  assert.equal(targetFor('training', true), null);
+
+  targetFor('custom', true);
   assert.equal(context.result, player);
-
-  context.G.rules.mostWanted = false;
-  vm.runInNewContext('result=mostWantedTarget()', context);
-  assert.equal(context.result, null);
-
-  context.G.rules.mostWanted = true;
   player.alive = false;
-  vm.runInNewContext('result=mostWantedTarget()', context);
+  vm.runInNewContext('result=huntedTarget()', context);
   assert.equal(context.result, null);
 
   const ai = functionSource('updateBot');
   assert.match(ai, /let best=marked/);
   assert.match(ai, /if\(!marked\)/);
-  assert.match(functionSource('damage'), /const marked=t\.ai\?mostWantedTarget\(\):null/);
+  assert.match(functionSource('damage'), /const marked=t\.ai\?huntedTarget\(\):null/);
 });
