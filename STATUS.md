@@ -8,6 +8,30 @@
 > language, newest first. This file is the engineering view: what is measured, what is known broken,
 > and why particular decisions went the way they did.
 
+## Win-sync fix prepared, deployment pending
+
+The hourly quota is already removed in production, but the latest live probe
+still finds no `sr_submit_once` endpoint. Do not treat local tests as deployment.
+Run `supabase/manual/win-sync-fix.sql`, verify it, then publish the client.
+
+The patch accepts zero-to-four-second results, keeps completed results in a
+per-account browser queue, retries with a stable UUID, and records each UUID
+once in the same transaction as its score. Cached replies never replay saves.
+Authentication and malformed-input checks remain. Optional breaks never block.
+Existing totals and saves are not rewritten or backfilled.
+
+The optional v2 patch counts lifetime wins even when Challenge requirements
+are unmet, while leaving those matches ineligible for seasonal advancement.
+The feature UI explains the qualification result.
+
+Validation includes legacy and versioned RPCs, 62 fast wins, over 60 matches and
+over 3,600 reported seconds in an hour, eight simultaneous duplicate requests,
+rollback and retry, account isolation, and a local browser test using main's
+actual endMatch handler. That browser test simulated a zero-second, zero-kill
+victory, withheld its committed response, reloaded, and confirmed Stats = 1,
+leaderboard = 1, match rows = 1, receipts = 1. It is a synthetic completion test,
+not a physical gameplay or production-write test.
+
 ## Summary
 
 The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules and automatically advances through opponent tiers after six cumulative qualifying wins. Rookie and Regular wins need at least 3 eliminations; Veteran and harder wins need at least 2. Losses do not erase qualifying wins. Its six-second briefing now shows only the tier, progress such as 4/6, and the elimination requirement. Custom and Training use a shorter three-second briefing without repeating setup details. After any briefing, taking control enables combat immediately; there is no movement-only firing lock. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Its optional Hunted rule is off by default and makes every bot hunt the player without changing Challenge AI. Season 1 starts 1 October 2026; each calendar month begins a new season at Rookie while permanent fighter progress and Preseason history remain intact.
@@ -655,7 +679,7 @@ client and the wire format were tested together rather than separately.
 | Login with right PIN / wrong PIN / unknown handle | Correct in all three cases |
 | PIN lockout after 8 wrong guesses | Locks 15 min, and the correct PIN is refused while locked |
 | Impossible submission (9999 kills, 999999 damage) | Clipped to the lobby size |
-| Score spam on a loop | Cut off by the hourly limits |
+| Score spam on a loop | Historical test; hourly limits have since been removed |
 | Registering and playing through the real UI | Pass — handle stored, score on the board |
 | Two players, seven trials, ranking and live feed | Pass |
 | Cloud save round-trip onto a wiped machine | Pass — coins, unlocks, XP, rank, mastery, loadout restored |
@@ -664,8 +688,9 @@ client and the wire format were tested together rather than separately.
 ### Also fixed while verifying 0.6
 
 - **A dying beginner got a red error toast.** The submit rule rejected short
-  trials, and dying twenty seconds in is completely normal. The floor is now
-  5 seconds, and rejections the player cannot act on are silent.
+  trials, and dying twenty seconds in is completely normal. That historical patch lowered the floor to
+  5 seconds. The September 13 win-sync patch removes the floor entirely and
+  keeps pending or rejected results visible.
 - **Reset progress would have erased the online fighter too.** It wrote an empty
   save, which then synced upward. It signs out first now.
 - **The results screen buttons wrapped mid-word** once a fourth button was added.

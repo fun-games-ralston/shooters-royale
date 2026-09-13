@@ -144,7 +144,7 @@ begin
     'SIXWIN_TEST','2222','foundry','nightmare',7,
     7,0,900,true,60,3,'challenge','{}'::jsonb
   );
-  if result->>'error' <> 'BAD_CHALLENGE_TIER' then
+  if result->>'ok' is distinct from 'true' or (result->>'qualifying_win')::boolean or result->>'challenge_ineligible_reason' is distinct from 'BAD_CHALLENGE_TIER' then
     raise exception 'player skipped directly to Nightmare: %', result;
   end if;
 
@@ -152,8 +152,8 @@ begin
     'SIXWIN_TEST','2222','foundry','veteran',1,
     1,0,200,true,30,3,'challenge','{}'::jsonb
   );
-  if result->>'error' <> 'NOT_STANDARD_CHALLENGE' then
-    raise exception 'one-opponent Challenge was not rejected: %', result;
+  if result->>'ok' is distinct from 'true' or (result->>'qualifying_win')::boolean or result->>'challenge_ineligible_reason' is distinct from 'NOT_STANDARD_CHALLENGE' then
+    raise exception 'one-opponent match must count only toward lifetime totals: %', result;
   end if;
 
   if not has_function_privilege('anon','public.sr_board_v2(text,integer,text)','execute') then

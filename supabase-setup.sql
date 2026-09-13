@@ -164,16 +164,10 @@ end $$;
 -- ---------------------------------------------------------------------
 -- 3. submit — record one finished trial
 --
---    The leaderboard ranks only on stats this function can sanity check:
---      * you cannot kill more fighters than were in the lobby
---      * you cannot claim more than 25 trials or more than an hour of play
---        in any one hour
---    This is honestly not unbreakable, and it is not trying to be. A kid who
---    really wants to can submit fabricated matches at 25 an hour. What stops
---    that in practice is that it is *visible*: the board shows everyone's trial
---    count, so 25 trials and 25 wins in an afternoon looks exactly as silly as
---    it is, and every single attempt leaves a row in `matches` with their name
---    on it. Social consequences beat clever validation with twelve year olds.
+--    Authenticate each result and clip impossible per-match numbers. There is
+--    no hourly match-count or accumulated-duration quota: short supported
+--    matches must not cause later completed results to disappear.
+--    Accepted results leave a match row; the client is not cheat-proof.
 -- ---------------------------------------------------------------------
 create or replace function public.sr_submit(
   p_handle text, p_pin text,
@@ -184,7 +178,7 @@ create or replace function public.sr_submit(
 ) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare st text; r public.players; h text;
-        k int; hs int; dmg int; b int; dur int; spent int; recent int;
+        k int; hs int; dmg int; b int; dur int;
 begin
   st := public.sr_auth(p_handle, p_pin);
   if st <> 'OK' then
@@ -198,25 +192,9 @@ begin
   dmg := least(greatest(coalesce(p_damage,0), 0), b * 400 + 500); -- 200 hp + shield + pets, generously
   dur := least(greatest(coalesce(p_duration,0), 0), 1200);
 
-  -- Only the physically impossible is refused. Getting deleted fifteen seconds
-  -- in is a completely normal thing that happens to a beginner, and it should
-  -- still count as a trial they turned up for.
-  if dur < 5 then
-    return jsonb_build_object('ok', false, 'error', 'TOO_SHORT');
-  end if;
-
-  -- Rate limits do the anti-cheat work instead of per-match rules, deliberately.
-  -- A rule like "five kills cannot happen in sixteen seconds" sounds reasonable
-  -- and then throws away a real player's best run of the week, which is exactly
-  -- the run they wanted on the board. Rate limits can never do that to a single
-  -- honest match; they only bite someone submitting on a loop.
-  --   * 25 trials an hour, when a real one runs several minutes
-  --   * you cannot claim more minutes of play in an hour than an hour holds
-  select count(*), coalesce(sum(m.duration_s), 0) into recent, spent
-    from public.matches m
-   where m.handle = h and m.played_at > now() - interval '1 hour';
-  if recent >= 25 or spent + dur > 3600 then
-    return jsonb_build_object('ok', false, 'error', 'TOO_FAST');
+  -- A completed game can end immediately. Reject malformed durations only.
+  if p_duration is null or p_duration < 0 then
+    return jsonb_build_object('ok', false, 'error', 'BAD_DURATION');
   end if;
 
   insert into public.matches (handle, arena, skill, bots, kills, headshots, damage, won, duration_s)
@@ -336,3 +314,77 @@ grant execute on function public.sr_submit(text,text,text,text,integer,integer,i
 --    be easier with Google sign-in". It would not. Tell the parents and the
 --    school it exists anyway.
 -- =====================================================================
+
+
+-- Durable, authenticated score retries.
+-- Receipts are private, immutable through the client API and retained for
+-- safe retries even after a browser has been closed for a long time.
+create table if not exists public.score_receipts (
+  handle text not null references public.players(handle) on delete cascade,
+  match_id uuid not null,
+  request jsonb not null,
+  response jsonb not null,
+  created_at timestamptz not null default now(),
+  primary key (handle, match_id)
+);
+alter table public.score_receipts enable row level security;
+revoke all on public.score_receipts from public, anon, authenticated;
+
+create or replace function public.sr_submit_once(
+  p_handle text, p_pin text, p_match_id uuid, p_version integer, p_result jsonb
+) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  st text;
+  h text;
+  request_body jsonb;
+  receipt public.score_receipts;
+  result jsonb;
+begin
+  st := public.sr_auth(p_handle,p_pin);
+  if st <> 'OK' then return jsonb_build_object('ok',false,'error',st); end if;
+  h := public.sr_clean_handle(p_handle);
+  if p_match_id is null or p_version is null or p_version not in (1,2)
+     or jsonb_typeof(p_result) is distinct from 'object' then
+    return jsonb_build_object('ok',false,'error','BAD_RESULT');
+  end if;
+  -- Never queue or replay a cloud save: an old result must not overwrite a
+  -- newer inventory or Stats save. sr_save remains responsible for saves.
+  request_body := jsonb_build_object('version',p_version,'result',p_result - 'p_save');
+  -- One fighter's receipt check and scoring run under the same row lock.
+  -- Concurrent tabs therefore cannot both score the same match ID.
+  perform 1 from public.players where handle=h for update;
+  select * into receipt from public.score_receipts where handle=h and match_id=p_match_id;
+  if found then
+    if receipt.request <> request_body then
+      return jsonb_build_object('ok',false,'error','MATCH_ID_CONFLICT');
+    end if;
+    return receipt.response;
+  end if;
+  if p_version=1 then
+    result := public.sr_submit(h,p_pin,
+      p_result->>'p_arena',p_result->>'p_skill',(p_result->>'p_bots')::integer,
+      (p_result->>'p_kills')::integer,(p_result->>'p_headshots')::integer,
+      (p_result->>'p_damage')::integer,(p_result->>'p_won')::boolean,
+      (p_result->>'p_duration')::integer,'{}'::jsonb);
+  else
+    if to_regprocedure('public.sr_submit_v2(text,text,text,text,integer,integer,integer,integer,boolean,integer,integer,text,jsonb)') is null then
+      return jsonb_build_object('ok',false,'error','SERVER_UPGRADE_REQUIRED');
+    end if;
+    result := public.sr_submit_v2(h,p_pin,
+      p_result->>'p_arena',p_result->>'p_skill',(p_result->>'p_bots')::integer,
+      (p_result->>'p_kills')::integer,(p_result->>'p_headshots')::integer,
+      (p_result->>'p_damage')::integer,(p_result->>'p_won')::boolean,
+      (p_result->>'p_duration')::integer,(p_result->>'p_time_limit')::integer,
+      p_result->>'p_mode','{}'::jsonb);
+  end if;
+  -- Temporary failures are not receipts. Rejected completed results are kept
+  -- too, so a later retry cannot reinterpret the original result.
+  if result->>'error' in ('NO_ACTIVE_SEASON') then return result; end if;
+  insert into public.score_receipts(handle,match_id,request,response)
+  values(h,p_match_id,request_body,result);
+  return result;
+end $$;
+revoke all on function public.sr_submit_once(text,text,uuid,integer,jsonb) from public;
+grant execute on function public.sr_submit_once(text,text,uuid,integer,jsonb) to anon, authenticated;
+notify pgrst, 'reload schema';

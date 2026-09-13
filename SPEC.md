@@ -626,17 +626,25 @@ edit their own numbers, and that is not fixable in a game of this shape. What th
 database does instead:
 
 - clips the physically impossible (kills can never exceed the lobby size);
-- rate-limits: 25 trials an hour, and you cannot claim more minutes of play in an
-  hour than an hour contains;
+- keeps authentication and bounded match results, with no minimum duration,
+  and seasonal eligibility checks, without hourly match-count or play-duration quotas;
 - makes it visible — the board shows each player's trial count beside their kills,
-  and every submission leaves an audited row in `matches`.
+  and every accepted submission leaves an audited row in `matches`.
 
 **A rule that was written and then deliberately removed:** "the trial must be
 long enough for the kills claimed to be possible". It sounded obviously correct
 and then rejected a real 5-kill run during testing, which is exactly the run a
-kid wants on the board. Rate limits can never do that to an honest match, so the
-per-match rule went and the rate limits stayed. Refusing a real achievement is a
-much worse failure than letting an inflated one through where everyone can see it.
+kid wants on the board. The hourly quotas also rejected supported fast matches,
+so the feature branch removes them. Rejection messages remain visible while a
+preview uses an older backend. Results persist per account and UUID and retry safely across reloads. Challenge
+eligibility does not discard lifetime credit. Existing gaps are not backfilled.
+
+**Optional playtime reminder.** After 30 active minutes in this browser tab, show
+“Time for a break?” between matches or after leaving Training. “Take a break”
+returns to the menu; “Keep playing” dismisses it. Neither choice imposes a
+cooldown or changes scores. Exclude menus, pauses, hidden tabs and outros; keep
+time across reloads using session storage. Remind again after 30 more active
+minutes. Friends PvP is outside this solo-client change.
 
 **Conflict rule.** On sign-in and at boot, whichever save has played more matches
 wins. A fresh registration always keeps whatever is already on the computer.

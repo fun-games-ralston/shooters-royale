@@ -318,6 +318,9 @@ canvas{display:block}
 .oc h3{font-family:var(--disp);font-size:40px;letter-spacing:.1em;text-transform:uppercase;text-align:center}
 .oc h3.win{color:var(--gold);text-shadow:0 0 30px rgba(242,177,52,.5)}
 .oc h3.lose{color:var(--ember)}
+#ovBreak{z-index:35}
+#ovBreak p{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--dim);margin:18px 0;text-align:center}
+#ovBreak .orow{justify-content:center}
 .statlist{font-family:var(--mono);font-size:13px;margin:18px 0;letter-spacing:.06em}
 .statlist div{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px dashed #2c2439;color:var(--dim)}
 .statlist div b{color:var(--bone);font-weight:normal}
@@ -408,6 +411,7 @@ canvas{display:block}
   .lrail{order:2;flex:0 1 320px;width:auto}
   .rrail{order:3;flex:0 1 320px;width:auto;align-self:stretch}
 }
+.score-sync{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--gold);margin:12px 0;padding:10px;background:#201a2c;border:1px solid #514060}
 /* leaderboard */
 .lbhead,.lbrow{display:grid;grid-template-columns:44px 1fr 62px 62px 62px 74px;gap:8px;align-items:center;
   padding:9px 10px;font-family:var(--mono);font-size:12px;letter-spacing:.08em}
@@ -552,6 +556,7 @@ canvas{display:block}
       <div class="lrail">
         <div class="playercard blk" id="playerCard"></div>
         <aside class="tpanel blk" id="miniBoard"></aside>
+        <p class="score-sync" data-score-sync role="status" aria-live="polite" hidden></p>
       </div>
       <div class="titlecenter">
         <h1 class="gametitle">Block<span>Royale</span></h1>
@@ -725,11 +730,24 @@ canvas{display:block}
   <div class="oc blk">
     <h3 id="resTitle" class="win">Victory</h3>
     <div class="statlist" id="resStats"></div>
+    <p class="score-sync" data-score-sync role="status" aria-live="polite" hidden></p>
     <div class="orow">
       <button class="btn primary" id="btnAgain">Run it back</button>
       <button class="btn" id="btnToShop">Armory</button>
       <button class="btn" id="btnToBoard">Leaderboard</button>
       <button class="btn ghost" id="btnToMenu">Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- OPTIONAL BREAK REMINDER: shown only after active play has ended. -->
+<div class="overlay hidden" id="ovBreak" role="dialog" aria-modal="true" aria-labelledby="breakTitle" aria-describedby="breakText">
+  <div class="oc blk">
+    <h3 id="breakTitle">Time for a break?</h3>
+    <p id="breakText"></p>
+    <div class="orow">
+      <button class="btn primary" id="btnTakeBreak">Take a break</button>
+      <button class="btn" id="btnKeepPlaying">Keep playing</button>
     </div>
   </div>
 </div>
@@ -746,6 +764,8 @@ canvas{display:block}
 <div id="loading"><div class="gametitle" style="font-size:38px">Loading</div><div class="bar"><i></i></div>
 <div class="tagline">Placing blocks</div></div>
 
+<script src="shared/playtime-reminder.js"></script>
+<script src="shared/score-queue.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -787,8 +807,11 @@ const NETERR = {
   BAD_HANDLE    : '3 to 14 letters or numbers, and keep it clean',
   BAD_PIN_FORMAT: 'The PIN has to be exactly 4 digits',
   TAKEN         : 'Somebody already took that name',
-  TOO_FAST      : 'Slow down — too many matches in one hour',
-  TOO_SHORT     : 'That match was too short to count',
+  TOO_FAST      : 'This server still has an hourly score limit. This result was not recorded',
+  BAD_DURATION  : 'The result has an invalid duration',
+  MATCH_ID_CONFLICT: 'The result identifier conflicts with an earlier submission',
+  BAD_RESULT    : 'The result could not be validated',
+  TOO_SHORT     : 'This server still has an old minimum-duration scoring rule',
   BAD_MODE      : 'That match mode is not supported',
   BAD_SKILL     : 'That opponent skill is not supported',
   BAD_RULES     : 'Those match rules are not supported',
@@ -802,9 +825,10 @@ const NET = {
   on(){ return !!(CLOUD.url && CLOUD.key); },
   async call(fn, body){
     if(!this.on()) return {ok:false, error:'OFFLINE'};
+    const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),15000);
     try{
       const r = await fetch(CLOUD.url.replace(/\/+$/,'')+'/rest/v1/rpc/'+fn, {
-        method:'POST',
+        method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json','apikey':CLOUD.key,'Authorization':'Bearer '+CLOUD.key},
         body:JSON.stringify(body||{}),
       });
@@ -812,6 +836,7 @@ const NET = {
       const j = await r.json();
       return Array.isArray(j) ? {ok:true, rows:j} : j;   // table functions come back as arrays
     }catch(e){ return {ok:false, error:'NO_NETWORK'}; }
+    finally{clearTimeout(timeout);}
   }
 };
 
@@ -902,7 +927,9 @@ const ACC_KEY='sr_account_v1';
 let ACC=null;
 function loadAcc(){ try{ ACC=JSON.parse(localStorage.getItem(ACC_KEY)||'null'); }catch(e){ ACC=null; } }
 function storeAcc(a){
+  clearTimeout(cloudPushT);
   ACC=a;
+  queueMicrotask(()=>{if(scoreReady) SCORES.resume();});
   try{ a ? localStorage.setItem(ACC_KEY,JSON.stringify(a)) : localStorage.removeItem(ACC_KEY); }catch(e){}
 }
 
@@ -911,41 +938,65 @@ let cloudPushT=null;
 function cloudPush(){
   if(!ACC||!NET.on()) return;
   clearTimeout(cloudPushT);
+  const owner=ACC;
   cloudPushT=setTimeout(()=>{
-    NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
+    if(ACC!==owner) return;
+    NET.call('sr_save',{p_handle:owner.handle,p_pin:owner.pin,p_save:S});
   },2500);
 }
 
-/* Report a finished match. Fire and forget — a dead network must never block
-   the results screen or lose the local save. */
-function cloudSubmit(res, arenaId, durationS, rules){
-  if(!ACC||!NET.on()) return;
-  rules=rules||matchRules();
-  const v2={
-    p_handle:ACC.handle, p_pin:ACC.pin,
-    p_arena:arenaId, p_skill:rules.skill, p_bots:rules.bots,
-    p_kills:res.kills, p_headshots:res.hs, p_damage:res.dmg,
-    p_won:res.win, p_duration:Math.round(durationS), p_time_limit:rules.time,
-    p_mode:rules.mode, p_save:S,
-  };
-  NET.call('sr_submit_v2',v2).then(async r=>{
-    // During branch rollout the live game may still have the v1 RPCs. Never
-    // send a Custom result through v1 because that would put it on the legacy
-    // leaderboard. Challenge can safely remain Preseason history.
-    if(r&&r.error==='HTTP_404'){
-      if(rules.mode==='custom') return NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
-      r=await NET.call('sr_submit',{
-        p_handle:ACC.handle,p_pin:ACC.pin,p_arena:arenaId,p_skill:rules.skill,p_bots:rules.bots,
-        p_kills:res.kills,p_headshots:res.hs,p_damage:res.dmg,p_won:res.win,
-        p_duration:Math.round(durationS),p_save:S,
-      });
+/* Completed results survive reloads and are acknowledged exactly once. */
+let scoreReady=false, scoreStorage=null;
+try{scoreStorage=window.localStorage;}catch(e){}
+const SCORES=BlockRoyaleScores.create({
+  storage:scoreStorage,
+  account:()=>ACC,
+  send:body=>NET.call('sr_submit_once',body),
+  onChange:renderScoreStatus,
+  onAccepted:async (result,entry)=>{
+    miniBoardT=0;
+    if(entry.version===2&&entry.payload.p_mode==='challenge'){
+      const current=await seasonProgress();
+      if(ACC&&ACC.handle===entry.handle) reconcileChallengeProgress(current);
     }
-    if(r&&r.ok){ if(rules.mode==='challenge') reconcileChallengeProgress(r); return; }
-    // Stay quiet about things the player can't act on. A match too short to
-    // count is normal and their local progress is safe either way; only shout
-    // when something is actually wrong with the connection or the account.
-    if(r&&(r.error==='OFFLINE'||r.error==='TOO_SHORT'||r.error==='TOO_FAST')) return;
-    toast('Score not sent to the leaderboard: '+netMsg(r?r.error:'NO_NETWORK'),true);
+    if(!$('#scr-title').classList.contains('hidden')) renderMiniBoard(true);
+    if(!$('#scr-board').classList.contains('hidden')) renderBoard();
+  },
+});
+function renderScoreStatus(status){
+  status=status||SCORES.status();
+  let text='';
+  if(!status.handle) text='Sign in before playing to record leaderboard results.';
+  else if(status.pending){
+    text=status.pending+' result'+(status.pending===1?'':'s')+' waiting to sync to the leaderboard.';
+    if(['BAD_PIN','LOCKED','NO_SUCH_PLAYER'].includes(status.error)) text+=' Sign in again to resume.';
+    else if(status.error==='HTTP_404'||status.error==='SERVER_UPGRADE_REQUIRED') text+=' Leaderboard syncing is temporarily unavailable.';
+    else text+=' Retrying automatically.';
+  }else if(status.last&&status.last.state==='sent') text='Result recorded on the leaderboard.';
+  if(status.last&&status.last.challengeReason){
+    const reasons={NO_ACTIVE_SEASON:'there is no active season',NOT_STANDARD_CHALLENGE:'the match did not use 7 opponents and 3 minutes',BAD_CHALLENGE_TIER:'the opponent tier did not match your current server progress',ELIMINATION_TARGET:'the elimination target was not met'};
+    text+=' Lifetime win recorded; Challenge did not advance because '+(reasons[status.last.challengeReason]||'its requirements were not met')+'.';
+  }
+  if(status.failed) text+=(text?' ':'')+status.failed+' result'+(status.failed===1?' was':'s were')+' not accepted: '+netMsg(status.failedError||status.error)+'.';
+  if(status.volatile) text+=' Browser storage is unavailable. Keep this tab open until syncing finishes.';
+  document.querySelectorAll('[data-score-sync]').forEach(el=>{
+    el.textContent=text; el.hidden=!text;
+  });
+}
+function retryScores(){if(scoreReady) SCORES.flush();}
+window.addEventListener('online',retryScores);
+window.addEventListener('storage',e=>{
+  if(e.key&&e.key.startsWith(BlockRoyaleScores.PREFIX)) SCORES.refresh();
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) retryScores();});
+
+function cloudSubmit(res,arenaId,durationS,rules){
+  if(!ACC||!NET.on()){renderScoreStatus();return;}
+  rules=rules||matchRules();
+  SCORES.enqueue(2,{
+    p_arena:arenaId,p_skill:rules.skill,p_bots:rules.bots,
+    p_kills:res.kills,p_headshots:res.hs,p_damage:res.dmg,
+    p_won:res.win,p_duration:Math.round(durationS),p_time_limit:rules.time,p_mode:rules.mode
   });
 }
 
@@ -1438,6 +1489,29 @@ const DEFAULT_STATE = {
 let S = JSON.parse(JSON.stringify(DEFAULT_STATE));
 const memStore = {};
 const SAVE_KEY = 'sr_save_v1';
+// Session storage keeps optional reminder time across reloads in this tab,
+// separately from account saves and competitive statistics.
+const PLAYTIME=BlockRoyalePlaytime.create((()=>{try{return sessionStorage;}catch(e){return null;}})());
+function showBreakReminder(){
+  if(G.on||document.hidden||!PLAYTIME.due()) return;
+  const panel=$('#ovBreak');
+  if(!panel.classList.contains('hidden')) return;
+  $('#breakText').textContent="You've played for "+PLAYTIME.minutes()+" minutes this session. Take a break whenever you're ready, or keep playing.";
+  panel.classList.remove('hidden');
+  $('#btnKeepPlaying').focus();
+}
+function dismissBreakReminder(takeBreak){
+  PLAYTIME.dismiss();
+  $('#ovBreak').classList.add('hidden');
+  if(takeBreak){
+    $('#ovResult').classList.add('hidden');
+    buildMenuScene(); show('scr-title');
+    $('#btnPlay').focus();
+  }else{
+    const next=$('#ovResult').classList.contains('hidden')?$('#btnPlay'):$('#btnAgain');
+    next.focus();
+  }
+}
 /* Three tiers, in order of preference: a host-provided storage bridge, the browser's
    own localStorage, and finally memory. localStorage is the one that matters — without
    it every coin, rank and daily challenge is wiped by a page refresh. */
@@ -4118,6 +4192,7 @@ function finishOutro(){
   $('#hud').classList.remove('dim');
   $('#hud').classList.add('hidden');
   $('#ovResult').classList.remove('hidden');
+  showBreakReminder();
 }
 function tickOutro(dt){
   const o=G.outro, sd=dt*0.34;
@@ -4495,6 +4570,7 @@ function show(id){
   if(id==='scr-board') renderBoard();
   if(id==='scr-account') renderAccount();
   if(id==='scr-title') renderMiniBoard();
+  if(id==='scr-title') showBreakReminder();
 }
 function refreshCoins(){
   $('#coinval').textContent=S.coins.toLocaleString();
@@ -5310,6 +5386,8 @@ function captureMouse(soft){
   catch(e){failed();}
 }
 function startMatch(capture){
+  // A reminder is informational; choosing another match never imposes a cooldown.
+  if(!$('#ovBreak').classList.contains('hidden')) dismissBreakReminder(false);
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
   G.rules=matchRules();
   G.training = (G.rules.mode==='training');
@@ -5328,6 +5406,17 @@ function startMatch(capture){
   }
 }
 function wireUI(){
+  $('#btnTakeBreak').onclick=()=>dismissBreakReminder(true);
+  $('#btnKeepPlaying').onclick=()=>dismissBreakReminder(false);
+  $('#ovBreak').addEventListener('keydown',e=>{
+    if(e.key==='Tab'){
+      e.preventDefault();
+      (document.activeElement===$('#btnKeepPlaying')?$('#btnTakeBreak'):$('#btnKeepPlaying')).focus();
+    }
+  });
+  const stopPlaytime=()=>{PLAYTIME.update(performance.now(),false);PLAYTIME.save();};
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) stopPlaytime();});
+  window.addEventListener('pagehide',stopPlaytime);
   $('#btnPlay').onclick=()=>{AU.ui();showChallengeBriefing();};
   $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-real/';};
   $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
@@ -5356,6 +5445,7 @@ function wireUI(){
   $('#btnToMenu').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-title'); };
   document.addEventListener('keydown',e=>{
     if(e.code==='Escape'){
+      if(!$('#ovBreak').classList.contains('hidden')){e.preventDefault();dismissBreakReminder(false);return;}
       if($('#shopPreview').classList.contains('open')){ closeArmoryDetails(true); return; }
       if(G.on&&!G.over&&!G.paused) pauseMatch(true);
       else if(G.paused){ $('#ovPause').classList.add('hidden'); G.paused=false; }
@@ -5367,6 +5457,7 @@ function wireUI(){
    ===================================================================== */
 function animate(){
   requestAnimationFrame(animate);
+  PLAYTIME.update(performance.now(),G.on&&!G.paused&&!G.over&&!document.hidden);
   const dt=Math.min(0.05,clock.getDelta());
   if(pvRig&&!$('#scr-shop').classList.contains('hidden')){
     pvRig.rotation.y+=dt*0.55; pvRenderer.render(pvScene,pvCamera);
@@ -5413,6 +5504,8 @@ async function boot(){
   initPreview(); initInput(); wireUI();
   buildMenuScene(); refreshCoins(); show('scr-title');
   $('#loading').classList.add('hidden');
+  scoreReady=true; SCORES.resume();
+  setInterval(retryScores,5000);
   animate();
 }
 if(window.THREE) boot();

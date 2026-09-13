@@ -157,27 +157,15 @@ test('season lifecycle messages appear on launch, checkpoints, and the final two
   assert.equal(titleOn('2026-10-02T18:00:00Z'), null);
 });
 
-test('Custom fallback saves progress but never calls the legacy leaderboard submit', async () => {
-  const calls = [];
-  const context = {
-    ACC: { handle: 'PLAYER', pin: '1234' },
-    S: { cfg: {}, stats: {} },
-    NET: {
-      on: () => true,
-      call: async (fn, body) => {
-        calls.push({ fn, body });
-        return fn === 'sr_submit_v2' ? { ok: false, error: 'HTTP_404' } : { ok: true };
-      },
-    },
-    matchRules: () => { throw new Error('explicit rules expected'); },
-    toast: () => {},
-    netMsg: value => value,
-  };
-  vm.runInNewContext(functionSource('cloudSubmit'), context);
-  const rules = { mode: 'custom', arena: 'foundry', skill: 'nightmare', bots: 1, time: 1 };
-  context.cloudSubmit({ kills: 1, hs: 0, dmg: 200, win: true }, 'foundry', 30, rules);
-  await new Promise(resolve => setImmediate(resolve));
-  assert.deepEqual(calls.map(call => call.fn), ['sr_submit_v2', 'sr_save']);
+test('Custom results retain their original rules in the durable queue and never fall back to legacy scoring', () => {
+  const calls=[];
+  const context={ACC:{handle:'PLAYER'},NET:{on:()=>true},SCORES:{enqueue:(version,body)=>calls.push({version,body})}};
+  vm.runInNewContext(functionSource('cloudSubmit'),context);
+  const rules={mode:'custom',skill:'nightmare',bots:1,time:1};
+  context.cloudSubmit({kills:1,hs:0,dmg:200,win:true},'foundry',2,rules);
+  assert.equal(calls[0].version,2);assert.equal(calls[0].body.p_mode,'custom');
+  assert.equal(calls[0].body.p_skill,'nightmare');assert.equal(calls[0].body.p_duration,2);
+  assert.equal(calls[0].body.p_save,undefined);
 });
 
 test('main menu uses a read-only Challenge briefing and Custom owns Match Setup', () => {

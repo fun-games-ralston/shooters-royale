@@ -4,6 +4,19 @@ Three steps, about ten minutes, and it costs nothing. The Season 1 candidate als
 
 ---
 
+## Reliable win recording update
+
+For an existing deployment, run `supabase/manual/win-sync-fix.sql` in the project's
+SQL Editor. It combines the two September 13 migrations and includes a read-only
+verification query. Apply the earlier hourly-quota migrations first. The script
+removes the minimum match duration, installs private duplicate-safe receipts,
+and separates lifetime credit from seasonal Challenge eligibility when v2 exists.
+It never rewrites or backfills player scores or saves. Publish the updated client
+only after verification reports both scoring gates absent and receipts installed.
+Already-open main clients benefit from removal of the duration gate immediately;
+they need a reload to get the durable retry queue.
+
+
 ## 1. Create the database (2 minutes)
 
 1. Open the **ethan-game** project at [supabase.com](https://supabase.com)
@@ -11,6 +24,7 @@ Three steps, about ten minutes, and it costs nothing. The Season 1 candidate als
 3. Open `supabase-setup.sql`, copy the whole file, paste it in, press **Run**
 4. For seasonal Challenges, run `supabase/migrations/20260912065528_challenge_seasons.sql` once afterward
 5. Then run `supabase/migrations/20260913035828_challenge_six_win_calendar_seasons.sql` for six-win progress and calendar-month seasons
+6. On release of the playtime-reminder fix, run `supabase/migrations/20260913044956_remove_match_count_limit.sql` to remove hourly scoring quotas from both submission endpoints. This is a backend change; publishing the frontend alone does not remove the live cap. The migration does not backfill or modify existing player totals.
 
 You should see `Success. No rows returned` after each migration. Both are additive: they preserve every existing player, save, and match, and label old matches as Preseason history.
 
@@ -155,16 +169,27 @@ What the database does instead:
 
 - **Impossible numbers are clipped.** You cannot report more kills than there
   were opponents in the lobby.
-- **Rate limits.** 25 trials an hour, and you cannot claim more minutes of
-  play in an hour than an hour actually contains.
-- **Everything is visible.** The board shows each player's trial count next to
-  their kills, so 25 trials and 25 wins in one afternoon looks exactly as silly
-  as it is. Every submission leaves a row in `matches` with a name on it.
+- **No hourly gameplay quotas.** The feature-branch migration removes both the
+  25-match cap and the accumulated-duration quota. Supported short matches
+  must not make later completed results disappear.
+- **Accepted results remain inspectable.** Each accepted submission leaves a
+  row in `matches` with its player and result. Rejected requests do not.
+- **Existing per-match checks remain.** Authentication and malformed-result validation remain. There is
+  no minimum match duration. Challenge requirements affect seasonal eligibility,
+  while the completed result still increments lifetime matches and wins.
 
-Deliberately *not* done: rules like "five kills cannot happen in sixteen
-seconds". They sound sensible and then they throw away a real player's best
-run of the week, which is the exact run they wanted on the board. Rate limits
-can never do that to an honest match.
+The optional break reminder is separate from scoring. It appears between
+matches after 30 minutes of active solo play, including Custom and Training.
+Paused, hidden-tab, menu and outro time do not count. Both choices allow play
+immediately; there is no cooldown. The reminder uses this tab's session storage,
+so reloads keep the timer, but it is not an account-wide or cross-device limit.
+Another reminder needs 30 more active minutes after dismissal.
+
+Completed results are retained per account and UUID, retried across reloads, and
+recorded once by the server. A queued result contains no PIN or cloud save and
+cannot overwrite newer inventory. Pending and rejected results stay visible.
+Historical reconciliation remains separate; no past missing wins are inferred.
+The updated browser requires the receipt migration before deployment.
 
 With twelve year olds, "everyone can see you did that" works better than
 clever validation. If someone does inflate their score, the fix is a

@@ -7,6 +7,20 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## Feature branch — Reliable win recording
+
+* Fast victories count, including games that finish in under five seconds and wins with no eliminations. There is no hourly match cap or forced break.
+* Completed results wait safely in this browser and retry after connection failures or reloads. Retrying the same result counts it once.
+* The menu and results screen show when a result is waiting to sync or has been recorded.
+* Challenge requirements affect seasonal advancement only. A tier mismatch, nonstandard setup, or season gap no longer discards the lifetime win; the result explains why the Challenge did not advance.
+* Prepared for rollout; the backend migration must be applied before publishing this client. Existing missing wins are not backfilled.
+
+## Feature branch — Score limits and optional breaks
+
+* Removed hourly match-count and accumulated-playtime scoring quotas in a migration for both legacy and Challenge submissions. Existing player totals and saves are untouched; the migration has not been applied to production.
+* Added an optional reminder after 30 active minutes of solo play. It appears between matches, offers Take a break or Keep playing, and never imposes a cooldown.
+* Score rejections now explain that the result was not recorded, including when a preview still uses an older capped backend. No historical wins are backfilled.
+
 ## 2.6.1 beta — Brief, ready, fight
 
 * The six-second Challenge briefing now shows only the opponent tier, qualifying wins, elimination requirement, and countdown. Fixed arena rules and the player's known weapon and companion no longer compete with the goal.
