@@ -21,6 +21,8 @@ test('Lockjaw and Dragonfire keep the approved balance contract',()=>{
   assert.ok(flame); assert.equal(flame.name,'Dragonfire');
   assert.equal(flame.dmg,70); assert.equal(flame.mag,8); assert.equal(flame.range,15);
   assert.equal(flame.flameDuration,3); assert.equal(flame.bodyOnly,true); assert.equal(flame.pvp,false);
+  assert.equal(Specials.flameDamage(flame.dmg,1),70);
+  assert.equal(Specials.flameDamage(flame.dmg,flame.flameDuration),210);
 });
 
 test('lock requires one continuous visible target and stays confirmed after cover',()=>{
