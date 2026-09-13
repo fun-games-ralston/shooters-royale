@@ -14,10 +14,10 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
 
 ## What's in it
 
-- **14 weapons**, and every one of them works differently — damage that fades
+- **16 solo weapons**, and every one of them works differently — damage that fades
   with distance, spray that climbs, burst fire, a heat bar instead of a
   magazine, a bipod you have to plant, a charge-up, shell-by-shell reloading,
-  backstab, lifesteal, knockback. Each has a strength and a drawback printed
+  backstab, lifesteal, knockback, a confirmed homing lock, and a multi-target flame cone. Each has a strength and a drawback printed
   on its shop card.
 - **10 procedural arenas** with ice, lava, low gravity and killable drops.
 - **7 pets** that fight alongside you and can be shot down.
@@ -30,6 +30,8 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
   combat, and the same maps and hazards as the solo game. Bring your saved
   weapons, companion, and look. Three-minute rounds have unlimited respawns,
   a kills scoreboard, and same-room rematches. PvP does not change solo progress.
+  Its fourteen network-certified weapons remain unchanged; Lockjaw and Dragonfire
+  fall back safely until their special state is added to the authoritative simulation.
 
 ## Controls
 

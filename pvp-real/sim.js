@@ -20,7 +20,9 @@
     {part:'BODY',y0:.84,y1:1.42,hx:.50,hz:.24,m:1},
     {part:'LEGS',y0:0,y1:.84,hx:.32,hz:.24,m:.65},
   ];
-  const WEAPONS=Object.fromEntries(Content.WEAPONS.map(source=>[source.id,Object.freeze({
+  // PvE-only special weapons stay out until their lock/stream state is host-authoritative.
+  // safeProfile replaces an equipped unsupported weapon with the normal PvP fallback.
+  const WEAPONS=Object.fromEntries(Content.WEAPONS.filter(source=>source.pvp!==false).map(source=>[source.id,Object.freeze({
     ...source,
     kind:source.proj?'rocket':source.melee?'melee':'hitscan',
     projectileSpeed:source.projSpeed,

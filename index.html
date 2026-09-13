@@ -244,6 +244,16 @@ canvas{display:block}
 #chargebar{position:absolute;left:50%;top:calc(50% + 54px);transform:translateX(-50%);width:150px;height:7px;
   background:rgba(10,7,16,.8);box-shadow:inset 0 0 0 2px #3d3352;display:none}
 #chargebar i{display:block;height:100%;width:0;background:var(--ench)}
+#lockbar{position:absolute;left:50%;top:calc(50% + 62px);transform:translateX(-50%);width:220px;text-align:center;
+  color:var(--gold);font-size:11px;letter-spacing:.16em;display:none;text-shadow:0 2px 4px #000}
+#lockbar .rail{height:7px;margin-top:5px;background:rgba(10,7,16,.9);box-shadow:inset 0 0 0 2px #3d3352}
+#lockbar i{display:block;height:100%;width:0;background:var(--gold);transition:width .04s linear}
+#lockbar.locked{color:var(--ember)} #lockbar.locked i{background:var(--ember)}
+#lockreticle{position:absolute;left:50%;top:50%;width:70px;height:70px;transform:translate(-50%,-50%) scale(.86) rotate(45deg);
+  border:2px dashed var(--gold);opacity:0;pointer-events:none;transition:opacity .12s,transform .12s,border-color .12s}
+#lockreticle.tracking{opacity:.8;transform:translate(-50%,-50%) scale(1) rotate(45deg)}
+#lockreticle.locked{opacity:1;border:3px solid var(--ember);box-shadow:0 0 18px rgba(224,85,58,.8);animation:lockpulse .55s ease-in-out infinite alternate}
+@keyframes lockpulse{to{transform:translate(-50%,-50%) scale(1.08) rotate(45deg)}}
 #streak{position:absolute;left:50%;top:23%;transform:translateX(-50%);font-family:var(--disp);font-size:40px;
   letter-spacing:.16em;color:var(--gold);text-shadow:0 3px 0 #000,0 0 22px rgba(242,177,52,.7);opacity:0;
   pointer-events:none;white-space:nowrap}
@@ -491,6 +501,8 @@ canvas{display:block}
     <div id="heatbar"><i></i></div>
   </div>
   <div id="chargebar"><i></i></div>
+  <div id="lockbar"><span>HOLD RMB TO LOCK</span><div class="rail"><i></i></div></div>
+  <div id="lockreticle"></div>
   <div id="streak"></div>
   <div id="cross"><i></i><i></i><i></i><i></i><i></i></div>
   <div id="hitmark">✕</div>
@@ -684,6 +696,7 @@ canvas{display:block}
 <div class="tagline">Placing blocks</div></div>
 
 <script src="shared/playtime-reminder.js"></script>
+<script src="shared/weapon-specials.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -878,6 +891,16 @@ const WEAPONS = [
         {w:.09,h:.09,d:.36,x:0,y:.15,z:-.36,c:0x14171a},{w:.05,h:.2,d:.1,x:0,y:-.15,z:-.18,c:0x1f2226},
         {w:.08,h:.16,d:.36,x:0,y:-.04,z:.34,c:0x2b4441}]},
 
+{fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:20,mag:8,reserve:8,reload:3.4,
+ flameDuration:3,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
+ role:'Hold a fuel cell for up to three seconds and sweep a 15 m cone across every fighter in it.',
+ limit:'A full three-second exposure deals 70 damage. Walls stop the fire, and a tap still spends the cell.',
+ desc:'Eight fuel cells turn a doorway into a furnace. Hold the trigger to keep the jet alive, sweep across a crowd, or release early to save yourself from standing still too long.',
+ parts:[{w:.15,h:.19,d:.68,x:0,y:.02,z:-.24,c:0x46362e},{w:.13,h:.13,d:.48,x:0,y:.04,z:-.78,c:0x6f3020},
+        {w:.18,h:.18,d:.22,x:0,y:.02,z:-1.12,c:0xff6b2c,e:.75},{w:.17,h:.34,d:.34,x:0,y:-.2,z:.12,c:0x7a4b28},
+        {w:.08,h:.2,d:.12,x:0,y:-.18,z:-.3,c:0x262328},{w:.05,h:.05,d:.38,x:.1,y:.12,z:-.72,c:0xffb347,e:.55},
+        {w:.05,h:.05,d:.38,x:-.1,y:.12,z:-.72,c:0xffb347,e:.55}]},
+
 {fx:'rocket',fxName:'Plasma rocket + shock-sphere blast',flash:0xff6b2c,flashSize:2.2,id:'bazooka',pw:8,name:'Bazooka',cls:'LAUNCHER',rar:'ench',cost:7000,dmg:95,splash:85,splashR:5.6,rpm:55,mag:2,reserve:6,reload:3.2,
  spread:.7,auto:false,range:150,speed:.84,recoil:5,proj:true,projSpeed:58,tracer:0xff6b2c,sfx:'launch',
  role:'Two rockets a tube. Hits people behind cover, and firing at your own feet launches you onto a roof.',
@@ -896,6 +919,16 @@ const WEAPONS = [
         {w:.05,h:.24,d:.05,x:.07,y:.12,z:-.66,c:0x8fe9ff},{w:.05,h:.24,d:.05,x:-.07,y:.12,z:-.66,c:0x8fe9ff},
         {w:.08,h:.22,d:.11,x:0,y:-.17,z:-.06,c:0x1a2c3d},{w:.08,h:.13,d:.28,x:0,y:-.02,z:.26,c:0x16232f}]},
 
+{fx:'homing',fxName:'Lock-on brackets + wall-hunting missile',flash:0xff475d,flashSize:2.3,id:'lockjaw',pw:9,name:'Lockjaw Launcher',cls:'SMART LAUNCHER',rar:'ench',cost:10000,dmg:60,rpm:40,mag:4,reserve:0,reload:0,
+ lockOn:{time:1.2,cone:3},homing:true,projSpeed:27,turnRate:4.8,bodyOnly:true,totalOnly:true,pvp:false,spread:0,auto:false,range:320,speed:.82,recoil:4.4,tracer:0xff475d,sfx:'lockjaw',
+ role:'Hold RMB on a visible fighter for 1.2 seconds. Once confirmed, the missile hunts them around cover for a guaranteed 60 damage.',
+ limit:'Four missiles total. It cannot launch without a lock, and losing sight before confirmation resets the scan.',
+ desc:'Paint one fighter, wait for the red brackets, then fire. The missile steers around the arena and ignores walls after launch; hiding only makes the chase look better.',
+ parts:[{w:.17,h:.2,d:1.12,x:0,y:.02,z:-.42,c:0x333743},{w:.21,h:.21,d:.18,x:0,y:.02,z:-1.03,c:0xff475d,e:.8},
+        {w:.2,h:.2,d:.16,x:0,y:.02,z:.16,c:0x222631},{w:.08,h:.2,d:.12,x:0,y:-.18,z:-.26,c:0x24212b},
+        {w:.08,h:.08,d:.34,x:.12,y:.14,z:-.5,c:0xf2b134,e:.55},{w:.08,h:.08,d:.34,x:-.12,y:.14,z:-.5,c:0xf2b134,e:.55},
+        {w:.12,h:.1,d:.28,x:0,y:.22,z:-.38,c:0x9fd8ff,e:.7}]},
+
 {fx:'void',fxName:'Spiral void beam + soul vortex',flash:0xc47bff,flashSize:2.4,id:'reaper',pw:10,name:'Obsidian Reaper',cls:'MYTHIC',rar:'myth',cost:15000,dmg:999,rpm:30,mag:1,reserve:2,reload:3.2,
  charge:1.0,chargeSlow:0.5,spread:.25,auto:true,range:260,speed:.9,recoil:6,scope:2.4,tracer:0xc47bff,sfx:'reap',
  role:'Any hit, anywhere on the body, kills instantly. Three guaranteed kills a match.',
@@ -909,6 +942,7 @@ const WEAPONS = [
 const W = {}; WEAPONS.forEach(w=>W[w.id]=w);
 const MELEE = WEAPONS.filter(w=>w.melee).map(w=>w.id);
 const GUNS  = WEAPONS.filter(w=>!w.melee).map(w=>w.id);
+const WS = globalThis.BlockRoyaleWeaponSpecials;
 
 /* ---------------- progression: ranks, mastery, medals, challenges ---------------- */
 const RANKS = [
@@ -1395,6 +1429,8 @@ const AU = {
       case 'brr':   this.burst(.05,2600,1400,3,v*.7); break;
       case 'thump': this.burst(.34,1100,90,.8,v*1.3); this.tone(120,38,.3,v*.8,'sawtooth'); break;
       case 'launch':this.burst(.42,700,90,.6,v*1.25); this.tone(240,60,.4,v*.6,'sawtooth'); break;
+      case 'lockjaw':this.burst(.46,900,100,.7,v*1.3); this.tone(310,72,.42,v*.75,'sawtooth'); this.tone(1180,420,.18,v*.35,'square'); break;
+      case 'flame': this.burst(.62,2600,180,.7,v*1.15,'lowpass'); this.tone(180,74,.5,v*.32,'sawtooth'); break;
       case 'zap':   this.tone(1500,320,.14,v*.55,'sawtooth'); this.burst(.12,4200,1600,3,v*.5); break;
       case 'reap':  this.tone(80,1400,.5,v*.8,'sawtooth'); this.burst(.55,2400,120,.6,v*1.2); break;
       case 'slash': this.burst(.13,5200,900,2.4,v*.7); break;
@@ -2217,6 +2253,8 @@ function fxDeath(e,kind){
   if(kind==='void') cols=[0xc47bff,0x6a3fb0,0x2b0f52,0xf3ece0];
   else if(kind==='arc') cols=[0x7df9ff,0xdff8ff,ou.shirt,0x2ea8c9];
   else if(kind==='rocket') cols=[0xff6b2c,0xffd166,ou.shirt,0x4a434f];
+  else if(kind==='homing') cols=[0xff475d,0xffd166,ou.shirt,0x343844];
+  else if(kind==='flame') cols=[0xff4a18,0xffd166,ou.shirt,0x4a3030];
   else if(kind==='leech') cols=[0x8fff6a,0xd8ffc6,ou.shirt,0x24361f];
   else if(kind==='smash') cols=[0xffd9a0,0xa9793f,ou.shirt,ou.pants];
   for(let i=0;i<18;i++){
@@ -2365,6 +2403,7 @@ function makeEnt(o){
     wep:'sidearm',ammo:0,res:0,reloadT:0,fireT:0,step:0,anim:0,
     regen:0,regenT:0,poison:0,poisonT:0,poisonAcc:0,poisonBy:null,poisonSource:null,speedT:0,speedM:1,hurtT:0,
     heat:0,heatLock:0,bloom:0,stillT:0,stunT:0,burstLeft:0,chargeT:0,lastShotT:-9,
+    lockTarget:null,lockScanTarget:null,lockT:0,lockReady:false,flameT:0,flameFxT:0,flameDamage:null,
     corpseSettled:false,
   },o);
   const wp=W[e.wep]; e.ammo=wp.mag; e.res=wp.reserve;
@@ -2437,6 +2476,9 @@ function spawnMatch(){
      Roles instead. Every lobby gets a spread of jobs, and difficulty decides how
      good the weapon is *within* each job. Nightmare now fields a Tesla rusher, an
      AK at mid, a Rail on an angle and a Bazooka for area — strong and varied. */
+  // Lockjaw and Dragonfire stay player-only until bots have explicit lock/stream
+  // behavior. Keeping them out of these role lists prevents a bot from receiving
+  // a special weapon it cannot operate correctly.
   const ROLE_GUNS = {                      // weakest to strongest within each job
     rush : ['bat','smg','scatter','claws','tesla'],
     mid  : ['sidearm','burstr','ak47'],
@@ -2559,7 +2601,7 @@ function playerAim(){
   const vx=aimPt.x-o.x,vy=aimPt.y-o.y,vz=aimPt.z-o.z,L=Math.hypot(vx,vy,vz)||1;
   return {o:o,d:{x:vx/L,y:vy/L,z:vz/L}};
 }
-const MZLEN={knife:.4,bat:.5,claws:.42,sidearm:.62,smg:.72,scatter:.86,burstr:.92,ak47:.98,lmg:1.14,minigun:1.0,sniper:1.34,bazooka:1.06,tesla:.82,reaper:1.46};
+const MZLEN={knife:.4,bat:.5,claws:.42,sidearm:.62,smg:.72,scatter:.86,burstr:.92,ak47:.98,lmg:1.14,minigun:1.0,dragonfire:1.28,sniper:1.34,bazooka:1.06,lockjaw:1.24,tesla:.82,reaper:1.46};
 function muzzlePos(e){
   if(e.isPlayer&&G.cam==='first'&&G.muzzle){
     const v=new THREE.Vector3(); G.muzzle.getWorldPosition(v); return {x:v.x,y:v.y,z:v.z};
@@ -2600,6 +2642,68 @@ function effSpread(e,wp){
   }
   return sp;
 }
+function clearWeaponLock(e){
+  e.lockTarget=null; e.lockScanTarget=null; e.lockT=0; e.lockReady=false;
+}
+function updatePlayerLock(e,wp,dt,aim){
+  if(!wp.lockOn){ clearWeaponLock(e); return; }
+  if(e.lockTarget&&!e.lockTarget.alive){ clearWeaponLock(e); }
+  const candidate=G.ads&&!e.lockReady?WS.selectLockTarget(aim.o,aim.d,G.ents,{
+    ignore:e,maxRange:wp.range,coneDegrees:wp.lockOn.cone,
+    visible:(target,origin,point,distance)=>{
+      const d=WS.normalize({x:point.x-origin.x,y:point.y-origin.y,z:point.z-origin.z});
+      return rayWorld(origin,d,distance)>=distance-.35;
+    }
+  }):null;
+  e.lockScanTarget=candidate;
+  const next=WS.advanceLock({targetId:e.lockTarget,progress:e.lockT,ready:e.lockReady},candidate,dt,wp.lockOn.time);
+  e.lockTarget=next.targetId; e.lockT=next.progress; e.lockReady=next.ready;
+  if(next.justLocked){ AU.tone(420,1320,.24,.24,'square'); setTimeout(()=>AU.tone(1320,1320,.12,.16,'square'),110); toast('TARGET LOCKED — FIRE'); }
+}
+function flameLineVisible(target,origin,point,distance){
+  const d=WS.normalize({x:point.x-origin.x,y:point.y-origin.y,z:point.z-origin.z});
+  return rayWorld(origin,d,distance)>=distance-.3;
+}
+function fxFlameJet(origin,direction,range){
+  const end={x:origin.x+direction.x*range,y:origin.y+direction.y*range,z:origin.z+direction.z*range};
+  fxEnergyBeam(origin,end,0xff4a18,.24,.09,.38);
+  fxEnergyBeam(origin,end,0xffd166,.09,.065,.9);
+  for(let i=0;i<5;i++){
+    const t=(i+.35+Math.random()*.45)/5,spread=.12+t*.75;
+    const pt={x:origin.x+direction.x*range*t+rnd(-spread,spread),y:origin.y+direction.y*range*t+rnd(-spread*.55,spread*.55),z:origin.z+direction.z*range*t+rnd(-spread,spread)};
+    fxOrb(pt,i%2?0xff6b2c:0xffd166,.08+t*.12,.34+t*.45,.16,.72);
+    if(i>2&&Math.random()<.55) fxSmoke(pt,0x4a3030,.18+t*.22,.32,.75);
+  }
+  fxLight(origin,0xff6b2c,3.4,.08);
+}
+function finishFlame(e){
+  if(e.flameDamage){
+    for(const entry of e.flameDamage.values()) if(entry.target.alive&&entry.carry>=.5){
+      damage(entry.target,Math.round(entry.carry),'BODY',e,entry.point,e.wep);
+    }
+  }
+  e.flameT=0; e.flameFxT=0; e.flameDamage=null; e.fireT=Math.min(Math.max(e.fireT,0),.25);
+  const wp=W[e.wep];
+  if(wp&&wp.flameDuration&&wp.mag>0&&e.ammo<=0) startReload(e);
+}
+function stepFlame(e,aim,dt){
+  const wp=W[e.wep];
+  if(!wp||!wp.flameDuration||e.flameT<=0) return;
+  const active=Math.min(dt,e.flameT),origin=muzzlePos(e),worldRange=Math.min(wp.range,rayWorld(origin,aim.d,wp.range));
+  e.flameFxT-=active;
+  if(e.flameFxT<=0){ e.flameFxT=.035; fxFlameJet(origin,aim.d,worldRange); }
+  const targets=WS.flameTargets(origin,aim.d,G.ents,{ignore:e,range:worldRange,endRadius:wp.flameRadius,visible:flameLineVisible});
+  if(!e.flameDamage) e.flameDamage=new Map();
+  for(const target of targets){
+    let entry=e.flameDamage.get(target);
+    if(!entry){ entry={target,carry:0,point:null}; e.flameDamage.set(target,entry); }
+    entry.carry+=wp.dmg/wp.flameDuration*active;
+    entry.point={x:target.pos.x,y:target.pos.y+1.15,z:target.pos.z};
+    if(entry.carry>=3){ const amount=Math.floor(entry.carry); entry.carry-=amount; damage(target,amount,'BODY',e,entry.point,wp.id); }
+  }
+  e.flameT-=active;
+  if(e.flameT<=0) finishFlame(e);
+}
 /* ---- is the attacker behind the target? ---- */
 function isBehind(att,t){
   const fx=-Math.sin(t.yaw), fz=-Math.cos(t.yaw);
@@ -2626,6 +2730,11 @@ function fire(e,aim){
   const wp=W[e.wep];
   if(!canFire(e)) return;
   if(wp.spinup){ if(G.spinup<wp.spinup&&e.isPlayer){ return; } }
+  if(wp.lockOn&&(!e.lockReady||!e.lockTarget||!e.lockTarget.alive)){
+    if(e.isPlayer) toast('HOLD RMB ON A FIGHTER TO LOCK',true);
+    return;
+  }
+  const confirmedTarget=wp.lockOn?e.lockTarget:null;
   // burst weapons keep a counter so a pull always delivers the whole burst
   if(wp.burst){
     if(!e.burstLeft||e.burstLeft<=0) e.burstLeft=wp.burst;
@@ -2645,6 +2754,7 @@ function fire(e,aim){
     }
   }
   if(wp.bloom) e.bloom=Math.min(wp.bloom.max,(e.bloom||0)+wp.bloom.per);
+  if(wp.flameDuration){ e.flameT=wp.flameDuration; e.flameFxT=0; e.flameDamage=new Map(); }
   const far = !e.isPlayer && Math.hypot(e.pos.x-G.pl.pos.x,e.pos.z-G.pl.pos.z)>26;
   AU.shot(wp.sfx,far);
   const mp=muzzlePos(e);
@@ -2672,11 +2782,16 @@ function fire(e,aim){
     if(wp.fx==='rocket'){
       for(let i=0;i<6;i++) fxSmoke({x:mp.x-aim.d.x*rnd(.2,1.6),y:mp.y-aim.d.y*rnd(.2,1.6),z:mp.z-aim.d.z*rnd(.2,1.6)},0x6d6472,.42,.7,.7);
     }
+    if(wp.fx==='homing'){
+      fxEnergyRing(mp,0xff475d,.16,1.7,.24,aim.d); fxSpark(mp,0xffd166,5,3.2,1.0);
+    }
   }
   const pellets=wp.pellets||1;
   const baseSpread=effSpread(e,wp);
   for(let i=0;i<pellets;i++){
     const d=spreadDir(aim.d,baseSpread);
+    if(wp.homing){ spawnHomingMissile(e,mp,wp,confirmedTarget); continue; }
+    if(wp.flameDuration) continue;
     if(wp.proj){ spawnRocket(e,mp,d,wp); continue; }
     const max=wp.range;
     const wd=rayWorld(aim.o,d,max);
@@ -2705,7 +2820,8 @@ function fire(e,aim){
       if(wp.chain) chainTo(hit.e,wp,e,end);
     } else if(wd<max){ impact(end,wp.tracer,wp.fx); }
   }
-  if(wp.mag>0&&e.ammo<=0) startReload(e);
+  if(wp.lockOn) clearWeaponLock(e);
+  if(wp.mag>0&&e.ammo<=0&&!wp.flameDuration) startReload(e);
 }
 function chainTo(from,wp,owner,pt){
   let n=0;
@@ -2745,6 +2861,27 @@ function finishReload(e){
   if(e.isPlayer){ const p=e.ammoBy[e.wep]; const take=Math.min(need,p.r); p.r-=take; e.ammo+=take; p.a=e.ammo; }
   else { const take=Math.min(need,e.res); e.res-=take; e.ammo+=take; }
 }
+function spawnHomingMissile(e,mp,wp,target){
+  const m=new THREE.Group();
+  const body=boxMesh(.24,.24,.82,0x343844,.3); m.add(body);
+  const nose=boxMesh(.3,.3,.24,0xff475d,.95); nose.position.z=-.5; m.add(nose);
+  const core=boxMesh(.14,.14,.28,0xf2b134,1); core.position.z=-.12; m.add(core);
+  const fin1=boxMesh(.06,.42,.24,0x20232c,0); fin1.position.z=.32; m.add(fin1);
+  const fin2=boxMesh(.42,.06,.24,0x20232c,0); fin2.position.z=.32; m.add(fin2);
+  const thrust=boxMesh(.22,.22,.62,0x9fd8ff,1); thrust.position.z=.62; m.add(thrust);
+  const point={x:target.pos.x,y:target.pos.y+1.1,z:target.pos.z};
+  const d=WS.normalize({x:point.x-mp.x,y:point.y-mp.y,z:point.z-mp.z});
+  m.position.set(mp.x,mp.y,mp.z); m.lookAt(mp.x+d.x,mp.y+d.y,mp.z+d.z); scene.add(m);
+  G.projs.push({kind:'homing',m,fire:thrust,pos:{x:mp.x,y:mp.y,z:mp.z},d,sp:wp.projSpeed,wp,owner:e,target,life:15,trail:0,wake:0,avoidSide:Math.random()<.5?-1:1});
+}
+function fxHomingImpact(pt){
+  AU.explode(); fxLight(pt,0xff475d,7,.3);
+  fxOrb(pt,0xffffff,.1,1.0,.14,.95); fxOrb(pt,0xff475d,.35,2.4,.34,.6);
+  fxEnergyRing(pt,0xffd166,.18,3.4,.38,{x:0,y:1,z:0});
+  fxEnergyRing(pt,0xff475d,.24,2.7,.32,{x:1,y:0,z:0});
+  fxSpark(pt,0xffd166,18,7.5,1.5);
+  for(let i=0;i<8;i++) fxSmoke({x:pt.x+rnd(-.7,.7),y:pt.y+rnd(-.5,.8),z:pt.z+rnd(-.7,.7)},0x49313b,.5,rnd(.55,.9),1.1);
+}
 function spawnRocket(e,mp,d,wp){
   const m=new THREE.Group();
   const body=boxMesh(.22,.22,.72,0x4a5b38,.2); m.add(body);
@@ -2757,7 +2894,37 @@ function spawnRocket(e,mp,d,wp){
 }
 function stepProjectiles(dt){
   for(let i=G.projs.length-1;i>=0;i--){
-    const p=G.projs[i]; const step=p.sp*dt, probe=step+0.4;
+    const p=G.projs[i];
+    if(p.kind==='homing'){
+      if(!p.target||!p.target.alive){
+        fxSmoke(p.pos,0x49313b,.38,.55,.8); scene.remove(p.m); fxKill(p.m); G.projs.splice(i,1); continue;
+      }
+      const old={x:p.pos.x,y:p.pos.y,z:p.pos.z};
+      const target={x:p.target.pos.x,y:p.target.pos.y+1.1,z:p.target.pos.z};
+      p.d=WS.homingDirection(p.pos,p.d,target,dt,{turnRate:p.wp.turnRate,avoidSide:p.avoidSide,probe:5,
+        clearance:(direction,probe)=>rayWorld(p.pos,direction,probe)});
+      p.sp=Math.min(42,p.sp+3.8*dt);
+      const step=p.sp*dt;
+      p.pos.x+=p.d.x*step; p.pos.y+=p.d.y*step; p.pos.z+=p.d.z*step; p.life-=dt;
+      p.m.position.set(p.pos.x,p.pos.y,p.pos.z); p.m.lookAt(p.pos.x+p.d.x,p.pos.y+p.d.y,p.pos.z+p.d.z);
+      if(p.fire){ const f=.7+Math.random()*.9; p.fire.scale.set(.22*f,.22*f,.62*f); }
+      p.trail-=dt;
+      if(p.trail<=0){ p.trail=.022;
+        const tail={x:p.pos.x-p.d.x*.62,y:p.pos.y-p.d.y*.62,z:p.pos.z-p.d.z*.62};
+        fxSmoke(tail,0x40495a,.28,.58,.65); fxSpark(tail,0x9fd8ff,2,1.7,.8); fxLight(p.pos,0xff475d,1.1,.05);
+      }
+      p.wake-=dt;
+      if(p.wake<=0){ p.wake=.08;
+        const tail={x:p.pos.x-p.d.x*.78,y:p.pos.y-p.d.y*.78,z:p.pos.z-p.d.z*.78};
+        fxEnergyRing(tail,0xff475d,.1,.72,.26,p.d,{x:-p.d.x*2.8,y:-p.d.y*2.8,z:-p.d.z*2.8},.7);
+      }
+      if(WS.segmentPointDistance(old,p.pos,target)<=.86||p.life<=0){
+        damage(p.target,p.wp.dmg,'BODY',p.owner,target,p.wp.id); fxHomingImpact(target);
+        scene.remove(p.m); fxKill(p.m); G.projs.splice(i,1);
+      }
+      continue;
+    }
+    const step=p.sp*dt, probe=step+0.4;
     // rayWorld returns `probe` when it hits nothing, so this has to be a strict compare —
     // `wd<=probe` detonated every rocket one frame after launch, in the firer's face.
     const wd=rayWorld(p.pos,p.d,probe);
@@ -2778,7 +2945,7 @@ function stepProjectiles(dt){
       fxEnergyRing(tail,0xff8a3c,.12,.62,.24,p.d,{x:-p.d.x*2,y:-p.d.y*2,z:-p.d.z*2},.62);
     }
     let boom=false;
-    if(hit&&hit.t<=probe){ damage(hit.e,p.wp.dmg,hit.part.n,p.owner,p.pos); boom=true; }
+    if(hit&&hit.t<=probe){ damage(hit.e,p.wp.dmg,hit.part.n,p.owner,p.pos,p.wp.id); boom=true; }
     else if(wd<probe) boom=true;
     else if(p.life<=0||p.pos.y<-20) boom=true;
     if(boom){ explode(p.pos,p.wp,p.owner); scene.remove(p.m); fxKill(p.m); G.projs.splice(i,1); }
@@ -2806,7 +2973,7 @@ function explode(pt,wp,owner){
     const d=Math.hypot(e.pos.x-pt.x,(e.pos.y+1)-pt.y,e.pos.z-pt.z);
     if(d<wp.splashR){
       const f=(1-d/wp.splashR)*(e===owner?0.35:1);
-      damage(e,wp.splash*f,'BODY',owner,{x:e.pos.x,y:e.pos.y+1.2,z:e.pos.z});
+      damage(e,wp.splash*f,'BODY',owner,{x:e.pos.x,y:e.pos.y+1.2,z:e.pos.z},wp.id);
       const kb=(1-d/wp.splashR)*9;
       const dx=(e.pos.x-pt.x)/(d||1),dz=(e.pos.z-pt.z)/(d||1);
       e.vel.x+=dx*kb; e.vel.z+=dz*kb; e.vel.y+=kb*0.55; e.onG=false;
@@ -3029,13 +3196,14 @@ function poison(t,dps,time,attacker,source){
 function kill(t,killer,part,source){
   if(!t.alive) return;
   const petKill=source==='pet';
+  const sourceWeapon=!petKill&&source&&W[source]?source:(killer&&W[killer.wep]?killer.wep:null);
   t.alive=false;
   // Living AI stops on the kill frame. Without a small corpse-only gravity
   // phase, a fighter killed by a jump or knockback stays suspended forever.
   t.corpseSettled=false; t.onG=false; t.vel.y=Math.min(0,t.vel.y||0);
   t.M.root.rotation.z=Math.PI/2*(Math.random()<.5?1:-1);
   t.M.root.position.y=t.pos.y+0.3;
-  fxDeath(t, !petKill&&killer&&W[killer.wep]?W[killer.wep].fx:null);
+  fxDeath(t, sourceWeapon?W[sourceWeapon].fx:null);
   if(t.tag) t.tag.visible=false;
   AU.kill();
   const who=petKill&&G.pet?G.pet.def.name.toUpperCase():killer?(killer.isPlayer?'YOU':killer.name):(part||'THE ARENA');
@@ -3045,8 +3213,8 @@ function kill(t,killer,part,source){
     G.kills++;
     if(petKill) G.petKills=(G.petKills||0)+1;
     else{
-      const kw=W[killer.wep];
-      G.wepKills[killer.wep]=(G.wepKills[killer.wep]||0)+1;
+      const weaponId=sourceWeapon||killer.wep,kw=W[weaponId];
+      G.wepKills[weaponId]=(G.wepKills[weaponId]||0)+1;
       if(kw.melee) G.meleeKills++;
       if(kw.fx==='rocket'||kw.fx==='arc'||kw.fx==='void') G.bigKills++;
     }
@@ -3122,6 +3290,8 @@ function updatePlayer(dt){
   if(p.onG&&sp>1.6){ p.step-=dt*sp*0.55; if(p.step<=0){AU.step();p.step=1;} }
   // weapon timers
   weaponTick(p,dt);
+  const liveAim=playerAim();
+  updatePlayerLock(p,wp,dt,liveAim);
   if(wp.spinup){ G.spinup = mouseDown ? Math.min(wp.spinup+0.4,G.spinup+dt) : Math.max(0,G.spinup-dt*1.6); }
   // shotgun-style loading breaks off the moment you pull the trigger
   if(wp.shellReload&&p.reloadT>0&&mouseDown&&p.ammo>0){ p.reloadT=0; }
@@ -3133,15 +3303,19 @@ function updatePlayer(dt){
       const mz=muzzlePos(p);
       fxCharge(mz,clamp(p.chargeT/wp.charge,0,1));
       G.plight&&fxLight(mz,0xc47bff,1.6*(p.chargeT/wp.charge),.06);
-      if(p.chargeT>=wp.charge){ p.chargeT=0; fire(p,playerAim()); }
+      if(p.chargeT>=wp.charge){ p.chargeT=0; fire(p,liveAim); }
     } else if(p.chargeT>0){
       p.chargeT=0; AU.tone(500,120,.18,.14,'sawtooth');
     }
     wantFire=false;
   } else {
     const shoot = (wp.burst&&p.burstLeft>0) ? true : (wp.auto ? mouseDown : wantFire);
-    if(shoot && p.reloadT<=0){ fire(p,playerAim()); }
+    if(shoot && p.reloadT<=0){ fire(p,liveAim); }
     wantFire=false;
+  }
+  if(wp.flameDuration&&p.flameT>0){
+    if(mouseDown) stepFlame(p,playerAim(),dt);
+    else finishFlame(p);
   }
   // ads
   G.adsT=lerp(G.adsT,G.ads?1:0,clamp(dt*12,0,1));
@@ -3195,9 +3369,11 @@ function eatFood(id){
 function swapSlot(i){
   const p=G.pl; if(!p.slots[i]||p.slot===i) return;
   if(p.eatT>0) return;
+  if(p.flameT>0) finishFlame(p);
+  clearWeaponLock(p);
   p.ammoBy[p.wep].a=p.ammo;
   p.slot=i; p.wep=p.slots[i]; p.ammo=p.ammoBy[p.wep].a; p.reloadT=0; p.fireT=0.25; G.spinup=0;
-  p.bloom=0; p.burstLeft=0; p.chargeT=0;
+  p.bloom=0; p.burstLeft=0; p.chargeT=0; p.flameT=0; p.flameDamage=null;
   attachGun(p); buildViewModel(); AU.ui(); updateHUD();
 }
 /* =====================================================================
@@ -3575,6 +3751,7 @@ function updateHUD(){
     : '<small>MELEE</small>';
   const planted = wp.bipod && (p.stillT||0)>=wp.bipod.still;
   $('#reloading').textContent = planted?'\u25AC PLANTED — SPREAD LOCKED'
+    : (p.flameT>0)?'BURNING — '+p.flameT.toFixed(1)+'s'
     : (p.heatLock>0)?'OVERHEATED — '+p.heatLock.toFixed(1)+'s'
     : (p.chargeT>0)?'CHARGING…'
     : p.reloadT>0?(wp.shellReload?'LOADING SHELLS…':'RELOADING…')
@@ -3590,6 +3767,20 @@ function updateHUD(){
   const CB=$('#chargebar');
   if(wp.charge&&p.chargeT>0){ CB.style.display='block'; CB.firstElementChild.style.width=clamp(p.chargeT/wp.charge,0,1)*100+'%'; }
   else CB.style.display='none';
+  const LB=$('#lockbar'),LR=$('#lockreticle');
+  if(wp.lockOn){
+    LB.style.display='block';
+    const progress=clamp(p.lockT/wp.lockOn.time,0,1),locked=p.lockReady&&p.lockTarget&&p.lockTarget.alive;
+    LB.className=locked?'locked':'';
+    LB.querySelector('span').textContent=locked?'TARGET LOCKED · LMB FIRE'
+      :p.lockScanTarget?'LOCKING '+p.lockScanTarget.name.toUpperCase()+'…'
+      :G.ads?'KEEP A FIGHTER IN THE BRACKETS':'HOLD RMB TO LOCK';
+    LB.querySelector('i').style.width=(progress*100)+'%';
+    LR.className=locked?'locked':p.lockScanTarget?'tracking':'';
+  }else{ LB.style.display='none'; LB.className=''; LR.className=''; }
+  $('#hint').textContent=wp.lockOn?'HOLD RMB ON A VISIBLE FIGHTER · WAIT FOR RED LOCK · LMB FIRE · 1-3 WEAPONS · V CAMERA · ESC PAUSE'
+    :wp.flameDuration?'HOLD LMB TO BURN FOR UP TO 3 SECONDS · RELEASE TO STOP · 15 M RANGE · 1-3 WEAPONS · ESC PAUSE'
+    :'WASD MOVE · MOUSE AIM · LMB FIRE · RMB SCOPE · R RELOAD · F EAT · Q SWAP FOOD · 1-3 WEAPONS · V CAMERA · SHIFT SPRINT · SPACE JUMP · TAB SCORES · ESC PAUSE';
   const ks=Object.keys(p.food).filter(k=>p.food[k]>0);
   const sig=p.slot+'|'+ks.map(k=>k+p.food[k]).join(',')+'|'+p.foodSel;
   if(sig!==lastHud){
@@ -3690,12 +3881,14 @@ function respawnDummy(e){
 }
 function trainCycle(dir){
   const p=G.pl, ids=WEAPONS.map(w=>w.id);
+  if(p.flameT>0) finishFlame(p);
+  clearWeaponLock(p);
   const cur=ids.indexOf(p.wep)>=0?ids.indexOf(p.wep):0;
   const nid=ids[(cur+dir+ids.length)%ids.length];
   p.slots[0]=nid;
   if(!p.ammoBy[nid]) p.ammoBy[nid]={a:W[nid].mag,r:W[nid].reserve};
   p.slot=0; p.wep=nid; p.ammo=W[nid].mag; p.ammoBy[nid].a=p.ammo; p.ammoBy[nid].r=W[nid].reserve;
-  p.reloadT=0; p.fireT=0.2; p.bloom=0; p.heat=0; p.heatLock=0; p.chargeT=0; p.burstLeft=0; G.spinup=0;
+  p.reloadT=0; p.fireT=0.2; p.bloom=0; p.heat=0; p.heatLock=0; p.chargeT=0; p.burstLeft=0; p.flameT=0; p.flameDamage=null; G.spinup=0;
   attachGun(p); buildViewModel(); lastHud=''; AU.ui(); updateHUD();
   toast(W[nid].name+' — '+W[nid].role);
 }
@@ -4533,10 +4726,12 @@ function weaponBtns(w,tab){
 function ammoTxt(w){
   if(w.melee) return 'melee \u00B7 never runs out';
   if(w.heat) return w.rpm+' RPM \u00B7 heat bar, no magazine';
+  if(w.totalOnly) return w.mag+' missiles total \u00B7 no spare ammo';
   return w.rpm+' RPM \u00B7 '+w.mag+'-round mag \u00B7 '+w.reserve+' spare';
 }
 function rangeTxt(w){
   if(w.melee) return w.range+' m reach';
+  if(w.lockOn) return 'whole-map lock after '+w.lockOn.time+' s confirmation';
   if(!w.fall) return 'full damage to '+w.range+' m';
   return 'full power to '+w.fall[0]+' m \u00B7 '+Math.round(w.fall[2]*100)+'% at '+w.fall[1]+' m';
 }
@@ -4555,13 +4750,16 @@ const WEAPON_CARD_COPY={
   lmg:['60 rounds; accurate while planted','Slow movement; 3.2 s reload'],
   claws:['Every hit heals 15 HP','Must fight inside 3.2 m'],
   minigun:['Highest DPS; 150-round belt','Spin-up, slow movement, 5.5 s reload'],
+  dragonfire:['Sweeps every target in a 15 m fire cone','70 damage needs three seconds of exposure'],
   sniper:['275 head damage at 250 m','Four shots; must scope'],
   bazooka:['Splash damage and rocket jumps','Only eight rockets; slow reload'],
+  lockjaw:['Confirmed lock guarantees 60 damage','Only four missiles; 1.2 s visible lock'],
   tesla:['No reload; chains to two targets','Overheats after 18 shots; 42 m range'],
   reaper:['Any hit kills instantly','Only three shots; 1 s charge']
 };
 function weaponCardDamage(w){
   if(w.dmg>900) return 'lethal anywhere';
+  if(w.bodyOnly) return w.dmg+(w.flameDuration?' per full burst':' any hit');
   if(w.pellets) return w.dmg+' × '+w.pellets+' · '+Math.round(w.dmg*HEAD_MULT)+' head';
   return w.dmg+' body · '+Math.round(w.dmg*HEAD_MULT)+' head';
 }
@@ -4572,10 +4770,12 @@ function weaponCardFire(w){
 function weaponCardAmmo(w){
   if(w.melee) return 'never runs out';
   if(w.heat) return 'heat bar · no magazine';
+  if(w.totalOnly) return w.mag+' total · no spare';
   return w.mag+' mag · '+w.reserve+' spare';
 }
 function weaponCardRange(w){
   if(w.melee) return w.range+' m reach';
+  if(w.lockOn) return 'whole-map lock';
   if(!w.fall) return w.range+' m full power';
   return w.fall[0]+' m full · '+w.fall[1]+' m max';
 }
@@ -4722,18 +4922,20 @@ function buyFood(f,n){
   AU.eat(f.glow>0); toast(f.name+' ×'+n+' added to your kit'); renderShop('food');
 }
 function pvInfoWeapon(w){
-  const dps = w.dmg>900 ? 'instant' :
+  const dps = w.dmg>900 ? 'instant' : w.flameDuration ? Math.round(w.dmg/w.flameDuration) :
     w.burst ? Math.round(w.dmg*w.burst/(w.burst*60/w.rpm+w.burstGap)) :
     w.melee||w.proj ? Math.round(w.dmg*w.rpm/60) : Math.round(w.dmg*(w.pellets||1)*w.rpm/60);
   $('#pvInfo').innerHTML='<h4>'+w.name+'</h4><div>'+w.desc+'</div>'+
-    kv('Power',pwBar(w.pw))+kv('Class',w.cls)+kv('Body damage',w.dmg>900?'lethal':w.dmg)+kv('Head damage',w.dmg>900?'lethal':Math.round(w.dmg*HEAD_MULT))+
-    kv('Leg damage',w.dmg>900?'lethal':Math.round(w.dmg*LEG_MULT))+
+    kv('Power',pwBar(w.pw))+kv('Class',w.cls)+kv(w.flameDuration?'Full exposure':'Body damage',w.dmg>900?'lethal':w.dmg)+kv('Head damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*HEAD_MULT))+
+    kv('Leg damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*LEG_MULT))+
     kv('Damage per second',dps)+
-    (w.mag>0?kv('Fire rate',w.rpm+' rpm')+kv('Magazine',w.mag)+kv('Spare ammo',w.reserve)+
-        kv('Reload',(w.shellReload?w.shellReload+'s per shell':w.reload+'s')):
+    (w.mag>0?kv('Fire rate',w.flameDuration?'one cell lasts up to '+w.flameDuration+'s':w.rpm+' rpm')+kv('Magazine',w.mag)+kv('Spare ammo',w.reserve)+
+        (w.totalOnly?kv('Reload','none \u2014 four missiles total'):kv('Reload',(w.shellReload?w.shellReload+'s per shell':w.reload+'s'))):
       w.heat?kv('Fire rate',w.rpm+' rpm')+kv('Ammo','heat bar — '+Math.floor(100/w.heat.per)+' shots')+kv('Overheat lock',w.heat.lock+'s')
       :kv('Ammo','none — melee'))+
-    kv('Reach',w.range+'m')+kv('Damage falloff',w.fall?(w.fall[0]+'m → '+w.fall[1]+'m'):'none')+
+    kv('Reach',w.lockOn?'whole map':w.range+'m')+kv('Damage falloff',w.fall?(w.fall[0]+'m → '+w.fall[1]+'m'):'none')+
+    (w.lockOn?kv('Lock time',w.lockOn.time+'s of visible aim'):'')+
+    (w.flameDuration?kv('Flame duration','up to '+w.flameDuration+'s per cell'):'')+
     (w.scope?kv('Scope',w.scope+'×'):'')+
     (w.charge?kv('Charge time',w.charge+'s'):'')+
     (w.spinup?kv('Spin-up',w.spinup+'s'):'')+

@@ -23,7 +23,7 @@ test('generated content is deterministic and exposes the complete catalog', () =
   const sandbox = { globalThis: {} };
   vm.runInNewContext(first, sandbox);
   const content = sandbox.globalThis.BlockRoyaleContent;
-  assert.equal(content.WEAPONS.length, 14);
+  assert.equal(content.WEAPONS.length, 16);
   assert.equal(content.PETS.length, 7);
   assert.equal(content.ARENAS.length, 10);
   assert.equal(content.HAIRS.length, 7);

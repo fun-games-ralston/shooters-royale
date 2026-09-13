@@ -106,6 +106,16 @@
         {w:.09,h:.09,d:.36,x:0,y:.15,z:-.36,c:0x14171a},{w:.05,h:.2,d:.1,x:0,y:-.15,z:-.18,c:0x1f2226},
         {w:.08,h:.16,d:.36,x:0,y:-.04,z:.34,c:0x2b4441}]},
 
+{fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:20,mag:8,reserve:8,reload:3.4,
+ flameDuration:3,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
+ role:'Hold a fuel cell for up to three seconds and sweep a 15 m cone across every fighter in it.',
+ limit:'A full three-second exposure deals 70 damage. Walls stop the fire, and a tap still spends the cell.',
+ desc:'Eight fuel cells turn a doorway into a furnace. Hold the trigger to keep the jet alive, sweep across a crowd, or release early to save yourself from standing still too long.',
+ parts:[{w:.15,h:.19,d:.68,x:0,y:.02,z:-.24,c:0x46362e},{w:.13,h:.13,d:.48,x:0,y:.04,z:-.78,c:0x6f3020},
+        {w:.18,h:.18,d:.22,x:0,y:.02,z:-1.12,c:0xff6b2c,e:.75},{w:.17,h:.34,d:.34,x:0,y:-.2,z:.12,c:0x7a4b28},
+        {w:.08,h:.2,d:.12,x:0,y:-.18,z:-.3,c:0x262328},{w:.05,h:.05,d:.38,x:.1,y:.12,z:-.72,c:0xffb347,e:.55},
+        {w:.05,h:.05,d:.38,x:-.1,y:.12,z:-.72,c:0xffb347,e:.55}]},
+
 {fx:'rocket',fxName:'Plasma rocket + shock-sphere blast',flash:0xff6b2c,flashSize:2.2,id:'bazooka',pw:8,name:'Bazooka',cls:'LAUNCHER',rar:'ench',cost:7000,dmg:95,splash:85,splashR:5.6,rpm:55,mag:2,reserve:6,reload:3.2,
  spread:.7,auto:false,range:150,speed:.84,recoil:5,proj:true,projSpeed:58,tracer:0xff6b2c,sfx:'launch',
  role:'Two rockets a tube. Hits people behind cover, and firing at your own feet launches you onto a roof.',
@@ -123,6 +133,16 @@
  parts:[{w:.1,h:.16,d:.58,x:0,y:.02,z:-.22,c:0x1f3a52},{w:.09,h:.09,d:.2,x:0,y:.06,z:-.6,c:0x2ea8c9},
         {w:.05,h:.24,d:.05,x:.07,y:.12,z:-.66,c:0x8fe9ff},{w:.05,h:.24,d:.05,x:-.07,y:.12,z:-.66,c:0x8fe9ff},
         {w:.08,h:.22,d:.11,x:0,y:-.17,z:-.06,c:0x1a2c3d},{w:.08,h:.13,d:.28,x:0,y:-.02,z:.26,c:0x16232f}]},
+
+{fx:'homing',fxName:'Lock-on brackets + wall-hunting missile',flash:0xff475d,flashSize:2.3,id:'lockjaw',pw:9,name:'Lockjaw Launcher',cls:'SMART LAUNCHER',rar:'ench',cost:10000,dmg:60,rpm:40,mag:4,reserve:0,reload:0,
+ lockOn:{time:1.2,cone:3},homing:true,projSpeed:27,turnRate:4.8,bodyOnly:true,totalOnly:true,pvp:false,spread:0,auto:false,range:320,speed:.82,recoil:4.4,tracer:0xff475d,sfx:'lockjaw',
+ role:'Hold RMB on a visible fighter for 1.2 seconds. Once confirmed, the missile hunts them around cover for a guaranteed 60 damage.',
+ limit:'Four missiles total. It cannot launch without a lock, and losing sight before confirmation resets the scan.',
+ desc:'Paint one fighter, wait for the red brackets, then fire. The missile steers around the arena and ignores walls after launch; hiding only makes the chase look better.',
+ parts:[{w:.17,h:.2,d:1.12,x:0,y:.02,z:-.42,c:0x333743},{w:.21,h:.21,d:.18,x:0,y:.02,z:-1.03,c:0xff475d,e:.8},
+        {w:.2,h:.2,d:.16,x:0,y:.02,z:.16,c:0x222631},{w:.08,h:.2,d:.12,x:0,y:-.18,z:-.26,c:0x24212b},
+        {w:.08,h:.08,d:.34,x:.12,y:.14,z:-.5,c:0xf2b134,e:.55},{w:.08,h:.08,d:.34,x:-.12,y:.14,z:-.5,c:0xf2b134,e:.55},
+        {w:.12,h:.1,d:.28,x:0,y:.22,z:-.38,c:0x9fd8ff,e:.7}]},
 
 {fx:'void',fxName:'Spiral void beam + soul vortex',flash:0xc47bff,flashSize:2.4,id:'reaper',pw:10,name:'Obsidian Reaper',cls:'MYTHIC',rar:'myth',cost:15000,dmg:999,rpm:30,mag:1,reserve:2,reload:3.2,
  charge:1.0,chargeSlow:0.5,spread:.25,auto:true,range:260,speed:.9,recoil:6,scope:2.4,tracer:0xc47bff,sfx:'reap',
@@ -343,5 +363,5 @@
  mod:{grav:0.55},void:true},
 ];
 
-  return {CONTENT_VERSION:'d9b03cde801657d6',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
+  return {CONTENT_VERSION:'4e9a698049f26406',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
 });
