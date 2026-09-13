@@ -65,7 +65,7 @@ Mouse and keyboard only — pointer lock has no touch equivalent, so there is no
 
 ## 4. Weapons
 
-**Fourteen weapons — eleven firearms and three melee.** Slot 1 and slot 2 hold firearms; slot 3 always holds
+**Sixteen solo weapons — thirteen firearms and three melee.** Slot 1 and slot 2 hold firearms; slot 3 always holds
 your chosen melee weapon, so you are never completely disarmed when a magazine runs dry.
 
 | # | Weapon | Class | Cost | PWR | Damage | RPM | Mag / spare | Reload | Full power to | Move | Fire |
@@ -81,9 +81,11 @@ your chosen melee weapon, so you are never completely disarmed when a magazine r
 | 9 | Leech Claws | Melee | 3,200 | 5 | 38, heals you 15 | 400 | — | — | 3.2 m | 1.16× | auto |
 | 10 | Cyclone Minigun | Heavy | 4,200 | 6 | 18 | 1200 | 150 / 150 | 5.5 s | 40 m → 55% at 70 m | 0.78× | auto |
 | 11 | Longshot Rail | Sniper | 5,200 | 7 | 110 / **275 head** | 55 | 4 / 20 | 2.7 s | no falloff, 250 m | 0.92× | semi |
-| 12 | Bazooka | Launcher | 7,000 | 8 | 95 + 85 splash | 55 | 2 / 6 | 3.2 s | no falloff, 150 m | 0.84× | semi |
-| 13 | Tesla Arc | Energy | 8,600 | 9 | 46 + 2 chains | 300 | **heat bar** | — | no falloff, 42 m | 1.04× | auto |
-| 14 | Obsidian Reaper | Mythic | 15,000 | 10 | lethal on any hit | 30 | 1 / 2 | 3.2 s | no falloff, 260 m | 0.90× | charged |
+| 12 | Dragonfire | Flamethrower | 6,100 | 7 | 70 / full 3 s exposure | 20 | 8 / 8 | 3.4 s | 15 m flame cone | 0.90× | held burst |
+| 13 | Bazooka | Launcher | 7,000 | 8 | 95 + 85 splash | 55 | 2 / 6 | 3.2 s | no falloff, 150 m | 0.84× | semi |
+| 14 | Tesla Arc | Energy | 8,600 | 9 | 46 + 2 chains | 300 | **heat bar** | — | no falloff, 42 m | 1.04× | auto |
+| 15 | Lockjaw Launcher | Smart launcher | 10,000 | 9 | 60 to any body part | 40 | **4 total** | none | whole-map confirmed lock | 0.82× | locked |
+| 16 | Obsidian Reaper | Mythic | 15,000 | 10 | lethal on any hit | 30 | 1 / 2 | 3.2 s | no falloff, 260 m | 0.90× | charged |
 
 ### 4.1 Mechanics glossary
 
@@ -105,6 +107,8 @@ Every one of them is surfaced on the shop card as a green ▲ *what it is for* l
 | **Knockback / stun** | `knock`, `stun` | Impulse along the shot direction plus a brief slow. |
 | **Lifesteal** | `leech` | Heals the attacker per hit landed. |
 | **Spin-up / spin slow** | `spinup`, `spinSlow` | Barrels must reach speed before the first round, and you walk slower while spun up. Player only; bots fire immediately. |
+| **Confirmed lock** | `lockOn`, `homing` | Hold RMB on one visible target continuously. Once confirmed, the lock survives lost sight and its missile steers around cover without colliding with walls. |
+| **Flame stream** | `flameDuration`, `flameRadius` | One fuel cell creates a held, multi-target cone for up to three seconds. Damage accrues only during exposure, and world geometry shortens the cone. |
 
 ### 4.2 Weapon roles
 
@@ -119,8 +123,10 @@ Every one of them is surfaced on the shop card as a green ▲ *what it is for* l
 - **Leech Claws** — 38 a rake, six times a second, healing 15 a hit. You are your own health pack, if you can close.
 - **Cyclone Minigun** — the highest sustained damage anywhere, out of one 150-round belt. Half a second of spin-up, no ADS, and you walk like a fridge.
 - **Longshot Rail** — 275 to the head at 250 m. Four shots, and un-scoped it could miss a wall.
+- **Dragonfire** — sweep a 15 m flame cone across several fighters. One cell lasts up to three seconds and deals 70 only after full exposure; walls stop it.
 - **Bazooka** — two rockets a tube, 5.6 m splash, hits people behind cover, and rocket-jumping works (self-splash is 35%). Eight rockets a life.
 - **Tesla Arc** — never reloads, chains to two more fighters within 9 m at 55%. Overheats after 18 shots, and only reaches 42 m.
+- **Lockjaw Launcher** — keep one visible fighter inside the brackets for 1.2 seconds, then spend one of four guaranteed 60-damage missiles. The lock persists after they hide.
 - **Obsidian Reaper** — kills on any hit to any body part. **Three shots per match.** A full second of charging at half speed, glowing purple, before each one.
 
 ### 4.3 Why the Reaper is not the end of the game
@@ -179,8 +185,10 @@ Each weapon has a distinct visual and audio signature, both named on its shop ca
 | Leech Claws | `leech` | `rake` | Three green claw streaks, then green motes fly from the victim into you |
 | Cyclone Minigun | `stream` | `brr` | Thick molten tracers plus a spark stream off the spinning barrels |
 | Longshot Rail | `rail` | `thump` | Lingering laser beam with a white-hot core and a muzzle ring pulse |
+| Dragonfire | `flame` | `flame` | Layered orange fire cone with a white-hot core, rolling fireballs, embers and smoke |
 | Bazooka | `rocket` | `launch` | Modelled rocket with flickering flame and smoke trail; fireball, double shockwave rings, tumbling debris |
 | Tesla Arc | `arc` | `zap` | Jagged forked lightning (7 jittered segments), chain arcs to secondary targets |
+| Lockjaw Launcher | `homing` | `lockjaw` | Gold scanning bar and red brackets; steerable missile with cyan thrust, smoke, pursuit rings and a red impact bloom |
 | Obsidian Reaper | `void` | `reap` | Purple charge core that pulses tighter as it fills, then a violet void beam; victims burst into souls |
 
 Shared effects: muzzle flash lights the arena via a single pooled `PointLight`, kills explode fighters into

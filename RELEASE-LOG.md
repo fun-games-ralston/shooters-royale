@@ -7,6 +7,16 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.5 candidate — Lockjaw and Dragonfire
+
+* Added **Lockjaw Launcher**: hold RMB on one visible fighter for 1.2 seconds to confirm a lock, then launch one of four missiles. The visible missile steers around cover, ignores wall impacts after launch, and deals exactly 60 damage to its living target anywhere on the map.
+* Added **Dragonfire**: each trigger spends one of eight fuel cells and produces a flame cone for up to three seconds while LMB remains held. A full exposure deals 70 damage, the cone can burn several fighters together, and walls stop it at 15 m.
+* Added explicit scanning, locked, and flame-duration HUD states, new models, synthesized sounds, trails, fire, smoke, impact effects, Armory comparison copy, details, and training-range access.
+* Kept Friends PvP safe: both weapons are PvE-only until their target locks and continuous damage can be made host-authoritative. Existing PvP loadouts fall back instead of treating them as ordinary shots.
+* Validated the initial candidate with 67 automated tests, including continuous lock, post-cover commitment, obstacle detour, multi-target flame geometry, exact weapon values, PvP fallback, content synchronization, and the existing solo/PvP suite.
+
+## 2.4.2 — Score limits and optional breaks
+
 ## Feature branch — Reliable win recording
 
 * Fast victories count, including games that finish in under five seconds and wins with no eliminations. There is no hourly match cap or forced break.
