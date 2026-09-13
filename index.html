@@ -61,6 +61,10 @@ canvas{display:block}
 .seasonbar{margin:14px auto 0;padding:8px 12px;max-width:420px;font-family:var(--mono);font-size:10px;
   line-height:1.55;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(27,22,38,.9);
   box-shadow:inset 0 0 0 2px var(--edge);text-align:center}
+.seasonbar.lifecycle{max-width:560px;padding:11px 14px;color:var(--bone);background:rgba(45,28,24,.96);
+  box-shadow:inset 0 0 0 2px var(--gold),0 0 24px rgba(242,177,52,.2)}
+.seasonbar.lifecycle b{display:block;color:var(--gold);font-family:var(--disp);font-size:16px;letter-spacing:.14em}
+.seasonbar.lifecycle span{display:block;margin-top:2px;letter-spacing:.07em}
 .briefcard{width:min(610px,92vw);padding:30px;text-align:center;background:rgba(21,16,32,.96)}
 .briefseason{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
 .brieftitle{font-family:var(--disp);font-size:clamp(34px,6vw,58px);letter-spacing:.1em;text-transform:uppercase;margin:9px 0}
@@ -73,6 +77,11 @@ canvas{display:block}
 .briefcount{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
 .briefbar{height:4px;background:#100c18;margin:0 auto 20px;max-width:430px;overflow:hidden}
 .briefbar i{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left center}
+.seasonprogress{display:grid;grid-template-columns:1fr auto;gap:5px 18px;align-items:center;margin:0 0 16px;padding:12px 14px;
+  background:#120e1c;box-shadow:inset 0 0 0 2px var(--edge);font-family:var(--mono);text-transform:uppercase}
+.seasonprogress b{font-family:var(--disp);font-size:18px;letter-spacing:.11em;color:var(--gold)}
+.seasonprogress strong{font-family:var(--disp);font-size:25px;letter-spacing:.08em;color:var(--bone);white-space:nowrap}
+.seasonprogress span{grid-column:1/-1;color:var(--dim);font-size:10px;letter-spacing:.07em;line-height:1.5}
 
 /* ---------- buttons ---------- */
 .btn{
@@ -673,7 +682,7 @@ canvas{display:block}
             <div>Your <b style="color:var(--gold)">first win each day earns up to 250 bonus coins</b>. Three <b style="color:var(--leaf)">daily challenges</b> reset every morning.</div>
             <div>Kills within five seconds of each other stack into <b style="color:var(--gold)">DOUBLE KILL → TRIPLE KILL</b> and pay a bonus.</div>
             <div>Every weapon tracks its own <b style="color:var(--ench)">mastery</b>. Ten kills earns a bronze charm on the gun, 150 earns diamond.</div>
-            <div><b style="color:var(--gold)">Challenge counts. Custom does not.</b> Clear a standard Challenge with at least three eliminations to join the seasonal leaderboard.</div>
+            <div><b style="color:var(--gold)">Challenge counts. Custom does not.</b> Clear each opponent tier with six qualifying wins. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2.</div>
             <div>Bots fight each other too. Let them.</div>
             <div>Use cover and the upper decks. Open ground kills.</div>
             <div>Every weapon fires its own effect — <b style="color:var(--ench)">rail beams, forked lightning, rockets, void blasts</b>.</div>
@@ -745,13 +754,14 @@ const CLOUD = {
   club: 'ralston',     // everyone using the same word shares one leaderboard
 };
 
-const CHALLENGE_RULES = Object.freeze({bots:7, time:3, minKills:3});
+const CHALLENGE_RULES = Object.freeze({bots:7, time:3, winsPerTier:6});
 const CHALLENGE_TIERS = Object.freeze(['rookie','regular','veteran','elite','nightmare']);
 const SEASON_FALLBACK = Object.freeze({
-  current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-09-25T07:00:00Z'},
-  next:{slug:'season-1',name:'Season 1',starts_at:'2026-09-25T07:00:00Z',ends_at:'2026-10-23T07:00:00Z'},
+  current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-10-01T07:00:00Z'},
+  next:{slug:'season-1',name:'Season 1',starts_at:'2026-10-01T07:00:00Z',ends_at:'2026-11-01T07:00:00Z'},
 });
 let SEASON_STATUS=null;
+const SEASON_TIME_ZONE='America/Los_Angeles';
 
 const NETERR = {
   OFFLINE       : 'Online play is not switched on in this copy of the game',
@@ -790,12 +800,55 @@ const NET = {
   }
 };
 
+function zoneDateParts(ms){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:SEASON_TIME_ZONE,year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(ms));
+  const out={}; parts.forEach(p=>{ if(p.type!=='literal') out[p.type]=Number(p.value); });
+  return {year:out.year,month:out.month,day:out.day};
+}
+function zoneOffsetMs(ms){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:SEASON_TIME_ZONE,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric',hourCycle:'h23'}).formatToParts(new Date(ms));
+  const out={}; parts.forEach(p=>{ if(p.type!=='literal') out[p.type]=Number(p.value); });
+  return Date.UTC(out.year,out.month-1,out.day,out.hour,out.minute,out.second)-ms;
+}
+function pacificMonthStartMs(year,month){
+  let guess=Date.UTC(year,month-1,1,8);
+  for(let i=0;i<2;i++) guess=Date.UTC(year,month-1,1)-zoneOffsetMs(guess);
+  return guess;
+}
 function localSeasonStatus(nowMs){
-  const now=nowMs===undefined?Date.now():nowMs;
-  const s1=SEASON_FALLBACK.next;
-  if(now<Date.parse(s1.starts_at)) return SEASON_FALLBACK;
-  if(now<Date.parse(s1.ends_at)) return {current:s1,next:null};
-  return {current:null,next:null};
+  const now=nowMs===undefined?Date.now():nowMs, launch=Date.parse(SEASON_FALLBACK.next.starts_at);
+  if(now<launch) return SEASON_FALLBACK;
+  const p=zoneDateParts(now), number=(p.year-2026)*12+(p.month-10)+1;
+  if(number<1) return SEASON_FALLBACK;
+  const start=pacificMonthStartMs(p.year,p.month), nextMonth=p.month===12?{year:p.year+1,month:1}:{year:p.year,month:p.month+1};
+  const end=pacificMonthStartMs(nextMonth.year,nextMonth.month);
+  const nextEndMonth=nextMonth.month===12?{year:nextMonth.year+1,month:1}:{year:nextMonth.year,month:nextMonth.month+1};
+  const current={slug:'season-'+number,name:'Season '+number,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString()};
+  const next={slug:'season-'+(number+1),name:'Season '+(number+1),starts_at:new Date(end).toISOString(),ends_at:new Date(pacificMonthStartMs(nextEndMonth.year,nextEndMonth.month)).toISOString()};
+  return {current:current,next:next,server_now:new Date(now).toISOString()};
+}
+function seasonCalendarInfo(season,nowMs){
+  if(!season) return null;
+  const now=zoneDateParts(nowMs===undefined?Date.now():nowMs), start=zoneDateParts(Date.parse(season.starts_at)), end=zoneDateParts(Date.parse(season.ends_at));
+  const day=Math.floor((Date.UTC(now.year,now.month-1,now.day)-Date.UTC(start.year,start.month-1,start.day))/86400000)+1;
+  const total=Math.round((Date.UTC(end.year,end.month-1,end.day)-Date.UTC(start.year,start.month-1,start.day))/86400000);
+  return {day:day,total:total,daysLeft:Math.max(0,total-day+1)};
+}
+function seasonLifecycleReminder(status,progress,nowMs){
+  const cur=status&&status.current;
+  if(!cur||cur.slug==='preseason') return null;
+  const info=seasonCalendarInfo(cur,nowMs===undefined&&status.server_now?Date.parse(status.server_now):nowMs);
+  if(!info||info.day<1||info.day>info.total) return null;
+  const p=progress||{bestTier:0,tierWins:0}, skill=CHALLENGE_TIERS[Math.min(p.bestTier||0,CHALLENGE_TIERS.length-1)]||'rookie';
+  const run=SKILLS&&SKILLS[skill]?SKILLS[skill].name.toUpperCase():skill.toUpperCase();
+  const score=run+' · '+Math.min(CHALLENGE_RULES.winsPerTier,Math.max(0,p.tierWins||0))+'/'+CHALLENGE_RULES.winsPerTier+' QUALIFYING WINS';
+  if(info.day===1) return {title:'NEW SEASON',body:'Everyone starts at Rookie · Begin your six-win climb'};
+  if(info.day===7) return {title:'WEEK ONE CHECKPOINT',body:score+' · Every qualifying win stays'};
+  if(info.day===15) return {title:'HALFWAY MARK',body:score+' · Keep climbing'};
+  if(info.day===info.total) return {title:'FINAL DAY',body:score+' · Last chance before the ladder resets'};
+  if(info.day===info.total-1) return {title:'2 DAYS LEFT',body:score+' · Make your final push'};
+  if(info.day===27) return {title:'FINAL WEEK',body:score+' · '+info.daysLeft+' days remain'};
+  return null;
 }
 async function loadSeasonStatus(){
   const fallback=localSeasonStatus();
@@ -808,7 +861,14 @@ async function loadSeasonStatus(){
 function renderSeasonBanner(){
   const el=$('#seasonBanner'); if(!el) return;
   const st=SEASON_STATUS||localSeasonStatus(), cur=st.current, next=st.next;
+  const reminder=seasonLifecycleReminder(st,challengeProgress());
   let txt='';
+  if(reminder){
+    el.innerHTML='<b>'+esc(reminder.title)+'</b><span>'+esc(reminder.body)+'</span>';
+    el.classList.add('lifecycle');
+    el.classList.remove('hidden');
+    return;
+  }
   if(cur&&cur.slug==='preseason'&&next){
     const days=seasonDaysUntil(next.starts_at);
     txt=next.name+' starts in '+days+' day'+(days===1?'':'s')+' · your fighter progress stays';
@@ -817,6 +877,7 @@ function renderSeasonBanner(){
     txt=cur.name+' · '+days+' day'+(days===1?'':'s')+' left';
   }
   el.textContent=txt;
+  el.classList.remove('lifecycle');
   el.classList.toggle('hidden',!txt);
 }
 
@@ -864,7 +925,7 @@ function cloudSubmit(res, arenaId, durationS, rules){
         p_duration:Math.round(durationS),p_save:S,
       });
     }
-    if(r&&r.ok) return;
+    if(r&&r.ok){ if(rules.mode==='challenge') reconcileChallengeProgress(r); return; }
     // Stay quiet about things the player can't act on. A match too short to
     // count is normal and their local progress is safe either way; only shout
     // when something is actually wrong with the connection or the account.
@@ -1352,7 +1413,7 @@ const DEFAULT_STATE = {
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
   cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', hunted:false },
-  challenge:{season:'',bestTier:0},
+  challenge:{season:'',bestTier:0,tierWins:0},
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
   mastery: {},
@@ -1432,17 +1493,48 @@ const pick=a=>a[(Math.random()*a.length)|0];
 function normalizeMode(mode){ return mode==='training'||mode==='custom'||mode==='challenge' ? mode : 'challenge'; }
 function challengeProgress(){
   const status=SEASON_STATUS||localSeasonStatus(), slug=(status.current&&status.current.slug)||'';
-  if(!S.challenge||S.challenge.season!==slug){ S.challenge={season:slug,bestTier:0}; }
+  if(!S.challenge||S.challenge.season!==slug){ S.challenge={season:slug,bestTier:0,tierWins:0}; }
   S.challenge.bestTier=clamp(Math.round(S.challenge.bestTier||0),0,CHALLENGE_TIERS.length);
+  S.challenge.tierWins=clamp(Math.round(S.challenge.tierWins||0),0,CHALLENGE_RULES.winsPerTier);
   return S.challenge;
 }
 function challengeTargetSkill(){
   const progress=challengeProgress();
   return CHALLENGE_TIERS[Math.min(progress.bestTier,CHALLENGE_TIERS.length-1)];
 }
-function recordChallengeClear(skill){
-  const progress=challengeProgress(), tier=CHALLENGE_TIERS.indexOf(skill)+1;
-  if(tier>progress.bestTier) progress.bestTier=tier;
+function challengeEliminationTarget(skill){
+  const tier=CHALLENGE_TIERS.indexOf(skill);
+  return tier>=0&&tier<2?3:2;
+}
+function challengeQualifyingWin(res,rules){
+  return !!(rules&&rules.mode==='challenge'&&res&&res.win&&res.kills>=challengeEliminationTarget(rules.skill));
+}
+function challengeResultOutcome(res,rules,commit){
+  const progress=challengeProgress(), tier=CHALLENGE_TIERS.indexOf(rules&&rules.skill)+1;
+  const requiredKills=challengeEliminationTarget(rules&&rules.skill), before=progress.tierWins;
+  const qualifying=challengeQualifyingWin(res,rules);
+  const after=qualifying?Math.min(CHALLENGE_RULES.winsPerTier,before+1):before;
+  const cleared=qualifying&&tier>progress.bestTier&&after>=CHALLENGE_RULES.winsPerTier;
+  if(commit){
+    if(cleared){
+      progress.bestTier=tier;
+      progress.tierWins=tier>=CHALLENGE_TIERS.length?CHALLENGE_RULES.winsPerTier:0;
+    } else progress.tierWins=after;
+  }
+  return {qualifying:qualifying,cleared:cleared,before:before,after:after,requiredKills:requiredKills,
+    winsRequired:CHALLENGE_RULES.winsPerTier,skill:rules&&rules.skill};
+}
+function recordChallengeResult(res,rules){
+  return challengeResultOutcome(res,rules,true);
+}
+function reconcileChallengeProgress(data){
+  if(!data||!data.ok) return false;
+  const progress=challengeProgress();
+  if(data.season&&data.season!==progress.season) return false;
+  if(Number.isFinite(Number(data.best_tier))) progress.bestTier=clamp(Math.round(Number(data.best_tier)),0,CHALLENGE_TIERS.length);
+  if(Number.isFinite(Number(data.tier_wins))) progress.tierWins=clamp(Math.round(Number(data.tier_wins)),0,CHALLENGE_RULES.winsPerTier);
+  saveState();
+  return true;
 }
 function matchRules(cfg){
   cfg=cfg||S.cfg;
@@ -1457,7 +1549,7 @@ function matchRules(cfg){
   };
 }
 function challengeCleared(res,rules){
-  return !!(rules&&rules.mode==='challenge'&&res&&res.win&&res.kills>=CHALLENGE_RULES.minKills);
+  return challengeResultOutcome(res,rules,false).cleared;
 }
 function seasonDaysUntil(iso,nowMs){
   const target=Date.parse(iso||'');
@@ -3867,7 +3959,8 @@ function endMatch(win,draw=false){
     hpLeft:Math.ceil(G.pl.hp), meleeKills:G.meleeKills||0, petKills:G.petKills||0, bigKills:G.bigKills||0,
     wepsUsed:Object.keys(G.wepKills||{}).length, bestStreak:G.bestStreak||0,
     lowHp:!!G.lowHp, ate:G.ate||0 };
-  const clearedChallenge=challengeCleared(res,rules);
+  const challengeOutcome=rules.mode==='challenge'?recordChallengeResult(res,rules):null;
+  const clearedChallenge=!!(challengeOutcome&&challengeOutcome.cleared);
 
   // The level catch-up is gone too. It was making a brand new player's very first
   // match the richest one they would play for a week, which is the exact moment the
@@ -3926,21 +4019,23 @@ function endMatch(win,draw=false){
   if(win) S.stats.wins++;
   S.stats.best=Math.max(S.stats.best,kills);
   S.stats.bestStreak=Math.max(S.stats.bestStreak||0,res.bestStreak);
-  if(clearedChallenge) recordChallengeClear(rules.skill);
   S.log=(S.log||[]); S.log.unshift({d:dayKey(),a:arena.id,k:kills,w:win?1:0,c:coins}); S.log=S.log.slice(0,12);
   S.food=Object.assign({},G.pl.food);
   saveState();
   win?AU.win():AU.lose();
   if(rankedUp) setTimeout(()=>AU.levelup(),700);
-  $('#resTitle').textContent=draw?'Draw':win&&rules.mode==='challenge'&&!clearedChallenge?'Survived':win?'Victory':'Eliminated';
-  $('#resTitle').className=win&&!(rules.mode==='challenge'&&!clearedChallenge)?'win':'lose';
+  const challengeMiss=win&&challengeOutcome&&!challengeOutcome.qualifying;
+  $('#resTitle').textContent=draw?'Draw':challengeMiss?'Survived':win?'Victory':'Eliminated';
+  $('#resTitle').className=win&&!challengeMiss?'win':'lose';
   const nextR=rAfter.next;
   const rBarPct = nextR ? clamp((S.xp-RANKS[rAfter.tier].xp)/(nextR.xp-RANKS[rAfter.tier].xp),0,1)*100 : 100;
   $('#resStats').innerHTML=
     row('Arena',arena.name)+row('Mode',rules.mode==='challenge'?'Challenge':rules.mode==='custom'?'Custom Battle':'Training Range')+
     row('Placement',draw?'Time limit · '+place+' survivors':'#'+place+' of '+(rules.bots+1))+
     row('Survived',fmtTime(rules.time*60-G.left))+
-    (rules.mode==='challenge'?row('Challenge',clearedChallenge?'CLEAR · COUNTS FOR '+SKILLS[rules.skill].name.toUpperCase():'NOT CLEARED · SCORE 3 ELIMINATIONS'):
+    (rules.mode==='challenge'?row('Challenge',clearedChallenge?'TIER CLEAR · 6/6 · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase():
+      challengeOutcome.qualifying?'QUALIFYING WIN · '+challengeOutcome.after+'/'+challengeOutcome.winsRequired:
+      'NO QUALIFYING WIN · NEED '+challengeOutcome.requiredKills+' ELIMINATIONS'):
       rules.mode==='custom'?row('Leaderboard','CUSTOM DOES NOT COUNT'):'')+
     (res.petKills?row('Companion kills',res.petKills):'')+
     (earned.length?'<div class="medals">'+earned.map(m=>'<span class="md">\u2726 '+m.name+
@@ -3969,11 +4064,11 @@ function endMatch(win,draw=false){
       '<span>+'+xpGain+' XP</span></div>'+
     '<div class="xpbar"><i style="width:'+rBarPct+'%"></i></div>'+
     '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum level')+'</span></div>'+
-    stepUpHint();
+    stepUpHint(challengeOutcome);
   cloudSubmit(res, arena.id, rules.time*60-G.left, rules);
   miniBoardT=0;
   refreshCoins();
-  startOutro(win,clearedChallenge,rules);
+  startOutro(win,challengeOutcome,rules);
 }
 /* ---------------------------------------------------------------
    The beat between the last shot and the scoreboard. Everything keeps
@@ -3981,12 +4076,15 @@ function endMatch(win,draw=false){
    death reads as something that happened rather than a screen that appeared.
    Skippable, because the fifth time round nobody wants to sit through it.
    --------------------------------------------------------------- */
-function startOutro(win,clearedChallenge,rules){
+function startOutro(win,challengeOutcome,rules){
   const k=G.lastKiller, part=G.lastPart;
-  const challengeMiss=win&&rules&&rules.mode==='challenge'&&!clearedChallenge;
+  const challengeMiss=win&&challengeOutcome&&!challengeOutcome.qualifying;
+  const challengeProgressWin=win&&challengeOutcome&&challengeOutcome.qualifying&&!challengeOutcome.cleared;
   let sub;
   if(G.draw) sub='TIME LIMIT · NO LAST FIGHTER';
-  else if(challengeMiss) sub='NEED 3 ELIMINATIONS TO CLEAR';
+  else if(challengeMiss) sub='NEED '+challengeOutcome.requiredKills+' ELIMINATIONS TO QUALIFY';
+  else if(challengeProgressWin) sub='QUALIFYING WIN '+challengeOutcome.after+'/'+challengeOutcome.winsRequired;
+  else if(challengeOutcome&&challengeOutcome.cleared) sub='TIER CLEAR · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase();
   else if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
   else if(k&&!k.isPlayer) sub=String(k.name||'?').toUpperCase()+' · '+W[k.wep].name.toUpperCase()+(part==='HEAD'?' · HEADSHOT':'');
   else if(k&&k.isPlayer) sub='YOUR OWN BLAST';
@@ -4057,10 +4155,11 @@ function row(k,v){ return '<div><span>'+k+'</span><b>'+v+'</b></div>'; }
 /* Challenge advances automatically. Custom can still offer the familiar
    difficulty suggestion without changing the player's setup. */
 const TIERS=CHALLENGE_TIERS;
-function stepUpHint(){
+function stepUpHint(challengeOutcome){
   const i=TIERS.indexOf((G.rules&&G.rules.skill)||S.cfg.skill);
   if(i<0||i>=TIERS.length-1) return '';
   if(G.rules&&G.rules.mode==='challenge'){
+    if(!challengeOutcome||!challengeOutcome.cleared) return '';
     const next=challengeTargetSkill();
     if(next===G.rules.skill) return '';
     return '<div class="rankrow sub" style="color:var(--gold)"><span>\u25B8 CHALLENGE CLEAR \u2014 NEXT TARGET: '+
@@ -4283,51 +4382,52 @@ function challengeBriefSeason(){
 function renderChallengeBriefRules(rules){
   const arena=AR[rules.arena]||AR.foundry, primary=W[S.eq.primary||'sidearm'];
   const pet=S.eq.pet&&PE[S.eq.pet];
+  const progress=challengeProgress(), needed=challengeEliminationTarget(rules.skill);
   $('#briefPills').innerHTML=[
     'TARGET: '+SKILLS[rules.skill].name.toUpperCase(),
-    CHALLENGE_RULES.bots+' OPPONENTS', CHALLENGE_RULES.time+' MIN', arena.name,
+    'WINS: '+progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier,
+    needed+' ELIMINATIONS EACH', CHALLENGE_RULES.bots+' OPPONENTS', CHALLENGE_RULES.time+' MIN', arena.name,
     primary.name, pet?pet.name:'NO PET'
   ].map(x=>'<span>'+esc(x)+'</span>').join('');
 }
-function updateChallengeStanding(rows,authoritative){
+function updateChallengeStanding(rows){
   const me=ACC&&rows&&rows.find(r=>r.handle===ACC.handle);
-  if(ACC&&authoritative){
-    challengeProgress().bestTier=me&&Number.isFinite(Number(me.best_tier))
-      ? clamp(Number(me.best_tier),0,CHALLENGE_TIERS.length) : 0;
-  } else if(me&&Number.isFinite(Number(me.best_tier))){
+  if(me&&Number.isFinite(Number(me.best_tier))){
     const progress=challengeProgress();
     progress.bestTier=Math.max(progress.bestTier,clamp(Number(me.best_tier),0,CHALLENGE_TIERS.length));
   }
   const rules=matchRules();
   renderChallengeBriefRules(rules);
+  const progress=challengeProgress(), needed=challengeEliminationTarget(rules.skill);
+  const run=SKILLS[rules.skill].name+' run: '+progress.tierWins+'/'+CHALLENGE_RULES.winsPerTier+' qualifying wins';
   const tips={
-    rookie:'Get on the board. Pick one clean fight at a time.',
-    regular:'Use cover, finish your fights, and keep moving.',
-    veteran:'Three eliminations makes it count. Make every reload safe.',
+    rookie:'Three eliminations makes a Rookie win qualify. Pick one clean fight at a time.',
+    regular:'Three eliminations makes it count. Use cover, finish your fights, and keep moving.',
+    veteran:'Two eliminations makes it count. Make every reload safe.',
     elite:'Own the high ground. Do not give away free damage.',
     nightmare:'No hiding now. Make every shot count.'
   };
   $('#briefTip').textContent=tips[rules.skill];
   if(!ACC){
     $('#briefPlace').textContent='PLAY FOR YOUR BEST';
-    $('#briefTarget').textContent='Sign in to place this clear on the seasonal board. Your local fighter progress still saves.';
+    $('#briefTarget').textContent=run+'. Sign in to protect this progress across devices and place completed tiers on the board.';
     return;
   }
   if(!me){
-    $('#briefPlace').textContent='MAKE THE BOARD';
-    $('#briefTarget').textContent='Win against '+SKILLS[rules.skill].name+' opponents with at least 3 eliminations to join the board.';
+    $('#briefPlace').textContent=progress.tierWins?'BUILD YOUR '+SKILLS[rules.skill].name.toUpperCase()+' RUN':'MAKE THE BOARD';
+    $('#briefTarget').textContent=run+'. Win with at least '+needed+' eliminations. Six qualifying wins clear the tier.';
     return;
   }
   $('#briefPlace').textContent='#'+me.rank+' THIS SEASON';
   const at=rows.indexOf(me), ahead=at>0?rows[at-1]:null;
   if(!ahead){
     $('#briefPlace').textContent='DEFEND THE CROWN';
-    $('#briefTarget').textContent='You lead the board. Improve your best clear to make the target harder to catch.';
+    $('#briefTarget').textContent='You lead the board. '+run+'. Keep climbing to make the target harder to catch.';
     return;
   }
   $('#briefPlace').textContent='CLIMB FROM #'+me.rank+' TO #'+ahead.rank;
   const tier=ahead.best_tier_name||'Unranked';
-  $('#briefTarget').textContent='Next target: #'+ahead.rank+' '+ahead.handle+' · '+tier+' · '+ahead.best_kills+' eliminations · '+Number(ahead.best_damage||0).toLocaleString()+' damage.';
+  $('#briefTarget').textContent=run+'. Catch #'+ahead.rank+' '+ahead.handle+' · '+tier+' · '+ahead.best_kills+' eliminations · '+Number(ahead.best_damage||0).toLocaleString()+' damage.';
 }
 function deployChallengeBrief(token,capture){
   if(token!==undefined&&token!==challengeBriefToken) return;
@@ -4352,9 +4452,11 @@ async function showChallengeBriefing(){
   };
   tick(); challengeBriefTimer=setInterval(tick,100);
   if(!NET.on()) return;
-  const board=await seasonBoard(100,'');
-  if(token!==challengeBriefToken||!board||!board.ok) return;
-  updateChallengeStanding(board.rows||[],!board.legacy);
+  const [board,progress]=await Promise.all([seasonBoard(100,''),seasonProgress()]);
+  if(token!==challengeBriefToken) return;
+  if(progress&&progress.ok) reconcileChallengeProgress(progress);
+  if(board&&board.ok) updateChallengeStanding(board.rows||[]);
+  else updateChallengeStanding(null);
 }
 function show(id){
   if(id!=='scr-challenge'&&challengeBriefTimer) cancelChallengeBriefing();
@@ -4430,6 +4532,10 @@ async function seasonBoard(limit,seasonSlug){
   }
   return r;
 }
+async function seasonProgress(){
+  if(!ACC||!NET.on()) return null;
+  return NET.call('sr_challenge_progress_v1',{p_handle:ACC.handle,p_pin:ACC.pin});
+}
 async function seasonRecent(limit,seasonSlug){
   let r=await NET.call('sr_recent_v2',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
   if(r&&r.error==='HTTP_404') r=await NET.call('sr_recent',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit});
@@ -4457,7 +4563,7 @@ async function renderMiniBoard(force){
   if(!b||!b.ok){ el.innerHTML=head+'<div class="tp-note">'+esc(netMsg(b?b.error:'NO_NETWORK'))+'</div>'; return; }
   const rows=b.rows||[];
   if(!rows.length){
-    el.innerHTML=head+'<div class="tp-note">No Challenge clears yet.<br>Be the first one on the board.</div>';
+    el.innerHTML=head+'<div class="tp-note">No Challenge tiers cleared yet.<br>Be first to earn 6 qualifying wins.</div>';
     el.dataset.filled='1'; return;
   }
   const me=ACC?ACC.handle:null;
@@ -4478,7 +4584,7 @@ async function renderMiniBoard(force){
   // has to fit one line inside a 278px rail, so this stays short
   html+='<div class="tp-foot">'+(me
       ? (mine?('#'+mine.rank+' OF '+rows.length+(mine.best_tier_name?' · '+mine.best_tier_name:'')+' · FULL BOARD ▸')
-             :'CLEAR A CHALLENGE TO JOIN')
+             :'EARN 6 QUALIFYING WINS TO JOIN')
       : 'JOIN THE CLUB TO COMPETE')+'</div>';
   el.innerHTML=html;
   el.dataset.filled='1';
@@ -4573,6 +4679,15 @@ async function accSubmit(joining){
 
 /* ---- leaderboard ---- */
 let BOARD_SEASON='';
+function challengeProgressPanel(requested){
+  if(requested==='preseason'||!ACC) return '';
+  const progress=challengeProgress(), skill=challengeTargetSkill(), needed=challengeEliminationTarget(skill);
+  const complete=progress.bestTier>=CHALLENGE_TIERS.length;
+  return '<div class="seasonprogress"><b>YOUR RUN · '+esc(SKILLS[skill].name)+'</b><strong>'+
+    (complete?'MASTERED':progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier)+'</strong><span>'+
+    (complete?'Nightmare cleared. Improve your best performance before the season resets.':
+      'Qualifying wins need '+needed+' eliminations. Losses do not erase progress.')+'</span></div>';
+}
 async function renderBoard(){
   const body=$('#boardBody'), sub=$('#boardSub');
   const club=(ACC&&ACC.club)||CLOUD.club;
@@ -4587,22 +4702,23 @@ async function renderBoard(){
     return;
   }
   body.innerHTML='<div class="lbempty">Loading the board…</div>';
-  const [b,f]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested)]);
+  const [b,f,p]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested),requested==='preseason'?null:seasonProgress()]);
+  if(p&&p.ok) reconcileChallengeProgress(p);
   if(!b||!b.ok){
     body.innerHTML='<div class="lbempty">'+netMsg(b?b.error:'NO_NETWORK')+'</div>'; return;
   }
   const rows=b.rows||[];
   if(!rows.length){
-    body.innerHTML=seasonPicker(status,requested)+
-      '<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has cleared a Challenge in '+esc(shownName)+' yet.<br><br>'+
-      'Win the standard 7-opponent, 3-minute match with at least 3 eliminations.</div>';
+    body.innerHTML=seasonPicker(status,requested)+challengeProgressPanel(requested)+
+      '<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has cleared a Challenge tier in '+esc(shownName)+' yet.<br><br>'+
+      'Earn six qualifying wins at Rookie. Each win needs at least 3 eliminations.</div>';
     wireSeasonPicker();
     return;
   }
   const me=ACC?ACC.handle:null;
   const tiered=rows.some(r=>r.best_tier_name!==undefined);
   const seasonal=!b.legacy&&rows.some(r=>r.season_slug!==undefined);
-  let html=seasonPicker(status,requested);
+  let html=seasonPicker(status,requested)+challengeProgressPanel(requested);
   if(seasonal) html+='<div class="lbhead s"><span>#</span><span>FIGHTER</span><span>BEAT</span>'+
     '<span class="v">BEST</span><span class="v">DAMAGE</span><span class="v">RUNS</span></div>';
   else html+='<div class="lbhead'+(tiered?' t':'')+'"><span>#</span><span>FIGHTER</span>'+
@@ -4631,10 +4747,10 @@ async function renderBoard(){
       '<span class="v">'+r.matches+'</span></div>';
   });
   if(seasonal) html+='<div class="lbrule"><b style="color:var(--gold)">Challenge counts. Custom does not.</b> '+
-    'Beat 7 opponents in 3 minutes with at least 3 eliminations. Your hardest clear sets your Challenge Tier; '+
+    'Six qualifying wins clear a tier. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2. Your hardest clear sets your Challenge Tier; '+
     'ties use eliminations, then damage. Your coins, gear, Fighter Level and mastery never reset.</div>';
   else if(tiered) html+='<div class="lbrule">Preseason history uses the old rule: hardest difficulty beaten, then wins at that level. '+
-    'Season 1 starts fresh without removing any fighter progress.</div>';
+    'Season 1 starts October 1 with everyone at Rookie, without removing any fighter progress.</div>';
   if(f&&f.ok&&f.rows&&f.rows.length){
     html+='<div class="feed"><h5>JUST NOW</h5>'+f.rows.map(m=>
       '<div><b>'+esc(m.handle)+'</b> '+(m.challenge_clear?'<span class="w">cleared</span>':m.won?'<span class="w">won</span>':'went down')+' in '+

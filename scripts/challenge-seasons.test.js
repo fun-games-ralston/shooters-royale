@@ -18,18 +18,21 @@ function functionSource(name) {
 function rulesContext() {
   const context = {
     result: null,
-    S: { challenge: { season: 'preseason', bestTier: 2 } },
+    S: { challenge: { season: 'preseason', bestTier: 2, tierWins: 0 } },
     SEASON_STATUS: { current: { slug: 'preseason' } },
     localSeasonStatus: () => ({ current: { slug: 'preseason' } }),
   };
   vm.runInNewContext(
-    "const CHALLENGE_RULES=Object.freeze({bots:7,time:3,minKills:3});\n" +
+    "const CHALLENGE_RULES=Object.freeze({bots:7,time:3,winsPerTier:6});\n" +
       "const CHALLENGE_TIERS=Object.freeze(['rookie','regular','veteran','elite','nightmare']);\n" +
       'const clamp=(v,a,b)=>v<a?a:v>b?b:v;\n' +
       functionSource('normalizeMode') + '\n' +
       functionSource('challengeProgress') + '\n' +
       functionSource('challengeTargetSkill') + '\n' +
-      functionSource('recordChallengeClear') + '\n' +
+      functionSource('challengeEliminationTarget') + '\n' +
+      functionSource('challengeQualifyingWin') + '\n' +
+      functionSource('challengeResultOutcome') + '\n' +
+      functionSource('recordChallengeResult') + '\n' +
       functionSource('matchRules') + '\n' +
       functionSource('challengeCleared'),
     context
@@ -79,32 +82,79 @@ test('old Trial saves migrate to Challenge without changing custom controls', ()
   }
 });
 
-test('a Challenge needs a win and three eliminations', () => {
+test('six cumulative qualifying wins clear a tier without losses erasing progress', () => {
   const context = rulesContext();
-  const evaluate = (win, kills, mode = 'challenge') => {
-    vm.runInNewContext(`result=challengeCleared({win:${win},kills:${kills}},{mode:'${mode}'})`, context);
+  context.S.challenge = { season: 'preseason', bestTier: 0, tierWins: 0 };
+  const play = (win, kills, skill = 'rookie', mode = 'challenge') => {
+    vm.runInNewContext(`result=recordChallengeResult({win:${win},kills:${kills}},{mode:'${mode}',skill:'${skill}'})`, context);
     return context.result;
   };
-  assert.equal(evaluate(true, 3), true);
-  assert.equal(evaluate(true, 2), false);
-  assert.equal(evaluate(false, 7), false);
-  assert.equal(evaluate(true, 7, 'custom'), false);
+  assert.equal(play(true, 2).qualifying, false);
+  assert.equal(context.S.challenge.tierWins, 0);
+  for (let i = 1; i <= 3; i++) {
+    const outcome = play(true, 3);
+    assert.equal(outcome.qualifying, true);
+    assert.equal(outcome.cleared, false);
+    assert.equal(context.S.challenge.tierWins, i);
+  }
+  assert.equal(play(false, 7).qualifying, false);
+  assert.equal(context.S.challenge.tierWins, 3, 'a loss must not erase qualifying wins');
+  play(true, 3);
+  play(true, 3);
+  const clear = play(true, 3);
+  assert.equal(clear.cleared, true);
+  assert.equal(context.S.challenge.bestTier, 1);
+  assert.equal(context.S.challenge.tierWins, 0, 'the next tier starts at zero');
+
+  assert.equal(play(true, 2, 'regular').qualifying, false, 'Regular still needs three eliminations');
+  context.S.challenge = { season: 'preseason', bestTier: 2, tierWins: 0 };
+  assert.equal(play(true, 2, 'veteran').qualifying, true, 'Veteran needs only two eliminations');
+  assert.equal(play(true, 7, 'veteran', 'custom').qualifying, false, 'Custom never qualifies');
 });
 
-test('the Preseason transition changes to Season 1 on the announced date', () => {
+test('calendar seasons begin October 1 at Pacific midnight and follow month boundaries', () => {
   const context = { result: null };
   vm.runInNewContext(
-    "const SEASON_FALLBACK=Object.freeze({current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-09-25T07:00:00Z'},next:{slug:'season-1',name:'Season 1',starts_at:'2026-09-25T07:00:00Z',ends_at:'2026-10-23T07:00:00Z'}});\n" +
+    "const SEASON_TIME_ZONE='America/Los_Angeles';\n" +
+      "const SEASON_FALLBACK=Object.freeze({current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-10-01T07:00:00Z'},next:{slug:'season-1',name:'Season 1',starts_at:'2026-10-01T07:00:00Z',ends_at:'2026-11-01T07:00:00Z'}});\n" +
+      functionSource('zoneDateParts') + '\n' + functionSource('zoneOffsetMs') + '\n' + functionSource('pacificMonthStartMs') + '\n' +
       functionSource('localSeasonStatus') + '\n' + functionSource('seasonDaysUntil'),
     context
   );
-  vm.runInNewContext("result=localSeasonStatus(Date.parse('2026-09-12T07:00:00Z'))", context);
+  vm.runInNewContext("result=localSeasonStatus(Date.parse('2026-10-01T06:59:59Z'))", context);
   assert.equal(context.result.current.slug, 'preseason');
   assert.equal(context.result.next.slug, 'season-1');
-  vm.runInNewContext("result=seasonDaysUntil('2026-09-25T07:00:00Z',Date.parse('2026-09-12T07:00:00Z'))", context);
-  assert.equal(context.result, 13);
-  vm.runInNewContext("result=localSeasonStatus(Date.parse('2026-09-25T07:00:00Z'))", context);
+  vm.runInNewContext("result=localSeasonStatus(Date.parse('2026-10-01T07:00:00Z'))", context);
   assert.equal(context.result.current.slug, 'season-1');
+  assert.equal(context.result.current.ends_at, '2026-11-01T07:00:00.000Z');
+  vm.runInNewContext("result=localSeasonStatus(Date.parse('2026-11-01T07:00:00Z'))", context);
+  assert.equal(context.result.current.slug, 'season-2');
+  assert.equal(context.result.current.ends_at, '2026-12-01T08:00:00.000Z', 'Pacific DST must not move the local reset hour');
+});
+
+test('season lifecycle messages appear on launch, checkpoints, and the final two days', () => {
+  const context = { result: null };
+  vm.runInNewContext(
+    "const SEASON_TIME_ZONE='America/Los_Angeles';\n" +
+      "const CHALLENGE_RULES=Object.freeze({bots:7,time:3,winsPerTier:6});\n" +
+      "const CHALLENGE_TIERS=Object.freeze(['rookie','regular','veteran','elite','nightmare']);\n" +
+      "const SKILLS={rookie:{name:'Rookie'},regular:{name:'Regular'},veteran:{name:'Veteran'},elite:{name:'Elite'},nightmare:{name:'Nightmare'}};\n" +
+      functionSource('zoneDateParts') + '\n' + functionSource('seasonCalendarInfo') + '\n' + functionSource('seasonLifecycleReminder'),
+    context
+  );
+  const status = "{current:{slug:'season-1',name:'Season 1',starts_at:'2026-10-01T07:00:00Z',ends_at:'2026-11-01T07:00:00Z'}}";
+  const progress = "{bestTier:1,tierWins:4}";
+  const titleOn = iso => {
+    vm.runInNewContext(`result=seasonLifecycleReminder(${status},${progress},Date.parse('${iso}'))`, context);
+    return context.result&&context.result.title;
+  };
+  assert.equal(titleOn('2026-10-01T18:00:00Z'), 'NEW SEASON');
+  assert.equal(titleOn('2026-10-07T18:00:00Z'), 'WEEK ONE CHECKPOINT');
+  assert.equal(titleOn('2026-10-15T18:00:00Z'), 'HALFWAY MARK');
+  assert.equal(titleOn('2026-10-27T18:00:00Z'), 'FINAL WEEK');
+  assert.equal(titleOn('2026-10-30T18:00:00Z'), '2 DAYS LEFT');
+  assert.equal(titleOn('2026-10-31T18:00:00Z'), 'FINAL DAY');
+  assert.equal(titleOn('2026-10-02T18:00:00Z'), null);
 });
 
 test('Custom fallback saves progress but never calls the legacy leaderboard submit', async () => {
@@ -146,6 +196,17 @@ test('main menu uses a read-only Challenge briefing and Custom owns Match Setup'
   assert.doesNotMatch(functionSource('startMatch'), /pauseMatch\(true\)/);
   assert.doesNotMatch(functionSource('startMatch'), /arena is ready/i);
   assert.doesNotMatch(source.match(/btnPlay'\)\.onclick[^\n]+/)[0], /captureMouse/);
+});
+
+test('Challenge progress appears in both the six-second briefing and the leaderboard', () => {
+  const briefing = functionSource('renderChallengeBriefRules');
+  const board = functionSource('challengeProgressPanel');
+  assert.match(source, /const CHALLENGE_BRIEF_MS=6000/);
+  assert.match(briefing, /'WINS: '\+progress\.tierWins\+' \/ '\+CHALLENGE_RULES\.winsPerTier/);
+  assert.match(briefing, /' ELIMINATIONS EACH'/);
+  assert.match(board, /YOUR RUN/);
+  assert.match(board, /progress\.tierWins\+' \/ '\+CHALLENGE_RULES\.winsPerTier/);
+  assert.match(board, /Losses do not erase progress/);
 });
 
 test('Custom setup prioritizes match choices and keeps Training last', () => {

@@ -10,8 +10,9 @@ Three steps, about ten minutes, and it costs nothing. The Season 1 candidate als
 2. Left sidebar → **SQL Editor** → **New query**
 3. Open `supabase-setup.sql`, copy the whole file, paste it in, press **Run**
 4. For seasonal Challenges, run `supabase/migrations/20260912065528_challenge_seasons.sql` once afterward
+5. Then run `supabase/migrations/20260913035828_challenge_six_win_calendar_seasons.sql` for six-win progress and calendar-month seasons
 
-You should see `Success. No rows returned`. The seasonal migration preserves every existing player, save, and match, and labels old matches as Preseason history.
+You should see `Success. No rows returned` after each migration. Both are additive: they preserve every existing player, save, and match, and label old matches as Preseason history.
 
 ---
 

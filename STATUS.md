@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 2.5 beta · **Date:** 12 September 2026 · **Branch:** `codex/challenge-seasons`
+**Version:** 2.6 beta · **Date:** 12 September 2026 · **Branch:** `codex/challenge-seasons`
 
 ---
 
@@ -10,9 +10,9 @@
 
 ## Summary
 
-The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules, automatically advances through opponent tiers, requires a win plus 3 eliminations, and opens with a six-second ladder briefing that launches directly into combat. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Its optional Hunted rule is off by default and makes every bot hunt the player without changing Challenge AI. Match Setup groups Arena, Opponents, Opponent Skill, and Time Limit first, presents Hunted as a separate full-width warning, puts Training last, and no longer repeats the loadout. Season 1 starts 25 September 2026; old results remain Preseason and permanent fighter progress is never reset.
+The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules and automatically advances through opponent tiers after six cumulative qualifying wins. Rookie and Regular wins need at least 3 eliminations; Veteran and harder wins need at least 2. Losses do not erase qualifying wins. The six-second briefing and leaderboard both show progress such as 4/6. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Its optional Hunted rule is off by default and makes every bot hunt the player without changing Challenge AI. Season 1 starts 1 October 2026; each calendar month begins a new season at Rookie while permanent fighter progress and Preseason history remain intact.
 
-The database migration is additive and versioned. It passed preservation, eligibility, tier-order, permissions, lint, and security-advisor checks on disposable local Supabase. The full 59-test game/PvP suite and shared-content drift check pass. Browser validation confirmed the main menu, countdown briefing, automatic arena load, 7 opponents, and 3-minute clock. Custom Setup browser checks confirmed the new control grouping, off/on warning states, Hunted match summary, removal of the repeated loadout, and live match launch. After the Challenge briefing, the live arena appears directly and one canvas click captures the mouse, which browsers require; there is no second Ready modal.
+The database change is additive and versioned. It preserves every player row and adds server-authoritative cumulative progress plus Pacific calendar-month season rows. The current Challenge tests pass in Node and local Supabase, and a rollback-only hosted-database test verified that wins 1–5 do not clear Rookie, win 6 does, and the authenticated progress read advances to Regular at 0/6. Browser validation confirmed the updated six-second briefing and its 0/6 progress display. The title-screen lifecycle schedule is covered at days 1, 7, 15, 27, and the final two days. The existing PvE and Friends PvP boundaries remain unchanged.
 
 0.5 is a weapon-design and retention pass, and it fixed two bugs that were quietly gutting the game.
 

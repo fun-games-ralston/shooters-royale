@@ -1,12 +1,10 @@
 # Block Royale Fair Play, Challenge, and Seasons Decision Guide
 
-**Purpose:** A plain-language discussion guide for deciding the next version of Block Royale with Ethan.
-
 **Status:** The core fairness fix is implemented for testing on `codex/challenge-seasons`. It is not on `main` and has not changed the game used by current players.
 
 **Data snapshot:** September 12, 2026 at 2:11 PM Pacific. The numbers will keep changing as players play.
 
-**Proposed Season 1 start:** September 25, 2026
+**Confirmed Season 1 start:** October 1, 2026 at 12:00 AM Pacific
 
 ## 1. Recommendation in one minute
 
@@ -18,12 +16,12 @@ The simplest fix is to separate two jobs that were mixed together:
 
 Recommended first release:
 
-1. Seasonal Challenge uses one clear, visible ruleset: 7 opponents, 3 minutes, and at least 3 eliminations in a win.
+1. Seasonal Challenge uses one clear, visible ruleset: 7 opponents and 3 minutes.
 2. Custom Battle keeps all the familiar controls, including one-opponent games, presets, and Hunted Mode, but never changes the seasonal leaderboard.
-3. One qualifying win clears a tier. Do not require three wins and do not promote players for accumulated damage.
-4. Keep the first season simple. Collect standardized Challenge data before adding adaptive difficulty.
-5. Discuss one optional relief rule: after two failed Challenge attempts, offer a clearly labeled, unranked Rally Round at an easier difficulty. It gives normal personal rewards but cannot promote the player.
-6. Add only a few understandable achievements later. Achievements should create fun goals, not affect rank or combat power.
+3. Six cumulative qualifying wins clear each tier. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2. Losses do not erase qualifying wins.
+4. Keep the first season simple. Collect standardized Challenge data before adding adaptive difficulty or a Rally Round.
+5. Start everyone at Rookie every calendar month. Only seasonal Challenge standing resets.
+6. Revisit a small achievement set after Season 1 rather than launching another system now.
 
 ## 2. What problem did we find?
 
@@ -189,26 +187,28 @@ The following behavior exists on `codex/challenge-seasons` for testing:
 - Seasonal Challenge skips setup and shows a six-second launch briefing with ladder motivation and read-only rules.
 - Challenge always uses 7 opponents and 3 minutes.
 - Challenge automatically targets Rookie, Regular, Veteran, Elite, then Nightmare.
-- The player clears a tier with one win and at least 3 eliminations.
-- Surviving with fewer than 3 eliminations does not clear the tier.
+- The player clears a tier after 6 cumulative qualifying wins. Losses do not erase progress.
+- Rookie and Regular wins qualify with at least 3 eliminations. Veteran, Elite, and Nightmare wins qualify with at least 2.
+- The six-second screen and leaderboard show the current run, such as 4/6.
 - Custom Battle keeps the 1 to 11 opponent slider, the familiar opponent presets, difficulty, arena, time, and the optional red Hunted Mode warning.
 - Custom results can still earn ordinary coins, XP, mastery, medals, and daily goals, but do not affect the seasonal leaderboard.
-- Seasonal ranking uses one player's best qualifying clear, ordered by tier, eliminations, damage, then earliest achievement. Repeating easy wins does not accumulate standing.
+- Seasonal ranking uses one player's best completed-tier clear, ordered by tier, eliminations, damage, then earliest achievement. Custom wins never contribute.
+- The database returns authenticated Challenge progress so the current run stays correct across devices.
 - The database migration is additive. Old RPCs and the live `main` client still work.
 - Existing coins, Fighter Level, gear, pets, arenas, mastery, saves, lifetime statistics, and old match history are preserved.
-- The old leaderboard remains visible as Preseason history. Season 1 is scheduled for September 25 through October 23, 2026.
+- The old leaderboard remains visible as Preseason history. Season 1 runs October 1 through October 31, 2026 in Pacific time; later seasons follow calendar months.
+- Season messages appear on days 1, 7, 15, and 27, plus the final two days.
 
 The following are **not** implemented:
 
 - Rally Rounds or mixed-difficulty relief matches;
-- starting a new season from the previous season's tier;
 - new achievement badges for Hunted Mode or collecting gear;
 - server-authoritative solo combat; and
 - deployment of this branch to `main`.
 
 ## 6. How Challenge difficulty works right now
 
-There is no hidden difficulty adjustment. Every player sees the same sequence, and one clear advances one step.
+There is no hidden difficulty adjustment. Every player sees the same sequence, and six qualifying wins advance one step.
 
 ```mermaid
 flowchart TD
@@ -216,61 +216,41 @@ flowchart TD
     B --> C[6-second briefing]
     C --> D[Play: 7 opponents, 3 minutes]
     D --> E{Win the match?}
-    E -- No --> F[No tier clear]
-    E -- Yes --> G{At least 3 eliminations?}
-    G -- No --> H[You survived, but no tier clear]
-    G -- Yes --> I[Record best clear on seasonal board]
-    I --> J{Nightmare cleared?}
-    J -- No --> K[Advance one tier]
-    K --> C
-    J -- Yes --> L[Stay at Nightmare and improve best performance]
+    E -- No --> F[Keep current qualifying-win total]
+    E -- Yes --> G{Rookie or Regular?}
+    G -- Yes --> H{At least 3 eliminations?}
+    G -- No --> I{At least 2 eliminations?}
+    H -- No --> F
+    I -- No --> F
+    H -- Yes --> J[Add 1 qualifying win]
+    I -- Yes --> J
+    J --> K{Reached 6 wins?}
+    K -- No --> C
+    K -- Yes --> L[Complete tier and record board result]
+    L --> M{Nightmare completed?}
+    M -- No --> N[Advance one tier at 0 of 6]
+    N --> C
+    M -- Yes --> O[Stay at Nightmare and improve best performance]
     F --> C
-    H --> C
 ```
 
-This is intentionally simpler than requiring several wins or a damage total:
+Why this rule was chosen:
 
-- Requiring three wins per tier would turn five tiers into a minimum of 15 wins. That is unnecessary grind for a middle-school audience.
+- Real player data showed hundreds of matches are common and many players keep choosing below-Elite opponents. Promotion therefore needs repeated proof without forcing every tier to feel equally punishing.
+- Six wins are cumulative. A loss never takes one away, so the system measures demonstrated success without creating a frustrating streak requirement.
+- The lower tiers require 3 eliminations to prevent hiding. Veteran and harder require 2 because those wins are already much more difficult.
 - Total damage is affected by weapon, pet, arena hazards, match events, and how much bots damage one another. It is useful feedback and a tie-breaker, but not a clean promotion rule.
-- One win plus three eliminations is visible, memorable, and prevents hiding from being the best strategy.
+- XP, coins, mastery, and other permanent progress continue on every ordinary match even when it does not qualify for tier promotion.
 
 ## 7. Should difficulty be mixed like a mobile game?
 
 The design goal is good: players need some relief after repeated losses. The risky part is silently changing the rules inside a ranked Challenge. If the game secretly makes some attempts easier, Challenge Tier stops meaning the same thing for everyone.
 
-Recommended compromise for discussion:
-
-### Optional Rally Round
-
-After two failed attempts at the current target tier, offer one clearly labeled **Rally Round**:
-
-- If the target is Regular or above, use the next easier opponent skill.
-- If the target is Rookie, use 5 Rookie opponents instead of 7.
-- Keep normal coins, XP, mastery, medals, and daily goals.
-- Do not allow a Rally Round to clear a tier or change the leaderboard.
-- Return to the same target tier afterward. Never demote the player.
-- Explain it in one sentence: **"Rally Round: build momentum. Rewards count; rank does not."**
-
-```mermaid
-flowchart TD
-    A[Ranked target match] --> B{Clear with a win and 3 eliminations?}
-    B -- Yes --> C[Advance tier]
-    B -- No --> D[Count one miss]
-    D --> E{Two misses in a row?}
-    E -- No --> A
-    E -- Yes --> F[Offer one unranked Rally Round]
-    F --> G[Personal rewards count, tier does not]
-    G --> H[Reset miss counter]
-    H --> A
-```
-
-This keeps the competitive test standardized while giving a player an occasional confidence-building game. It is still pending because the first Season 1 data may show that Rookie is already approachable without it.
+**Decision: delay this.** Season 1 does not include hidden difficulty changes or a Rally Round. The cumulative-win rule already gives players a kind form of persistence because losses do not remove earned wins. First collect standardized attempts, qualifying wins, and drop-off by tier. Revisit a clearly labeled, unranked relief match only if the data shows repeated losses are causing players to leave.
 
 ### Starting later seasons
 
-For Season 1, everyone should start at Rookie because legacy results were not standardized.
-
-For Season 2 and later, discuss starting each player one tier below the highest tier they cleared in the previous season. This avoids boring experts with repeated Rookie games while still asking them to prove themselves again. Do not implement this until Season 1 shows that tier clears are trustworthy.
+Every season starts everyone at Rookie. This is now a confirmed rule, not an open Season 2 decision. The monthly reset is easy to explain and gives every player the same starting line; permanent fighter progress is still preserved.
 
 ## 8. Achievements without another confusing system
 
@@ -290,13 +270,15 @@ These goals motivate different kinds of play without making Custom Battle secret
 
 Keep bot-on-bot combat enabled in Challenge.
 
-It is part of the battle-royale identity and the current AI balance. Turning it off would make every Challenge a player-versus-seven ambush and would require a major AI rebalance. The 3-elimination requirement is the simpler anti-hiding rule: the player may use positioning, but cannot win the Challenge by letting bots do all the work.
+It is part of the battle-royale identity and the current AI balance. Turning it off would make every Challenge a player-versus-seven ambush and would require a major AI rebalance. The 3-elimination requirement at Rookie and Regular, and 2-elimination requirement at harder tiers, is the simpler anti-hiding rule: the player may use positioning, but cannot qualify by letting bots do all the work.
 
 Hunted Mode remains Custom only. In that mode every living bot targets the player and ignores other bots and pets as targets. Because it is unranked, players can choose the scary experience without changing the fairness of the ladder.
 
 ## 10. Seasons and progress
 
-Use four-week seasons. Two weeks is easy to miss because of school, travel, or device access. Four weeks refreshes competition while giving players enough chances to participate.
+Use calendar-month seasons. Season 1 starts October 1, 2026 at midnight Pacific and ends when November begins. Future seasons reset at Pacific midnight on the first day of each month. This is easier for players to remember than a rolling four-week date.
+
+Lifecycle messages appear on the title screen on days 1, 7, 15, and 27, plus the final two days. They show the player's current tier and qualifying-win total, with a stronger final-push message near reset. The six-second Challenge screen repeats the live `x/6` progress before a match.
 
 Only seasonal Challenge standing starts fresh. Never reset:
 
@@ -310,43 +292,42 @@ Only seasonal Challenge standing starts fresh. Never reset:
 
 Preseason preserves the old board as history, but it should be labeled **Legacy rules** so nobody mistakes it for a fair comparison with Season 1.
 
-## 11. Decisions to make with Ethan
+## 11. Confirmed decisions and later questions
 
 | Decision | Recommended answer | Why | Status |
 | --- | --- | --- | --- |
 | Should Custom games count on the leaderboard? | No | Adjustable games cannot be compared fairly | Implemented on feature branch |
-| Is one win plus 3 eliminations enough to clear a tier? | Yes for Season 1 | Simple and avoids a 15-win grind | Implemented on feature branch |
+| How does a tier clear? | 6 cumulative qualifying wins; 3 eliminations at Rookie/Regular and 2 at Veteran+ | Repeated proof, anti-hiding, and less high-tier fatigue | Implemented on feature branch |
 | Should bots fight each other in Challenge? | Yes | Keeps battle-royale play and avoids a large AI rebalance | Implemented behavior |
-| Should we add a Rally Round after two misses? | Maybe, test after initial play sessions | Gives relief without changing ranked rules | Open discussion |
-| Should Season 2 start one tier below last season's best? | Likely yes | Reduces boring early games for skilled players | Decide after Season 1 data |
+| Should we add a Rally Round after two misses? | Wait for data | Gives relief, but may be unnecessary complexity | Delayed |
+| Where does each season start? | Everyone at Rookie | One simple, equal starting line | Implemented |
 | Should achievements affect the leaderboard? | No | Interesting goals and competitive skill are different | Open, recommendation only |
-| Should the first achievements be Hunted Survivor, Arsenal Complete, and Nightmare Clear? | Yes, but later | Covers Custom, long-term collection, and Challenge with only three ideas | Open discussion |
-| Should Season 1 launch on September 25? | Only after a small playtest confirms clarity and preservation | Main is currently protected | Pending approval |
+| Should the first achievements be Hunted Survivor, Arsenal Complete, and Nightmare Clear? | Revisit after Season 1 | Covers three play styles without adding power | Delayed |
+| When does Season 1 launch? | October 1, 2026, Pacific time | Clean calendar boundary and more test time | Implemented in schedule; `main` still protected |
 
 ## 12. Season 1 test and learning plan
 
 Before moving the feature branch to `main`, verify:
 
 1. A one-opponent Custom win never changes the seasonal board.
-2. A Challenge win with fewer than 3 eliminations does not clear a tier.
-3. A valid clear advances exactly one tier.
-4. Repeating a weaker result does not improve leaderboard place.
-5. Old saves, coins, equipment, mastery, and history remain intact.
-6. A player can explain the system as, "Challenge counts; Custom doesn't."
+2. A Rookie or Regular win with fewer than 3 eliminations does not add progress.
+3. A Veteran-or-harder win with 2 eliminations does add progress.
+4. Wins 1 through 5 do not clear a tier; win 6 advances exactly one tier.
+5. Losses do not erase the existing qualifying-win total.
+6. Repeating a weaker result does not improve leaderboard place.
+7. Old saves, coins, equipment, mastery, and history remain intact.
+8. A player sees the same `x/6` progress after signing in on another device.
+9. A player can explain the system as, "Challenge counts; Custom doesn't. Six good wins clear a tier."
 
 During Season 1, collect these simple measures by tier:
 
 - attempts before first clear;
-- percentage clearing within 1, 3, and 5 attempts;
+- percentage earning a first qualifying win within 3 attempts and clearing a tier within 6, 10, or 15 attempts;
 - eliminations, damage, match duration, and result;
 - whether a player immediately retries, switches to Custom, or leaves; and
 - weapon, pet, and arena used, so one loadout does not silently dominate.
 
-Suggested design guardrail, not an observed fact:
-
-> About 70% of participating players should be able to clear Rookie within three standard attempts.
-
-If far fewer can, tune Rookie before adding grind. If almost everyone clears it immediately, consider a faster starting point in later seasons. Do not change several rules at once, or we will not know what solved the problem.
+Do not set a success target before the first standardized sample exists. If Rookie produces long runs with almost no qualifying wins, tune Rookie itself before adding another mode. If nearly everyone reaches 6/6 immediately, revisit the win count for a future season. Do not change several rules at once, or we will not know what solved the problem.
 
 ## 13. Evidence limits and data definitions
 

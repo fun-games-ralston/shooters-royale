@@ -119,7 +119,7 @@
         <p class="lede">The old leaderboard mixed <strong>choose-anything Custom games</strong> with <strong>competitive ranking</strong>. The result: the fastest path up was often one easy opponent, not the strongest performance.</p>
         <div class="actions">
           <a class="btn primary" href="#evidence">See the evidence</a>
-          <a class="btn" href="#decisions">Make the decisions</a>
+          <a class="btn" href="#decisions">Review the decisions</a>
         </div>
       </div>
       <aside class="verdict">
@@ -236,11 +236,11 @@
 
     <section id="solution" class="section shell">
       <div class="section-head">
-        <div><div class="section-kicker">Proposed structure</div><h2>One job for each mode</h2></div>
+        <div><div class="section-kicker">Confirmed structure</div><h2>One job for each mode</h2></div>
         <p class="section-intro">The game does not need a total redesign. It needs a clear boundary between competitive standing, free play, and friend battles.</p>
       </div>
       <div class="mode-map">
-        <article class="mode featured"><div class="mode-label">The fair test</div><h3>Seasonal Challenge</h3><p>Everyone faces comparable conditions and climbs one visible ladder.</p><ul><li>7 opponents</li><li>3 minutes</li><li>Win + at least 3 eliminations</li><li>Rookie → Nightmare</li><li>Armory loadout still matters</li></ul><div class="mode-result">Counts for seasonal rank</div></article>
+        <article class="mode featured"><div class="mode-label">The fair test</div><h3>Seasonal Challenge</h3><p>Everyone faces comparable conditions and climbs one visible ladder.</p><ul><li>7 opponents</li><li>3 minutes</li><li>6 qualifying wins per tier</li><li>3 eliminations per Rookie or Regular win</li><li>2 eliminations per Veteran-or-higher win</li><li>Armory loadout still matters</li></ul><div class="mode-result">Counts for seasonal rank</div></article>
         <article class="mode"><div class="mode-label">The playground</div><h3>Custom Battle</h3><p>Keep the familiar choices, presets, and experiments players already enjoy.</p><ul><li>1 to 11 opponents</li><li>Any opponent skill</li><li>Any time and arena</li><li>Optional Hunted Mode</li><li>Coins, level, mastery stay</li></ul><div class="mode-result">Never changes seasonal rank</div></article>
         <article class="mode"><div class="mode-label">The social match</div><h3>Play with Friends</h3><p>Use the same weapons, pets, maps, and look in an unranked two-player room.</p><ul><li>Host-authoritative round</li><li>Shared PvE content</li><li>No solo rewards</li><li>No seasonal rank</li><li>Separate PvP score</li></ul><div class="mode-result">Fun together, not ladder proof</div></article>
       </div>
@@ -249,16 +249,16 @@
     <section class="section shell">
       <div class="section-head">
         <div><div class="section-kicker">Current feature-branch logic</div><h2>How a tier advances</h2></div>
-        <p class="section-intro">There is no hidden difficulty adjustment. One qualifying win moves the player one step. A miss repeats the same target.</p>
+        <p class="section-intro">There is no hidden difficulty adjustment. Six qualifying wins move the player one step. Losses do not erase earlier qualifying wins.</p>
       </div>
       <div class="flow" aria-label="Challenge progression steps">
         <div class="step"><div class="n">STEP 01</div><strong>Start at Rookie</strong><span>A new season begins with no seasonal clear.</span></div><div class="arrow">→</div>
-        <div class="step"><div class="n">STEP 02</div><strong>See briefing</strong><span>Six seconds of ladder position, target, and fixed rules.</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 02</div><strong>See briefing</strong><span>Six seconds showing ladder position, fixed rules, and progress such as 4 / 6.</span></div><div class="arrow">→</div>
         <div class="step"><div class="n">STEP 03</div><strong>Play the match</strong><span>Seven opponents. Three minutes. Your Armory setup.</span></div><div class="arrow">→</div>
-        <div class="step"><div class="n">STEP 04</div><strong>Check the clear</strong><span>Did you win and score at least three eliminations?</span></div><div class="arrow">→</div>
-        <div class="step"><div class="n">STEP 05</div><strong>Record or retry</strong><span>Advance one tier, or repeat the same target.</span></div>
+        <div class="step"><div class="n">STEP 04</div><strong>Check the win</strong><span>Did you win with 3 eliminations at Rookie/Regular, or 2 at Veteran and up?</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 05</div><strong>Add or retry</strong><span>Add one qualifying win. At 6 / 6, advance one tier. Otherwise keep the same target.</span></div>
       </div>
-      <div class="branch"><div class="path yes"><b>YES: tier cleared.</b><br>Record the best result, then move Rookie → Regular → Veteran → Elite → Nightmare.</div><div class="path no"><b>NO: no tier clear.</b><br>Surviving with fewer than 3 eliminations is not enough. The player retries the same tier.</div></div>
+      <div class="branch"><div class="path yes"><b>QUALIFYING WIN.</b><br>Progress becomes 1 / 6, 2 / 6, and so on. The sixth qualifying win moves Rookie → Regular → Veteran → Elite → Nightmare.</div><div class="path no"><b>NO QUALIFYING WIN.</b><br>The player stays at the same tier and keeps earlier progress. XP, coins, stats, and mastery still count normally.</div></div>
     </section>
 
     <section class="section shell">
@@ -267,16 +267,15 @@
         <article class="status-panel"><h3><span class="dot"></span>Built for testing</h3><div class="checklist">
           <div class="check"><i>✓</i><span>Seasonal Challenge and Custom are separate menu choices.</span></div>
           <div class="check"><i>✓</i><span>Challenge locks 7 opponents, 3 minutes, and the next tier.</span></div>
-          <div class="check"><i>✓</i><span>One win plus 3 eliminations clears a tier.</span></div>
+          <div class="check"><i>✓</i><span>Six qualifying wins clear a tier; progress appears as 4 / 6 in the briefing and leaderboard.</span></div>
           <div class="check"><i>✓</i><span>Custom keeps presets and Hunted Mode but cannot affect rank.</span></div>
-          <div class="check"><i>✓</i><span>Four-week seasons preserve coins, gear, level, mastery, and history.</span></div>
+          <div class="check"><i>✓</i><span>Calendar-month seasons preserve coins, gear, level, mastery, and history.</span></div>
           <div class="check"><i>✓</i><span>Preseason is preserved as legacy history.</span></div>
+          <div class="check"><i>✓</i><span>Season messages appear on days 1, 7, 15, 27, and the final two days.</span></div>
         </div></article>
-        <article class="status-panel pending"><h3><span class="dot"></span>Open for discussion</h3><div class="checklist">
-          <div class="check"><i>?</i><span>Add an unranked Rally Round after two failed attempts?</span></div>
-          <div class="check"><i>?</i><span>Start Season 2 one tier below last season's best?</span></div>
-          <div class="check"><i>?</i><span>Add three simple achievements after Season 1?</span></div>
-          <div class="check"><i>?</i><span>Use the proposed Sep 25 launch after a small playtest?</span></div>
+        <article class="status-panel pending"><h3><span class="dot"></span>Delayed until we have evidence</h3><div class="checklist">
+          <div class="check"><i>…</i><span>Wait for Season 1 data before deciding whether a Rally Round is useful.</span></div>
+          <div class="check"><i>…</i><span>Add achievements only after Season 1.</span></div>
           <div class="check"><i>?</i><span>How should the first standardized data change Rookie difficulty?</span></div>
         </div></article>
       </div>
@@ -285,29 +284,27 @@
     <section class="section shell">
       <div class="grid-2">
         <article class="card">
-          <div class="section-kicker">Optional relief idea</div><h3>Rally Round</h3><p class="sub">After two failed ranked attempts, offer one clearly labeled easier match. Personal rewards count; rank does not. Then return to the same target, with no demotion.</p>
+          <div class="section-kicker">Delayed experiment</div><h3>Rally Round</h3><p class="sub">Do not add it for Season 1. First measure whether players actually need relief after repeated misses. If the data supports it later, the easier match would stay clearly unranked.</p>
           <div class="signal-grid" style="grid-template-columns:1fr 1fr"><div class="signal"><strong>2 misses</strong><span>triggers an offer, not a forced change</span></div><div class="signal"><strong>0 rank</strong><span>the easier match cannot promote</span></div></div>
           <div class="takeaway"><div>→</div><div><strong>Why:</strong> give confidence without secretly changing the competitive test.</div></div>
         </article>
         <article class="card">
-          <div class="section-kicker">Keep achievements small</div><h3>Three goals, no new currency</h3><div class="mini-list"><div><span>Hunted Survivor</span><b>Custom</b></div><div><span>Arsenal Complete</span><b>Armory</b></div><div><span>Nightmare Clear</span><b>Challenge</b></div></div><p class="footnote">Use the existing medal or profile presentation. Achievements should never affect rank or combat power.</p>
+          <div class="section-kicker">After Season 1</div><h3>Three goals, no new currency</h3><div class="mini-list"><div><span>Hunted Survivor</span><b>Custom</b></div><div><span>Arsenal Complete</span><b>Armory</b></div><div><span>Nightmare Clear</span><b>Challenge</b></div></div><p class="footnote">These remain good candidates, but wait for Season 1. Achievements should never affect rank or combat power.</p>
         </article>
       </div>
     </section>
 
     <section id="decisions" class="section shell">
-      <div class="section-head"><div><div class="section-kicker">Review together</div><h2>Decide with Ethan</h2></div><p class="section-intro">Tap one answer for each question. Your choices stay only in this browser so you can work through the system together.</p></div>
+      <div class="section-head"><div><div class="section-kicker">Decision record</div><h2>What Reynold and Ethan settled</h2></div><p class="section-intro">These choices now define the feature-branch test. The live main game remains unchanged until the test is accepted.</p></div>
       <div class="decision-shell">
-        <div class="decision-toolbar"><div class="progress-text"><b id="doneCount">0</b> of 6 decisions marked</div><button class="reset" id="resetChoices" type="button">Reset choices</button></div>
-        <div class="decision-list" id="decisionList">
-          <article class="decision" data-id="custom"><div class="decision-top"><div class="decision-num">1</div><div><h3>Should adjustable Custom games affect the leaderboard?</h3><p>Players can still earn personal progress. This only decides whether Custom changes competitive standing.</p></div><div class="recommend">Recommend: No</div></div><div class="choices"><button class="choice" data-value="No">No</button><button class="choice" data-value="Yes">Yes</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
-          <article class="decision" data-id="clear"><div class="decision-top"><div class="decision-num">2</div><div><h3>Is one win plus 3 eliminations enough to clear a tier?</h3><p>Three wins per tier would require at least 15 wins to finish the ladder.</p></div><div class="recommend">Recommend: Yes</div></div><div class="choices"><button class="choice" data-value="Yes">Yes</button><button class="choice" data-value="Require more">Require more</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
-          <article class="decision" data-id="rally"><div class="decision-top"><div class="decision-num">3</div><div><h3>Should we add an unranked Rally Round after two misses?</h3><p>It may reduce frustration, but Season 1 data might show that it is unnecessary.</p></div><div class="recommend">Recommend: Wait for data</div></div><div class="choices"><button class="choice" data-value="Wait for data">Wait for data</button><button class="choice" data-value="Add at launch">Add at launch</button><button class="choice" data-value="No Rally">No Rally</button></div></article>
-          <article class="decision" data-id="season2"><div class="decision-top"><div class="decision-num">4</div><div><h3>Where should experienced players begin Season 2?</h3><p>Legacy results are not trustworthy enough for Season 1 seeding. Season 1 results will be standardized.</p></div><div class="recommend">Recommend: One tier below</div></div><div class="choices"><button class="choice" data-value="One tier below last best">One tier below</button><button class="choice" data-value="Everyone at Rookie">Everyone Rookie</button><button class="choice" data-value="Decide later">Decide later</button></div></article>
-          <article class="decision" data-id="achievements"><div class="decision-top"><div class="decision-num">5</div><div><h3>Should we add three simple achievements?</h3><p>Hunted Survivor, Arsenal Complete, and Nightmare Clear. No new currency or power.</p></div><div class="recommend">Recommend: Later</div></div><div class="choices"><button class="choice" data-value="Add after Season 1">After Season 1</button><button class="choice" data-value="Add at launch">At launch</button><button class="choice" data-value="Skip">Skip</button></div></article>
-          <article class="decision" data-id="launch"><div class="decision-top"><div class="decision-num">6</div><div><h3>Should Season 1 start September 25?</h3><p>Only after a small playtest confirms the rules are clear and existing progress is safe.</p></div><div class="recommend">Recommend: Yes, after test</div></div><div class="choices"><button class="choice" data-value="Yes, after playtest">Yes, after playtest</button><button class="choice" data-value="Delay">Delay</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
+        <div class="decision-list">
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">1</div><div><h3>Custom Battle never affects seasonal rank.</h3><p>It still awards XP, coins, stats, and mastery, and keeps the presets players already know.</p></div><div class="recommend">Settled</div></div></article>
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">2</div><div><h3>Six qualifying wins clear each tier.</h3><p>Rookie and Regular wins need 3 eliminations each. Veteran, Elite, and Nightmare wins need 2. Losses do not erase progress.</p></div><div class="recommend">Settled</div></div></article>
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">3</div><div><h3>Wait for data before adding Rally Round.</h3><p>Season 1 should show whether repeated losses create a real fatigue problem.</p></div><div class="recommend">Delayed</div></div></article>
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">4</div><div><h3>Everyone starts each season at Rookie.</h3><p>Every player climbs the same monthly ladder from the same starting point.</p></div><div class="recommend">Settled</div></div></article>
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">5</div><div><h3>Achievements wait until after Season 1.</h3><p>The first release stays focused on fair ranking and understandable progress.</p></div><div class="recommend">Delayed</div></div></article>
+          <article class="decision resolved"><div class="decision-top"><div class="decision-num">6</div><div><h3>Season 1 begins October 1, then resets monthly.</h3><p>Season messages appear on days 1, 7, 15, 27, and the final two days so players understand the cycle.</p></div><div class="recommend">Settled</div></div></article>
         </div>
-        <div class="summary" id="summary"><h3>Your review notes</h3><ul id="summaryList"></ul></div>
       </div>
     </section>
 
@@ -317,40 +314,11 @@
         <article class="card source"><div class="section-kicker">Evidence notes</div><h3>What the data can and cannot say</h3>
           <details><summary>Where did the numbers come from?</summary><p>The game's public read-only leaderboard, recent-results, Preseason-board, and season-status functions. The snapshot was recorded on September 12, 2026 at 2:11 PM Pacific.</p></details>
           <details><summary>Can we prove someone hacked the game?</summary><p>No. The aggregate data shows unusual, one-opponent-like play. The public feed does not include opponent count or a replay, so it cannot prove intent or developer-tools tampering.</p></details>
-          <details><summary>Do we know the correct Rookie difficulty?</summary><p>Not yet. There are no Season 1 results under the fixed 7-opponent format. Measure clears within 1, 3, and 5 attempts before changing the ladder.</p></details>
+          <details><summary>Do we know the correct Rookie difficulty?</summary><p>Not yet. There are no Season 1 results under the fixed 7-opponent format. Measure qualifying wins, attempts, and where players stop before changing the ladder.</p></details>
         </article>
       </div>
     </section>
   </main>
   <footer class="footer"><div class="shell"><span>Block Royale Fair Play Review</span><span><span class="tag gold">Feature branch only</span> <span class="tag">Main game unchanged</span></span></div></footer>
-  <script>
-    (()=>{
-      const key='block-royale-fair-play-review-v1';
-      const labels={custom:'Custom affects rank',clear:'Tier clear rule',rally:'Rally Round',season2:'Season 2 start',achievements:'Achievements',launch:'Season 1 launch'};
-      let state={};
-      try{state=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){state={}}
-      const decisions=[...document.querySelectorAll('.decision')];
-      const render=()=>{
-        let done=0; const items=[];
-        decisions.forEach(card=>{
-          const id=card.dataset.id,value=state[id];
-          card.classList.toggle('resolved',!!value);
-          card.querySelectorAll('.choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.value===value));
-          if(value){done++;items.push('<li><strong>'+labels[id]+':</strong> '+value+'</li>')}
-        });
-        document.getElementById('doneCount').textContent=done;
-        const summary=document.getElementById('summary'); summary.classList.toggle('show',done>0);
-        document.getElementById('summaryList').innerHTML=items.join('');
-      };
-      document.getElementById('decisionList').addEventListener('click',e=>{
-        const btn=e.target.closest('.choice'); if(!btn)return;
-        const card=btn.closest('.decision'); state[card.dataset.id]=btn.dataset.value;
-        try{localStorage.setItem(key,JSON.stringify(state))}catch(err){}
-        render();
-      });
-      document.getElementById('resetChoices').addEventListener('click',()=>{state={};try{localStorage.removeItem(key)}catch(e){}render()});
-      render();
-    })();
-  </script>
 </body>
 </html>

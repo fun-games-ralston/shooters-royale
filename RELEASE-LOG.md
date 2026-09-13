@@ -7,6 +7,15 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.6 beta — Six-win calendar seasons
+
+* A tier now takes **6 cumulative qualifying wins** to clear. Rookie and Regular wins need at least 3 eliminations; Veteran, Elite, and Nightmare wins need at least 2. Losses do not erase progress.
+* The six-second Challenge briefing now shows the current opponent tier, qualifying-win progress such as **4 / 6**, and the elimination target. The seasonal leaderboard has a separate **Your Run** strip so unfinished progress is visible without pretending it is a completed rank.
+* Season 1 now starts at midnight Pacific on **1 October 2026**. Seasons reset on the first day of each calendar month, and every player starts each season at Rookie. Coins, Fighter Level, unlocks, mastery, lifetime statistics, accounts, and match history still never reset.
+* The title screen shows lifecycle reminders on season days 1, 7, 15, and 27, plus the final two days. Messages include the player's live tier progress and become a final-push warning near reset.
+* Added a server-authoritative Challenge progress endpoint and serialized match submission. This keeps cumulative progress consistent across devices and prevents two tabs from turning the same fifth win into duplicate clears.
+* The additive migration and browser build passed the full JavaScript suite, local database behavior and permission tests, a real browser check of the six-second briefing, and a rollback-only verification against the hosted database. Candidate only; `main` is unchanged.
+
 ## 2.5 beta — Season 1 candidate
 
 * The main menu now separates **Seasonal Challenge** from **Custom Battle**. Challenge uses 7 opponents and 3 minutes, automatically advances through the five opponent tiers, and opens with a six-second ladder briefing instead of a setup form. It then reveals the live arena directly, removing the redundant Ready screen; one click on the arena captures the mouse. Custom keeps the familiar 1–11 opponent, opponent presets, and 1–6 minute controls. Training stays inside Match Setup.

@@ -59,7 +59,7 @@ A 3D browser arena shooter with blocky Minecraft-style fighters. One life, 200 H
 
 Mouse and keyboard only — pointer lock has no touch equivalent, so there is no mobile control scheme.
 
-**Modes.** *Seasonal Challenge* is the competitive mode: seven opponents, three minutes, and the next uncleared opponent tier. A win needs at least three eliminations to clear and reach the seasonal board. It opens with a six-second ladder briefing, not a setup form, then enters combat without a second Ready screen. *Custom Battle* preserves the familiar opponent presets, 1–11 opponent slider and 1–6 minute control; it earns personal progress but never changes the board. Its full-width red **Hunted Mode** warning is off by default; when on, every bot hunts the player and ignores other bots and pets as targets. *Training Range* is the last Custom Battle setting and pays nothing.
+**Modes.** *Seasonal Challenge* is the competitive mode: seven opponents, three minutes, and the next uncleared opponent tier. Six cumulative qualifying wins clear a tier; Rookie and Regular wins need at least three eliminations, while Veteran and harder wins need at least two. Losses do not erase progress. It opens with a six-second ladder briefing showing the current run (for example, 4/6), then enters combat without a second Ready screen. *Custom Battle* preserves the familiar opponent presets, 1–11 opponent slider and 1–6 minute control; it earns personal progress but never changes the board. Its full-width red **Hunted Mode** warning is off by default; when on, every bot hunts the player and ignores other bots and pets as targets. *Training Range* is the last Custom Battle setting and pays nothing.
 
 ---
 
@@ -598,6 +598,7 @@ The original RPCs stay in place for the live `main` client. The feature branch a
 | `sr_board(club, limit)` | Public ranking, by difficulty beaten. Never returns a PIN hash |
 | `sr_recent(club, limit)` | A live "just now" feed of finished trials |
 | `sr_season_status()` | Returns the current/next season and server timestamps |
+| `sr_challenge_progress_v1(handle, pin)` | Returns authoritative tier and cumulative qualifying-win progress for the active season |
 | `sr_submit_v2(…, mode, time_limit, save)` | Records Challenge or Custom while enforcing fixed Challenge rules and tier order |
 | `sr_board_v2(club, limit, season)` | Returns one best eligible clear per fighter for one season |
 | `sr_recent_v2(club, limit, season)` | Returns Challenge activity for one season; excludes Custom |
@@ -609,16 +610,16 @@ failed-attempt counter that the lockout depends on.
 
 ### Seasonal Challenge ranking
 
-> **Clear the standard Challenge with at least three eliminations. Your hardest tier leads; ties use eliminations, then damage.**
+> **Earn six qualifying wins to clear a tier. Rookie and Regular need 3 eliminations per win; Veteran and harder need 2.**
 
-Challenge automatically advances Rookie → Regular → Veteran → Elite → Nightmare. The database rejects skipped tiers, non-standard opponent/time settings, and Custom results on the seasonal board. One best clear per player is ranked by tier, eliminations, damage, then earliest achievement; repeated games do not accumulate standing.
+Challenge automatically advances Rookie → Regular → Veteran → Elite → Nightmare. Qualifying wins accumulate and losses do not reset them. The database rejects skipped tiers, non-standard opponent/time settings, and Custom results on the seasonal board. Only the sixth qualifying win completes a tier; one best completed-tier result per player is ranked by tier, eliminations, damage, then earliest achievement.
 
 It exists because paying more coins for harder tiers cannot solve competitive fairness: accumulated
 rewards can always be farmed. Standing instead comes from one standard clear. Players who want an
 easier tier, a mixed preset, or a different lobby size still have those familiar choices in Custom,
 without affecting anybody else's place.
 
-Delivered as an additive dated migration. Existing matches become read-only Preseason legacy history; no player row, save, coin balance, unlock, Fighter Level, mastery, lifetime statistic, account, or club membership is reset. Old RPCs remain unchanged until `main` is approved.
+Season 1 begins 1 October 2026 at midnight Pacific. Every later season is a Pacific calendar month and every player starts the monthly Challenge at Rookie. Only Challenge standing resets. Existing matches remain read-only Preseason legacy history; no player row, save, coin balance, unlock, Fighter Level, mastery, lifetime statistic, account, or club membership is reset. The title screen shows season messages on days 1, 7, 15, and 27, plus the final two days.
 
 **Anti-cheat.** The game is client-side JavaScript, so a kid with DevTools can
 edit their own numbers, and that is not fixable in a game of this shape. What the
