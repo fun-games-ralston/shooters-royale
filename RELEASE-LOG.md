@@ -10,11 +10,11 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 ## 2.5 candidate — Lockjaw and Dragonfire
 
 * Added **Lockjaw Launcher**: hold RMB on one visible fighter for 1.2 seconds to confirm a lock, then launch one of four missiles. The visible missile steers around cover, ignores wall impacts after launch, and deals exactly 60 damage to its living target anywhere on the map.
-* Added **Dragonfire**: its eight-second fuel tank supports two maximum four-second bursts. It deals 70 damage per second, can burn several fighters together, and walls stop it at 15 m.
-* Training Range now provides unlimited reserve while preserving real magazine depletion and reloads, so small magazines and Dragonfire's fuel tank can be tested honestly.
+* Added **Dragonfire**: its 30-second match supply supports five maximum six-second bursts. It deals 70 damage per second, can burn several fighters together, and walls stop it at 15 m. Releasing early saves the remaining fuel; ordinary matches have no refill.
+* Training Range now provides unlimited reserve while preserving real magazine or fuel depletion and reloads, so small magazines and Dragonfire's full 30-second supply can be tested honestly before it restocks.
 * Added explicit scanning, locked, and flame-duration HUD states, new models, synthesized sounds, trails, fire, smoke, impact effects, Armory comparison copy, details, and training-range access.
 * Kept Friends PvP safe: both weapons are PvE-only until their target locks and continuous damage can be made host-authoritative. Existing PvP loadouts fall back instead of treating them as ordinary shots.
-* Validated the candidate with 68 automated tests, including continuous lock, post-cover commitment, obstacle detour, multi-target flame geometry, fuel consumption, Training Range magazine behavior, PvP fallback, content synchronization, and the existing solo/PvP suite.
+* Validated the candidate with 69 automated tests, including continuous lock, post-cover commitment, obstacle detour, multi-target flame geometry, five-burst fuel consumption, Training Range magazine behavior, PvP fallback, content synchronization, and the existing solo/PvP suite.
 
 ## 2.4.2 — Score limits and optional breaks
 

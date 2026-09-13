@@ -81,7 +81,7 @@ your chosen melee weapon, so you are never completely disarmed when a magazine r
 | 9 | Leech Claws | Melee | 3,200 | 5 | 38, heals you 15 | 400 | — | — | 3.2 m | 1.16× | auto |
 | 10 | Cyclone Minigun | Heavy | 4,200 | 6 | 18 | 1200 | 150 / 150 | 5.5 s | 40 m → 55% at 70 m | 0.78× | auto |
 | 11 | Longshot Rail | Sniper | 5,200 | 7 | 110 / **275 head** | 55 | 4 / 20 | 2.7 s | no falloff, 250 m | 0.92× | semi |
-| 12 | Dragonfire | Flamethrower | 6,100 | 7 | 70/sec, 280/max burst | 15 | 8 s / 8 s fuel | 3.4 s | 15 m flame cone | 0.90× | 4 s held burst |
+| 12 | Dragonfire | Flamethrower | 6,100 | 7 | 70/sec, 420/max burst | 10 | 30 s total fuel | none | 15 m flame cone | 0.90× | 6 s held burst |
 | 13 | Bazooka | Launcher | 7,000 | 8 | 95 + 85 splash | 55 | 2 / 6 | 3.2 s | no falloff, 150 m | 0.84× | semi |
 | 14 | Tesla Arc | Energy | 8,600 | 9 | 46 + 2 chains | 300 | **heat bar** | — | no falloff, 42 m | 1.04× | auto |
 | 15 | Lockjaw Launcher | Smart launcher | 10,000 | 9 | 60 to any body part | 40 | **4 total** | none | whole-map confirmed lock | 0.82× | locked |
@@ -108,7 +108,7 @@ Every one of them is surfaced on the shop card as a green ▲ *what it is for* l
 | **Lifesteal** | `leech` | Heals the attacker per hit landed. |
 | **Spin-up / spin slow** | `spinup`, `spinSlow` | Barrels must reach speed before the first round, and you walk slower while spun up. Player only; bots fire immediately. |
 | **Confirmed lock** | `lockOn`, `homing` | Hold RMB on one visible target continuously. Once confirmed, the lock survives lost sight and its missile steers around cover without colliding with walls. |
-| **Flame stream** | `flameDuration`, `flameRadius` | Fuel drains continuously from an eight-second tank. Each trigger can sustain a multi-target cone for up to four seconds, and world geometry shortens the cone. |
+| **Flame stream** | `flameDuration`, `flameRadius`, `fuelTotal` | Fuel drains continuously from one 30-second match supply. Each trigger can sustain a multi-target cone for up to six seconds, and world geometry shortens the cone. There is no ordinary refill. |
 
 ### 4.2 Weapon roles
 
@@ -123,7 +123,7 @@ Every one of them is surfaced on the shop card as a green ▲ *what it is for* l
 - **Leech Claws** — 38 a rake, six times a second, healing 15 a hit. You are your own health pack, if you can close.
 - **Cyclone Minigun** — the highest sustained damage anywhere, out of one 150-round belt. Half a second of spin-up, no ADS, and you walk like a fridge.
 - **Longshot Rail** — 275 to the head at 250 m. Four shots, and un-scoped it could miss a wall.
-- **Dragonfire** — sweep a 15 m flame cone across several fighters for 70 damage per second. Its eight-second tank supports two four-second bursts; walls stop it.
+- **Dragonfire** — sweep a 15 m flame cone across several fighters for 70 damage per second. Its 30-second match supply supports five full six-second bursts; walls stop it and there is no spare tank.
 - **Bazooka** — two rockets a tube, 5.6 m splash, hits people behind cover, and rocket-jumping works (self-splash is 35%). Eight rockets a life.
 - **Tesla Arc** — never reloads, chains to two more fighters within 9 m at 55%. Overheats after 18 shots, and only reaches 42 m.
 - **Lockjaw Launcher** — keep one visible fighter inside the brackets for 1.2 seconds, then spend one of four guaranteed 60-damage missiles. The lock persists after they hide.
