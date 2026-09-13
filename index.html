@@ -1116,11 +1116,11 @@ const WEAPONS = [
         {w:.09,h:.09,d:.36,x:0,y:.15,z:-.36,c:0x14171a},{w:.05,h:.2,d:.1,x:0,y:-.15,z:-.18,c:0x1f2226},
         {w:.08,h:.16,d:.36,x:0,y:-.04,z:.34,c:0x2b4441}]},
 
-{fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:20,mag:8,reserve:8,reload:3.4,
- flameDuration:3,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
+{fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:15,mag:8,reserve:8,reload:3.4,
+ flameDuration:4,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
  role:'Burn for 70 damage each second and sweep a 15 m cone across every fighter in it.',
- limit:'Needs nearly a full cell to defeat 200 HP. Walls stop the fire, and a tap still spends the cell.',
- desc:'Eight fuel cells turn a doorway into a furnace. A full three-second burn reaches 210 damage; hold the trigger to keep the jet alive and sweep it across a crowd.',
+ limit:'The trigger cuts after four seconds. Walls stop the fire, and the eight-second tank must be refilled.',
+ desc:'An eight-second fuel tank turns a doorway into a furnace. Hold for up to four seconds at a time, then release and press again for the second burst.',
  parts:[{w:.15,h:.19,d:.68,x:0,y:.02,z:-.24,c:0x46362e},{w:.13,h:.13,d:.48,x:0,y:.04,z:-.78,c:0x6f3020},
         {w:.18,h:.18,d:.22,x:0,y:.02,z:-1.12,c:0xff6b2c,e:.75},{w:.17,h:.34,d:.34,x:0,y:-.2,z:.12,c:0x7a4b28},
         {w:.08,h:.2,d:.12,x:0,y:-.18,z:-.3,c:0x262328},{w:.05,h:.05,d:.38,x:.1,y:.12,z:-.72,c:0xffb347,e:.55},
@@ -2990,7 +2990,11 @@ function finishFlame(e){
 function stepFlame(e,aim,dt){
   const wp=W[e.wep];
   if(!wp||!wp.flameDuration||e.flameT<=0) return;
-  const active=Math.min(dt,e.flameT),origin=muzzlePos(e),worldRange=Math.min(wp.range,rayWorld(origin,aim.d,wp.range));
+  const fuel=WS.consumeFlameFuel(e.ammo,e.flameT,dt),active=fuel.active;
+  e.ammo=fuel.fuel; e.flameT=fuel.burstRemaining;
+  if(e.isPlayer) e.ammoBy[e.wep].a=e.ammo;
+  if(active<=0){ finishFlame(e); return; }
+  const origin=muzzlePos(e),worldRange=Math.min(wp.range,rayWorld(origin,aim.d,wp.range));
   e.flameFxT-=active;
   if(e.flameFxT<=0){ e.flameFxT=.035; fxFlameJet(origin,aim.d,worldRange); }
   const targets=WS.flameTargets(origin,aim.d,G.ents,{ignore:e,range:worldRange,endRadius:wp.flameRadius,visible:flameLineVisible});
@@ -3002,8 +3006,7 @@ function stepFlame(e,aim,dt){
     entry.point={x:target.pos.x,y:target.pos.y+1.15,z:target.pos.z};
     if(entry.carry>=3){ const amount=Math.floor(entry.carry); entry.carry-=amount; damage(target,amount,'BODY',e,entry.point,wp.id); }
   }
-  e.flameT-=active;
-  if(e.flameT<=0) finishFlame(e);
+  if(e.flameT<=.0001||e.ammo<=.0001){ if(e.ammo<=.0001)e.ammo=0; finishFlame(e); }
 }
 /* ---- is the attacker behind the target? ---- */
 function isBehind(att,t){
@@ -3044,7 +3047,7 @@ function fire(e,aim){
   } else {
     e.fireT=60/wp.rpm;
   }
-  if(wp.mag>0&&!(G.training&&e.isPlayer)) e.ammo--;
+  if(wp.mag>0&&!wp.flameDuration) e.ammo--;
   e.lastShotT=G.t;
   if(wp.heat){
     e.heat=(e.heat||0)+wp.heat.per;
@@ -3055,7 +3058,7 @@ function fire(e,aim){
     }
   }
   if(wp.bloom) e.bloom=Math.min(wp.bloom.max,(e.bloom||0)+wp.bloom.per);
-  if(wp.flameDuration){ e.flameT=wp.flameDuration; e.flameFxT=0; e.flameDamage=new Map(); }
+  if(wp.flameDuration){ e.flameT=Math.min(wp.flameDuration,e.ammo); e.flameFxT=0; e.flameDamage=new Map(); }
   const far = !e.isPlayer && Math.hypot(e.pos.x-G.pl.pos.x,e.pos.z-G.pl.pos.z)>26;
   AU.shot(wp.sfx,far);
   const mp=muzzlePos(e);
@@ -3140,9 +3143,13 @@ function chainTo(from,wp,owner,pt){
 function startReload(e){
   const wp=W[e.wep]; if(wp.mag<=0) return;
   if(e.reloadT>0||e.ammo>=wp.mag) return;
-  const have = e.isPlayer ? e.ammoBy[e.wep].r : e.res;
+  const pool=e.isPlayer?e.ammoBy[e.wep]:null;
+  // Training keeps the reserve bottomless, but magazines still empty and reload.
+  // This preserves each weapon's cadence and makes small magazines testable.
+  if(G.training&&e.isPlayer&&pool.r<=0) pool.r=WS.trainingReserve(pool.r,wp.mag);
+  const have = e.isPlayer ? pool.r : e.res;
   if(have<=0) return;
-  e.reloadT = wp.shellReload ? wp.reload : wp.reload;   // shotgun: reload is the "ready up" time per shell
+  e.reloadT = G.training&&wp.totalOnly ? 1.4 : wp.reload;
   if(e.isPlayer) AU.reload();
 }
 function finishReload(e){
@@ -4059,12 +4066,14 @@ function updateHUD(){
   $('#hptext').textContent=Math.ceil(p.hp)+' / '+BASE_HP+(p.abs>0?'  +'+Math.ceil(p.abs):'');
   $('#gname').textContent=wp.name.toUpperCase();
   const pool=p.ammoBy[p.wep];
-  $('#gammo').innerHTML = wp.mag>0 ? (p.ammo+'<small> / '+pool.r+'</small>')
+  const ammoNow=wp.flameDuration?p.ammo.toFixed(1):p.ammo;
+  const reserveNow=G.training?'∞':(wp.flameDuration?pool.r.toFixed(1):pool.r);
+  $('#gammo').innerHTML = wp.mag>0 ? (ammoNow+'<small> / '+reserveNow+'</small>')
     : wp.heat ? (Math.round(100-(p.heat||0))+'<small>% COILS</small>')
     : '<small>MELEE</small>';
   const planted = wp.bipod && (p.stillT||0)>=wp.bipod.still;
   $('#reloading').textContent = planted?'\u25AC PLANTED — SPREAD LOCKED'
-    : (p.flameT>0)?'BURNING — '+p.flameT.toFixed(1)+'s'
+    : (p.flameT>0)?'BURNING — '+p.flameT.toFixed(1)+'s BURST · '+p.ammo.toFixed(1)+'s FUEL'
     : (p.heatLock>0)?'OVERHEATED — '+p.heatLock.toFixed(1)+'s'
     : (p.chargeT>0)?'CHARGING…'
     : p.reloadT>0?(wp.shellReload?'LOADING SHELLS…':'RELOADING…')
@@ -4092,7 +4101,7 @@ function updateHUD(){
     LR.className=locked?'locked':p.lockScanTarget?'tracking':'';
   }else{ LB.style.display='none'; LB.className=''; LR.className=''; }
   $('#hint').textContent=wp.lockOn?'HOLD RMB ON A VISIBLE FIGHTER · WAIT FOR RED LOCK · LMB FIRE · 1-3 WEAPONS · V CAMERA · ESC PAUSE'
-    :wp.flameDuration?'HOLD LMB TO BURN FOR UP TO 3 SECONDS · RELEASE TO STOP · 15 M RANGE · 1-3 WEAPONS · ESC PAUSE'
+    :wp.flameDuration?'HOLD LMB TO BURN FOR UP TO 4 SECONDS · 8-SECOND FUEL TANK · 15 M RANGE · ESC PAUSE'
     :'WASD MOVE · MOUSE AIM · LMB FIRE · RMB SCOPE · R RELOAD · F EAT · Q SWAP FOOD · 1-3 WEAPONS · V CAMERA · SHIFT SPRINT · SPACE JUMP · TAB SCORES · ESC PAUSE';
   const ks=Object.keys(p.food).filter(k=>p.food[k]>0);
   const sig=p.slot+'|'+ks.map(k=>k+p.food[k]).join(',')+'|'+p.foodSel;
@@ -5249,6 +5258,7 @@ function ammoTxt(w){
   if(w.melee) return 'melee \u00B7 never runs out';
   if(w.heat) return w.rpm+' RPM \u00B7 heat bar, no magazine';
   if(w.totalOnly) return w.mag+' missiles total \u00B7 no spare ammo';
+  if(w.flameDuration) return w.mag+' s fuel tank \u00B7 '+w.reserve+' s spare fuel';
   return w.rpm+' RPM \u00B7 '+w.mag+'-round mag \u00B7 '+w.reserve+' spare';
 }
 function rangeTxt(w){
@@ -5272,7 +5282,7 @@ const WEAPON_CARD_COPY={
   lmg:['60 rounds; accurate while planted','Slow movement; 3.2 s reload'],
   claws:['Every hit heals 15 HP','Must fight inside 3.2 m'],
   minigun:['Highest DPS; 150-round belt','Spin-up, slow movement, 5.5 s reload'],
-  dragonfire:['70 damage/sec across a 15 m fire cone','Needs nearly a full cell to defeat 200 HP'],
+  dragonfire:['70 damage/sec across a 15 m fire cone','Four-second burst cap; walls stop the flame'],
   sniper:['275 head damage at 250 m','Four shots; must scope'],
   bazooka:['Splash damage and rocket jumps','Only eight rockets; slow reload'],
   lockjaw:['Confirmed lock guarantees 60 damage','Only four missiles; 1.2 s visible lock'],
@@ -5293,6 +5303,7 @@ function weaponCardAmmo(w){
   if(w.melee) return 'never runs out';
   if(w.heat) return 'heat bar · no magazine';
   if(w.totalOnly) return w.mag+' total · no spare';
+  if(w.flameDuration) return w.mag+' s tank · '+w.reserve+' s spare';
   return w.mag+' mag · '+w.reserve+' spare';
 }
 function weaponCardRange(w){
@@ -5448,18 +5459,18 @@ function pvInfoWeapon(w){
     w.burst ? Math.round(w.dmg*w.burst/(w.burst*60/w.rpm+w.burstGap)) :
     w.melee||w.proj ? Math.round(w.dmg*w.rpm/60) : Math.round(w.dmg*(w.pellets||1)*w.rpm/60);
   const damageRows=w.flameDuration
-    ?kv('Damage per second',w.dmg)+kv('Full cell damage',Math.round(w.dmg*w.flameDuration))+kv('Hit zones','same damage anywhere')
+    ?kv('Damage per second',w.dmg)+kv('Maximum burst damage',Math.round(w.dmg*w.flameDuration))+kv('Hit zones','same damage anywhere')
     :kv('Body damage',w.dmg>900?'lethal':w.dmg)+kv('Head damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*HEAD_MULT))+
       kv('Leg damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*LEG_MULT))+kv('Damage per second',dps);
   $('#pvInfo').innerHTML='<h4>'+w.name+'</h4><div>'+w.desc+'</div>'+
     kv('Power',pwBar(w.pw))+kv('Class',w.cls)+damageRows+
-    (w.mag>0?kv('Fire rate',w.flameDuration?'one cell lasts up to '+w.flameDuration+'s':w.rpm+' rpm')+kv('Magazine',w.mag)+kv('Spare ammo',w.reserve)+
+    (w.mag>0?kv('Fire rate',w.flameDuration?'up to '+w.flameDuration+'s per burst':w.rpm+' rpm')+kv(w.flameDuration?'Fuel tank':'Magazine',w.flameDuration?w.mag+' seconds':w.mag)+kv(w.flameDuration?'Spare fuel':'Spare ammo',w.flameDuration?w.reserve+' seconds':w.reserve)+
         (w.totalOnly?kv('Reload','none \u2014 four missiles total'):kv('Reload',(w.shellReload?w.shellReload+'s per shell':w.reload+'s'))):
       w.heat?kv('Fire rate',w.rpm+' rpm')+kv('Ammo','heat bar — '+Math.floor(100/w.heat.per)+' shots')+kv('Overheat lock',w.heat.lock+'s')
       :kv('Ammo','none — melee'))+
     kv('Reach',w.lockOn?'whole map':w.range+'m')+kv('Damage falloff',w.fall?(w.fall[0]+'m → '+w.fall[1]+'m'):'none')+
     (w.lockOn?kv('Lock time',w.lockOn.time+'s of visible aim'):'')+
-    (w.flameDuration?kv('Flame duration','up to '+w.flameDuration+'s per cell'):'')+
+    (w.flameDuration?kv('Maximum burst',w.flameDuration+' seconds'):'')+
     (w.scope?kv('Scope',w.scope+'×'):'')+
     (w.charge?kv('Charge time',w.charge+'s'):'')+
     (w.spinup?kv('Spin-up',w.spinup+'s'):'')+
