@@ -58,30 +58,6 @@ canvas{display:block}
   text-shadow:0 4px 0 #0a0710,0 0 26px rgba(242,177,52,.55)}
 .tagline{font-family:var(--mono);color:var(--dim);letter-spacing:.32em;font-size:12px;margin-top:14px;
   text-transform:uppercase;text-shadow:0 1px 3px #0d0a14,0 0 10px #0d0a14}
-.seasonbar{margin:14px auto 0;padding:8px 12px;max-width:420px;font-family:var(--mono);font-size:10px;
-  line-height:1.55;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(27,22,38,.9);
-  box-shadow:inset 0 0 0 2px var(--edge);text-align:center}
-.seasonbar.lifecycle{max-width:560px;padding:11px 14px;color:var(--bone);background:rgba(45,28,24,.96);
-  box-shadow:inset 0 0 0 2px var(--gold),0 0 24px rgba(242,177,52,.2)}
-.seasonbar.lifecycle b{display:block;color:var(--gold);font-family:var(--disp);font-size:16px;letter-spacing:.14em}
-.seasonbar.lifecycle span{display:block;margin-top:2px;letter-spacing:.07em}
-.briefcard{width:min(540px,92vw);padding:26px 30px 22px;text-align:center;background:rgba(21,16,32,.96)}
-.briefseason{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
-.brieftitle{font-family:var(--disp);font-size:clamp(30px,5vw,44px);letter-spacing:.1em;text-transform:uppercase;margin:8px 0 20px}
-.brieftier{font-family:var(--disp);font-size:20px;letter-spacing:.14em;color:var(--bone);text-transform:uppercase}
-.briefscore{font-family:var(--disp);font-size:clamp(52px,9vw,72px);line-height:1;color:var(--gold);letter-spacing:.08em;margin:7px 0 0}
-.briefscorelabel{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase}
-.briefrequirement{font-family:var(--mono);font-size:12px;line-height:1.6;letter-spacing:.08em;color:var(--leaf);margin:18px auto 0;text-transform:uppercase}
-.brieftarget{font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--dim);margin:7px auto 21px;max-width:430px}
-.briefcount{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
-.briefbar{height:4px;background:#100c18;margin:0 auto 17px;max-width:390px;overflow:hidden}
-.briefbar i{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left center}
-.orow .btn.briefback{flex:0 0 auto;min-width:140px;font-size:14px;padding:9px 24px}
-.seasonprogress{display:grid;grid-template-columns:1fr auto;gap:5px 18px;align-items:center;margin:0 0 16px;padding:12px 14px;
-  background:#120e1c;box-shadow:inset 0 0 0 2px var(--edge);font-family:var(--mono);text-transform:uppercase}
-.seasonprogress b{font-family:var(--disp);font-size:18px;letter-spacing:.11em;color:var(--gold)}
-.seasonprogress strong{font-family:var(--disp);font-size:25px;letter-spacing:.08em;color:var(--bone);white-space:nowrap}
-.seasonprogress span{grid-column:1/-1;color:var(--dim);font-size:10px;letter-spacing:.07em;line-height:1.5}
 
 /* ---------- buttons ---------- */
 .btn{
@@ -117,7 +93,6 @@ canvas{display:block}
 /* ---------- setup grid ---------- */
 .setgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;overflow:auto;width:100%;align-content:start}
 .card{padding:14px 16px}
-.card.setup-wide{grid-column:1/-1}
 .card .lab{font-family:var(--disp);letter-spacing:.14em;font-size:17px;text-transform:uppercase}
 .card .hint{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin:3px 0 12px;letter-spacing:.06em}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -127,19 +102,6 @@ canvas{display:block}
 .chip.on{background:var(--bone);color:#150f22;box-shadow:inset 0 0 0 2px #fff, 0 0 14px rgba(236,227,210,.25);font-weight:bold}
 .chip.locked{opacity:.45;cursor:not-allowed}
 .chip.locked::after{content:" 🔒"}
-.togglebtn{width:100%;border:0;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  background:#171222;box-shadow:inset 0 0 0 2px #2a2239;color:var(--dim);font-family:var(--mono);font-size:12px;
-  letter-spacing:.09em;text-transform:uppercase;cursor:pointer;text-align:left}
-.togglebtn:hover{background:#221a33;color:var(--bone)}
-.togglebtn b{font-family:var(--disp);font-size:18px;letter-spacing:.12em;color:var(--bone);font-weight:400}
-.togglebtn.on{background:var(--bone);color:#150f22;box-shadow:inset 0 0 0 2px #fff,0 0 14px rgba(236,227,210,.22)}
-.togglebtn.on b{color:#150f22}
-.togglebtn.danger{color:#ee9b8e;background:#251219;box-shadow:inset 0 0 0 2px #7e2e2e}
-.togglebtn.danger:hover{color:#fff;background:#35171c;box-shadow:inset 0 0 0 2px var(--ember),0 0 14px rgba(224,85,58,.2)}
-.togglebtn.danger b{color:var(--ember)}
-.togglebtn.danger.on{color:#fff;background:linear-gradient(#a2382d,#6c201e);box-shadow:inset 0 0 0 2px #f47b66,0 0 18px rgba(224,85,58,.38)}
-.togglebtn.danger.on b{color:#fff}
-.togglebtn[disabled]{opacity:.4;cursor:not-allowed;filter:grayscale(.35)}
 .sliderow{display:flex;align-items:center;gap:14px}
 .track{position:relative;flex:1;height:26px;display:flex;align-items:center;cursor:pointer}
 .track .rail{position:absolute;left:0;right:0;height:6px;background:#0f0b18;box-shadow:inset 1px 1px 0 rgba(0,0,0,.8)}
@@ -147,10 +109,6 @@ canvas{display:block}
 .track .knob{position:absolute;width:16px;height:24px;background:var(--gold);margin-left:-8px;
   box-shadow:inset 2px 2px 0 rgba(255,255,255,.55),inset -2px -2px 0 rgba(0,0,0,.45),0 0 0 2px #0a0710}
 .val{font-family:var(--mono);font-size:22px;color:var(--gold);min-width:58px;text-align:right}
-.rulefixed{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 12px;
-  background:#171222;box-shadow:inset 0 0 0 2px #2a2239;font-family:var(--mono);font-size:12px;
-  letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
-.rulefixed b{font-family:var(--disp);font-size:22px;letter-spacing:.1em;color:var(--gold);font-weight:400}
 
 /* ---------- shop ---------- */
 .shopnav{width:186px;padding:14px 10px;display:flex;flex-direction:column;gap:6px;border-right:2px solid #0a0710;background:#161122}
@@ -423,8 +381,6 @@ canvas{display:block}
 .lbempty{padding:26px 10px;color:var(--dim);font-family:var(--mono);font-size:12px;line-height:2}
 .lbhead.t,.lbrow.t{grid-template-columns:44px 1fr 86px 60px 60px 60px 70px}
 .lbrow.t .tier{font-size:10px;letter-spacing:.1em}
-.lbhead.s,.lbrow.s{grid-template-columns:44px 1fr 92px 68px 78px 70px}
-.lbrow.s .tier{font-size:10px;letter-spacing:.1em}
 .lbrule{margin-top:14px;padding-top:12px;border-top:1px solid #2c2439;font-family:var(--mono);
   font-size:11px;line-height:1.9;color:var(--text2);letter-spacing:.02em}
 .mb-legend{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8.5px;
@@ -556,12 +512,11 @@ canvas{display:block}
       <div class="titlecenter">
         <h1 class="gametitle">Block<span>Royale</span></h1>
         <div class="tagline">One life · Last block standing</div>
-        <div class="seasonbar hidden" id="seasonBanner"></div>
         <div class="menu-col">
-          <button class="btn primary" id="btnPlay">Seasonal challenge</button>
-          <button class="btn" id="btnSetup">Custom battle</button>
+          <button class="btn primary" id="btnPlay">Deploy</button>
           <button class="btn" id="btnFriends">Play with friends <span style="color:var(--gold)">Beta</span></button>
           <button class="btn" id="btnShop">Armory</button>
+          <button class="btn" id="btnSetup">Match setup</button>
           <button class="btn ghost" id="btnHelp">How to play</button>
         </div>
       </div>
@@ -569,44 +524,11 @@ canvas{display:block}
     </div>
   </div>
 
-  <!-- SEASONAL CHALLENGE BRIEFING -->
-  <div class="screen hidden" id="scr-challenge">
-    <div class="briefcard blk">
-      <div class="briefseason" id="briefSeason">Preseason</div>
-      <div class="brieftitle">Seasonal challenge</div>
-      <div class="brieftier" id="briefTier">Rookie run</div>
-      <div class="briefscore" id="briefScore">0 / 6</div>
-      <div class="briefscorelabel">Qualifying wins</div>
-      <div class="briefrequirement" id="briefRequirement">Win with 3 eliminations</div>
-      <div class="brieftarget" id="briefTarget">One good win at a time.</div>
-      <div class="briefcount" id="briefCount">Deploying in 6</div>
-      <div class="briefbar"><i id="briefBar"></i></div>
-      <div class="orow" style="justify-content:center">
-        <button class="btn ghost briefback" id="btnBriefBack">Back</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CUSTOM / TRAINING BRIEFING -->
-  <div class="screen hidden" id="scr-custom-brief">
-    <div class="briefcard blk">
-      <div class="briefseason" id="customBriefMode">Custom battle</div>
-      <div class="brieftitle" id="customBriefTitle">Locked &amp; loaded</div>
-      <div class="brieftier">Get ready</div>
-      <div class="brieftarget" id="customBriefTarget">Personal progress · No seasonal rank</div>
-      <div class="briefcount" id="customBriefCount">Deploying in 3</div>
-      <div class="briefbar"><i id="customBriefBar"></i></div>
-      <div class="orow" style="justify-content:center">
-        <button class="btn ghost briefback" id="btnCustomBriefBack">Back</button>
-      </div>
-    </div>
-  </div>
-
   <!-- SETUP -->
   <div class="screen hidden" id="scr-setup">
     <div class="page blk">
       <div class="pagehead">
-        <div><h2>Match setup</h2><div class="sub">Custom rules · Personal progress</div></div>
+        <div><h2>Match setup</h2><div class="sub">Tune the trial before you drop</div></div>
         <button class="btn sm ghost" data-back>Back</button>
       </div>
       <div class="pagebody"><div class="setgrid" id="setupGrid"></div></div>
@@ -680,16 +602,16 @@ canvas{display:block}
             <div><kbd>F</kbd> Eat &nbsp; <kbd>Q</kbd> Swap food</div>
             <div><kbd>V</kbd> First / third person &nbsp; <kbd>Tab</kbd> Scores</div>
             <div><kbd>T</kbd> Next weapon — <b style="color:var(--gold)">training range only</b></div>
-            <div style="margin-top:10px;color:var(--dim)">The <b style="color:var(--bone)">training range</b> is under <b style="color:var(--bone)">Custom Battle → Mode</b>. Nothing can hurt you there and you can test-fire every weapon in the game for free.</div>
+            <div style="margin-top:10px;color:var(--dim)">The <b style="color:var(--bone)">training range</b> is under <b style="color:var(--bone)">Match setup → Mode</b>. Nothing can hurt you there and you can test-fire every weapon in the game for free.</div>
             <div><kbd>Esc</kbd> Release cursor &amp; pause</div>
           </div>
         </div>
         <div>
-          <h4 style="font-family:var(--disp);letter-spacing:.16em;color:var(--gold);margin-bottom:10px">RULES OF THE BATTLE</h4>
+          <h4 style="font-family:var(--disp);letter-spacing:.16em;color:var(--gold);margin-bottom:10px">RULES OF THE TRIAL</h4>
           <div style="float:right;margin:-34px 0 0 0"><button class="btn sm ghost" id="btnReset">Reset progress</button></div>
           <div class="keys" style="color:var(--dim)">
             <div>Everyone starts with <b style="color:var(--bone)">200 HP</b> and one life. No respawns.</div>
-            <div>Last fighter standing wins the battle.</div>
+            <div>Last fighter standing wins the trial.</div>
             <div>Headshots deal <b style="color:var(--ember)">2.5×</b> damage. Legs deal 0.65×.</div>
             <div>Health never regenerates on its own — <b style="color:var(--bone)">eat</b> to heal.</div>
             <div>Enchanted golden apples grant gold absorption on top of 200 HP.</div>
@@ -697,7 +619,7 @@ canvas{display:block}
             <div>Your <b style="color:var(--gold)">first win each day earns up to 250 bonus coins</b>. Three <b style="color:var(--leaf)">daily challenges</b> reset every morning.</div>
             <div>Kills within five seconds of each other stack into <b style="color:var(--gold)">DOUBLE KILL → TRIPLE KILL</b> and pay a bonus.</div>
             <div>Every weapon tracks its own <b style="color:var(--ench)">mastery</b>. Ten kills earns a bronze charm on the gun, 150 earns diamond.</div>
-            <div><b style="color:var(--gold)">Challenge counts. Custom does not.</b> Clear each opponent tier with six qualifying wins. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2.</div>
+            <div>On the leaderboard, your place is the <b style="color:var(--gold)">hardest difficulty you have ever won on</b>. Ties go to whoever has the most wins at that level. Playing Rookie a hundred times will not move you up — beating Veteran once moves you a whole band.</div>
             <div>Bots fight each other too. Let them.</div>
             <div>Use cover and the upper decks. Open ground kills.</div>
             <div>Every weapon fires its own effect — <b style="color:var(--ench)">rail beams, forked lightning, rockets, void blasts</b>.</div>
@@ -715,7 +637,7 @@ canvas{display:block}
     <div class="statlist" id="pauseStats"></div>
     <div class="orow">
       <button class="btn primary" id="btnResume">Resume</button>
-      <button class="btn ghost" id="btnQuit">Abandon battle</button>
+      <button class="btn ghost" id="btnQuit">Abandon trial</button>
     </div>
   </div>
 </div>
@@ -769,15 +691,6 @@ const CLOUD = {
   club: 'ralston',     // everyone using the same word shares one leaderboard
 };
 
-const CHALLENGE_RULES = Object.freeze({bots:7, time:3, winsPerTier:6});
-const CHALLENGE_TIERS = Object.freeze(['rookie','regular','veteran','elite','nightmare']);
-const SEASON_FALLBACK = Object.freeze({
-  current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-10-01T07:00:00Z'},
-  next:{slug:'season-1',name:'Season 1',starts_at:'2026-10-01T07:00:00Z',ends_at:'2026-11-01T07:00:00Z'},
-});
-let SEASON_STATUS=null;
-const SEASON_TIME_ZONE='America/Los_Angeles';
-
 const NETERR = {
   OFFLINE       : 'Online play is not switched on in this copy of the game',
   NO_NETWORK    : 'Cannot reach the server — check the wifi',
@@ -787,14 +700,8 @@ const NETERR = {
   BAD_HANDLE    : '3 to 14 letters or numbers, and keep it clean',
   BAD_PIN_FORMAT: 'The PIN has to be exactly 4 digits',
   TAKEN         : 'Somebody already took that name',
-  TOO_FAST      : 'Slow down — too many matches in one hour',
-  TOO_SHORT     : 'That match was too short to count',
-  BAD_MODE      : 'That match mode is not supported',
-  BAD_SKILL     : 'That opponent skill is not supported',
-  BAD_RULES     : 'Those match rules are not supported',
-  NOT_STANDARD_CHALLENGE: 'Challenge must use 7 opponents and 3 minutes',
-  BAD_CHALLENGE_TIER: 'That is not your current Challenge target',
-  NO_ACTIVE_SEASON: 'There is no active Challenge season',
+  TOO_FAST      : 'Slow down — too many trials in one hour',
+  TOO_SHORT     : 'That trial was too short to count',
 };
 const netMsg = e => NETERR[e] || ('Something went wrong ('+e+')');
 
@@ -814,87 +721,6 @@ const NET = {
     }catch(e){ return {ok:false, error:'NO_NETWORK'}; }
   }
 };
-
-function zoneDateParts(ms){
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:SEASON_TIME_ZONE,year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(ms));
-  const out={}; parts.forEach(p=>{ if(p.type!=='literal') out[p.type]=Number(p.value); });
-  return {year:out.year,month:out.month,day:out.day};
-}
-function zoneOffsetMs(ms){
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:SEASON_TIME_ZONE,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric',hourCycle:'h23'}).formatToParts(new Date(ms));
-  const out={}; parts.forEach(p=>{ if(p.type!=='literal') out[p.type]=Number(p.value); });
-  return Date.UTC(out.year,out.month-1,out.day,out.hour,out.minute,out.second)-ms;
-}
-function pacificMonthStartMs(year,month){
-  let guess=Date.UTC(year,month-1,1,8);
-  for(let i=0;i<2;i++) guess=Date.UTC(year,month-1,1)-zoneOffsetMs(guess);
-  return guess;
-}
-function localSeasonStatus(nowMs){
-  const now=nowMs===undefined?Date.now():nowMs, launch=Date.parse(SEASON_FALLBACK.next.starts_at);
-  if(now<launch) return SEASON_FALLBACK;
-  const p=zoneDateParts(now), number=(p.year-2026)*12+(p.month-10)+1;
-  if(number<1) return SEASON_FALLBACK;
-  const start=pacificMonthStartMs(p.year,p.month), nextMonth=p.month===12?{year:p.year+1,month:1}:{year:p.year,month:p.month+1};
-  const end=pacificMonthStartMs(nextMonth.year,nextMonth.month);
-  const nextEndMonth=nextMonth.month===12?{year:nextMonth.year+1,month:1}:{year:nextMonth.year,month:nextMonth.month+1};
-  const current={slug:'season-'+number,name:'Season '+number,starts_at:new Date(start).toISOString(),ends_at:new Date(end).toISOString()};
-  const next={slug:'season-'+(number+1),name:'Season '+(number+1),starts_at:new Date(end).toISOString(),ends_at:new Date(pacificMonthStartMs(nextEndMonth.year,nextEndMonth.month)).toISOString()};
-  return {current:current,next:next,server_now:new Date(now).toISOString()};
-}
-function seasonCalendarInfo(season,nowMs){
-  if(!season) return null;
-  const now=zoneDateParts(nowMs===undefined?Date.now():nowMs), start=zoneDateParts(Date.parse(season.starts_at)), end=zoneDateParts(Date.parse(season.ends_at));
-  const day=Math.floor((Date.UTC(now.year,now.month-1,now.day)-Date.UTC(start.year,start.month-1,start.day))/86400000)+1;
-  const total=Math.round((Date.UTC(end.year,end.month-1,end.day)-Date.UTC(start.year,start.month-1,start.day))/86400000);
-  return {day:day,total:total,daysLeft:Math.max(0,total-day+1)};
-}
-function seasonLifecycleReminder(status,progress,nowMs){
-  const cur=status&&status.current;
-  if(!cur||cur.slug==='preseason') return null;
-  const info=seasonCalendarInfo(cur,nowMs===undefined&&status.server_now?Date.parse(status.server_now):nowMs);
-  if(!info||info.day<1||info.day>info.total) return null;
-  const p=progress||{bestTier:0,tierWins:0}, skill=CHALLENGE_TIERS[Math.min(p.bestTier||0,CHALLENGE_TIERS.length-1)]||'rookie';
-  const run=SKILLS&&SKILLS[skill]?SKILLS[skill].name.toUpperCase():skill.toUpperCase();
-  const score=run+' · '+Math.min(CHALLENGE_RULES.winsPerTier,Math.max(0,p.tierWins||0))+'/'+CHALLENGE_RULES.winsPerTier+' QUALIFYING WINS';
-  if(info.day===1) return {title:'NEW SEASON',body:'Everyone starts at Rookie · Begin your six-win climb'};
-  if(info.day===7) return {title:'WEEK ONE CHECKPOINT',body:score+' · Every qualifying win stays'};
-  if(info.day===15) return {title:'HALFWAY MARK',body:score+' · Keep climbing'};
-  if(info.day===info.total) return {title:'FINAL DAY',body:score+' · Last chance before the ladder resets'};
-  if(info.day===info.total-1) return {title:'2 DAYS LEFT',body:score+' · Make your final push'};
-  if(info.day===27) return {title:'FINAL WEEK',body:score+' · '+info.daysLeft+' days remain'};
-  return null;
-}
-async function loadSeasonStatus(){
-  const fallback=localSeasonStatus();
-  if(!NET.on()){ SEASON_STATUS=fallback; renderSeasonBanner(); return SEASON_STATUS; }
-  const r=await NET.call('sr_season_status',{});
-  SEASON_STATUS=(r&&r.ok)?r:fallback;
-  renderSeasonBanner();
-  return SEASON_STATUS;
-}
-function renderSeasonBanner(){
-  const el=$('#seasonBanner'); if(!el) return;
-  const st=SEASON_STATUS||localSeasonStatus(), cur=st.current, next=st.next;
-  const reminder=seasonLifecycleReminder(st,challengeProgress());
-  let txt='';
-  if(reminder){
-    el.innerHTML='<b>'+esc(reminder.title)+'</b><span>'+esc(reminder.body)+'</span>';
-    el.classList.add('lifecycle');
-    el.classList.remove('hidden');
-    return;
-  }
-  if(cur&&cur.slug==='preseason'&&next){
-    const days=seasonDaysUntil(next.starts_at);
-    txt=next.name+' starts in '+days+' day'+(days===1?'':'s')+' · your fighter progress stays';
-  } else if(cur){
-    const days=seasonDaysUntil(cur.ends_at);
-    txt=cur.name+' · '+days+' day'+(days===1?'':'s')+' left';
-  }
-  el.textContent=txt;
-  el.classList.remove('lifecycle');
-  el.classList.toggle('hidden',!txt);
-}
 
 /* ---- the account lives in its own storage key, separate from the game save,
        because the game save is the thing we upload ---- */
@@ -916,32 +742,18 @@ function cloudPush(){
   },2500);
 }
 
-/* Report a finished match. Fire and forget — a dead network must never block
+/* Report a finished trial. Fire and forget — a dead network must never block
    the results screen or lose the local save. */
-function cloudSubmit(res, arenaId, durationS, rules){
+function cloudSubmit(res, arenaId, durationS){
   if(!ACC||!NET.on()) return;
-  rules=rules||matchRules();
-  const v2={
+  NET.call('sr_submit',{
     p_handle:ACC.handle, p_pin:ACC.pin,
-    p_arena:arenaId, p_skill:rules.skill, p_bots:rules.bots,
+    p_arena:arenaId, p_skill:S.cfg.skill, p_bots:S.cfg.bots,
     p_kills:res.kills, p_headshots:res.hs, p_damage:res.dmg,
-    p_won:res.win, p_duration:Math.round(durationS), p_time_limit:rules.time,
-    p_mode:rules.mode, p_save:S,
-  };
-  NET.call('sr_submit_v2',v2).then(async r=>{
-    // During branch rollout the live game may still have the v1 RPCs. Never
-    // send a Custom result through v1 because that would put it on the legacy
-    // leaderboard. Challenge can safely remain Preseason history.
-    if(r&&r.error==='HTTP_404'){
-      if(rules.mode==='custom') return NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
-      r=await NET.call('sr_submit',{
-        p_handle:ACC.handle,p_pin:ACC.pin,p_arena:arenaId,p_skill:rules.skill,p_bots:rules.bots,
-        p_kills:res.kills,p_headshots:res.hs,p_damage:res.dmg,p_won:res.win,
-        p_duration:Math.round(durationS),p_save:S,
-      });
-    }
-    if(r&&r.ok){ if(rules.mode==='challenge') reconcileChallengeProgress(r); return; }
-    // Stay quiet about things the player can't act on. A match too short to
+    p_won:res.win, p_duration:Math.round(durationS), p_save:S,
+  }).then(r=>{
+    if(r&&r.ok) return;
+    // Stay quiet about things the player can't act on. A trial too short to
     // count is normal and their local progress is safe either way; only shout
     // when something is actually wrong with the connection or the account.
     if(r&&(r.error==='OFFLINE'||r.error==='TOO_SHORT'||r.error==='TOO_FAST')) return;
@@ -1141,10 +953,10 @@ const MEDALS = [
 const CHALLENGES = [
   {id:'kills6',  txt:'Get 6 kills in one day',           goal:6,   coins:160, track:'kills'},
   {id:'hs4',     txt:'Land 4 headshots',                 goal:4,   coins:180, track:'hs'},
-  {id:'win1',    txt:'Win a battle',                     goal:1,   coins:200, track:'wins'},
+  {id:'win1',    txt:'Win a trial',                      goal:1,   coins:200, track:'wins'},
   {id:'melee3',  txt:'Get 3 melee kills',                goal:3,   coins:210, track:'meleeKills'},
   {id:'dmg2500', txt:'Deal 2,500 damage',                goal:2500,coins:160, track:'dmg'},
-  {id:'match3',  txt:'Play 3 battles',                   goal:3,   coins:120, track:'matches'},
+  {id:'match3',  txt:'Play 3 trials',                    goal:3,   coins:120, track:'matches'},
   {id:'wep3',    txt:'Get a kill with 3 different weapons',goal:3, coins:190, track:'wepKinds'},
   {id:'explode2',txt:'Get 2 kills with splash or lightning',goal:2,coins:210, track:'bigKills'},
   {id:'survive', txt:'Finish top 3 twice',               goal:2,   coins:180, track:'top3'},
@@ -1427,8 +1239,7 @@ const DEFAULT_STATE = {
   own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
-  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', hunted:false },
-  challenge:{season:'',bestTier:0,tierWins:0},
+  cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'trial' },
   stats:{ matches:0, wins:0, kills:0, best:0, cleared:[], streak:0, bestStreak:0, medals:{} },
   xp: 0,
   mastery: {},
@@ -1477,13 +1288,6 @@ function adoptSave(p){
   // and a time limit of up to 15 minutes, outside what the slider can now show.
   delete S.cfg.fov;
   S.cfg.time = clamp(Math.round(S.cfg.time||3), 1, 6);
-  S.cfg.bots = clamp(Math.round(S.cfg.bots||5), 1, 11);
-  S.cfg.mode = normalizeMode(S.cfg.mode);
-  // The first feature preview called this Most Wanted. Keep that one preview's
-  // local choice when it loads, then use the clearer Hunted name from now on.
-  S.cfg.hunted = !!(p.cfg&&p.cfg.hunted!==undefined?p.cfg.hunted:p.cfg&&p.cfg.mostWanted);
-  delete S.cfg.mostWanted;
-  S.challenge=Object.assign({},DEFAULT_STATE.challenge,p.challenge||{});
   S.stats=Object.assign({}, DEFAULT_STATE.stats,p.stats||{});
   S.food = p.food||{};
   S.xp = p.xp||0; S.mastery = p.mastery||{}; S.daily = p.daily||null; S.log = p.log||[];
@@ -1505,72 +1309,6 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[(Math.random()*a.length)|0];
-function normalizeMode(mode){ return mode==='training'||mode==='custom'||mode==='challenge' ? mode : 'challenge'; }
-function challengeProgress(){
-  const status=SEASON_STATUS||localSeasonStatus(), slug=(status.current&&status.current.slug)||'';
-  if(!S.challenge||S.challenge.season!==slug){ S.challenge={season:slug,bestTier:0,tierWins:0}; }
-  S.challenge.bestTier=clamp(Math.round(S.challenge.bestTier||0),0,CHALLENGE_TIERS.length);
-  S.challenge.tierWins=clamp(Math.round(S.challenge.tierWins||0),0,CHALLENGE_RULES.winsPerTier);
-  return S.challenge;
-}
-function challengeTargetSkill(){
-  const progress=challengeProgress();
-  return CHALLENGE_TIERS[Math.min(progress.bestTier,CHALLENGE_TIERS.length-1)];
-}
-function challengeEliminationTarget(skill){
-  const tier=CHALLENGE_TIERS.indexOf(skill);
-  return tier>=0&&tier<2?3:2;
-}
-function challengeQualifyingWin(res,rules){
-  return !!(rules&&rules.mode==='challenge'&&res&&res.win&&res.kills>=challengeEliminationTarget(rules.skill));
-}
-function challengeResultOutcome(res,rules,commit){
-  const progress=challengeProgress(), tier=CHALLENGE_TIERS.indexOf(rules&&rules.skill)+1;
-  const requiredKills=challengeEliminationTarget(rules&&rules.skill), before=progress.tierWins;
-  const qualifying=challengeQualifyingWin(res,rules);
-  const after=qualifying?Math.min(CHALLENGE_RULES.winsPerTier,before+1):before;
-  const cleared=qualifying&&tier>progress.bestTier&&after>=CHALLENGE_RULES.winsPerTier;
-  if(commit){
-    if(cleared){
-      progress.bestTier=tier;
-      progress.tierWins=tier>=CHALLENGE_TIERS.length?CHALLENGE_RULES.winsPerTier:0;
-    } else progress.tierWins=after;
-  }
-  return {qualifying:qualifying,cleared:cleared,before:before,after:after,requiredKills:requiredKills,
-    winsRequired:CHALLENGE_RULES.winsPerTier,skill:rules&&rules.skill};
-}
-function recordChallengeResult(res,rules){
-  return challengeResultOutcome(res,rules,true);
-}
-function reconcileChallengeProgress(data){
-  if(!data||!data.ok) return false;
-  const progress=challengeProgress();
-  if(data.season&&data.season!==progress.season) return false;
-  if(Number.isFinite(Number(data.best_tier))) progress.bestTier=clamp(Math.round(Number(data.best_tier)),0,CHALLENGE_TIERS.length);
-  if(Number.isFinite(Number(data.tier_wins))) progress.tierWins=clamp(Math.round(Number(data.tier_wins)),0,CHALLENGE_RULES.winsPerTier);
-  saveState();
-  return true;
-}
-function matchRules(cfg){
-  cfg=cfg||S.cfg;
-  const mode=normalizeMode(cfg.mode);
-  return {
-    mode:mode,
-    arena:cfg.arena,
-    skill:mode==='challenge'?challengeTargetSkill():cfg.skill,
-    bots:mode==='challenge'?CHALLENGE_RULES.bots:clamp(Math.round(cfg.bots||5),1,11),
-    time:mode==='challenge'?CHALLENGE_RULES.time:clamp(Math.round(cfg.time||3),1,6),
-    hunted:mode==='custom'&&!!cfg.hunted,
-  };
-}
-function challengeCleared(res,rules){
-  return challengeResultOutcome(res,rules,false).cleared;
-}
-function seasonDaysUntil(iso,nowMs){
-  const target=Date.parse(iso||'');
-  if(!Number.isFinite(target)) return null;
-  return Math.max(0,Math.ceil((target-(nowMs===undefined?Date.now():nowMs))/86400000));
-}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const hex=n=>'#'+n.toString(16).padStart(6,'0');
 function shade(n,f){let r=(n>>16&255)*f,g=(n>>8&255)*f,b=(n&255)*f;
@@ -2149,7 +1887,7 @@ const HITBOX=[
  {n:'LEGS',y0:0.00,y1:0.84,hx:.32,hz:.24,m:LEG_MULT},
 ];
 const G = {
-  on:false,paused:false,over:false,world:null,fx:null,ents:[],pl:null,rules:null,softCapture:false,
+  on:false,paused:false,over:false,world:null,fx:null,ents:[],pl:null,
   t:0,left:0,cam:'first',yaw:0,pitch:0,shake:0,camD:5.2,
   tracers:[],trIdx:0,projs:[],mapBoxes:[],dmgEls:[],fxp:[],plight:null,plightT:0,vm:null,vmGun:null,muzzle:null,
   ads:false,adsT:0,recoil:0,recoilV:0,spinup:0,scoreOpen:false,lastDamageT:-99,
@@ -2603,7 +2341,7 @@ function attachGun(e){
   e.M.hand.add(e.gunModel);
 }
 function spawnMatch(){
-  const rules=G.rules||matchRules(), def=AR[rules.arena]||AR.foundry;
+  const def=AR[S.cfg.arena]||AR.foundry;
   scene=new THREE.Scene();
   scene.background=new THREE.Color(def.sky);
   scene.fog=new THREE.FogExp2(def.fog,def.fogD);
@@ -2651,7 +2389,7 @@ function spawnMatch(){
   }
 
   // bots
-  const n=rules.bots, names=BOT_NAMES.slice();
+  const n=S.cfg.bots, names=BOT_NAMES.slice();
   for(let i=names.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;const t=names[i];names[i]=names[j];names[j]=t;}
   /* Bots used to be handed a weapon from a 3-wide band of the cost-ordered list.
      That list is ordered by price, and price buys specialisation rather than
@@ -2673,7 +2411,7 @@ function spawnMatch(){
   const bag = ROLE_BAG.slice();
   for(let i=bag.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=bag[i]; bag[i]=bag[j]; bag[j]=t; }
   for(let i=0;i<n;i++){
-    let sk=rules.skill; if(sk==='mixed') sk=pick(['rookie','regular','regular','veteran','elite']);
+    let sk=S.cfg.skill; if(sk==='mixed') sk=pick(['rookie','regular','regular','veteran','elite']);
     const K=SKILLS[sk];
     const role=bag[i%bag.length];
     const list=ROLE_GUNS[role];
@@ -2699,20 +2437,18 @@ function spawnMatch(){
   buildViewModel();
   G.yaw=Math.atan2(-p.pos.x,-p.pos.z); G.pitch=0; p.yaw=G.yaw;
   if(G.pet) warpPetToFormation(G.pet,p,petTactic(G.pet.def));
-  G.t=0; G.left=rules.time*60; G.on=true; G.over=false; G.paused=false;
-  G.cam=S.cfg.cam; G.camD=0; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
+  G.t=0; G.left=S.cfg.time*60; G.on=true; G.over=false; G.paused=false;
+  G.cam=S.cfg.cam; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
   G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.lastAttacker=null; G.lastAttackerT=-99;
   G.events=[]; G.lastKiller=null; G.lastPart=null; G.outro=null; scheduleEvent();
   G.wepKills={}; G.petKills=0; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
   G.streakCoins=0; G.lowHp=false; G.ate=0; G.swing=0;
-  if(G.training) G.left=99999;
+  if(G.training){ G.left=99999; }
   $('#killfeed').innerHTML=''; $('#dmgnums').innerHTML=''; lastHud='';
   $('#mapName').textContent=def.name.toUpperCase();
   const hz=arenaHazards(def);
   if(hz.length) setTimeout(()=>{ if(G.on) toast(def.name.toUpperCase()+' — '+hz[hz.length-1]); }, 900);
-  // Paint the real spawn before an automatic transition waits for pointer lock.
-  // Otherwise the first paused frame renders the camera at the world origin.
-  updateCamera(0); updateModels(0); updateHUD(); drawMinimap();
+  updateHUD(); drawMinimap();
 }
 const tagTex={};
 function makeTag(name){
@@ -3245,10 +2981,7 @@ function damage(t,amount,part,attacker,pt,source){
     setTimeout(()=>$('#hurt').style.opacity=0,140);
     G.shake=Math.max(G.shake,0.12+amount/900);
   }
-  const marked=t.ai?huntedTarget():null;
-  if(marked){
-    t.ai.target=marked; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=marked.pos.x; t.ai.lz=marked.pos.z;
-  } else if(petDamage&&t.ai&&petUp()){
+  if(petDamage&&t.ai&&petUp()){
     t.ai.target=G.pet; t.ai.react=0; t.ai.seen=G.t; t.ai.lx=G.pet.pos.x; t.ai.lz=G.pet.pos.z;
   } else if(attacker&&!attacker.isPlayer&&!t.isPlayer&&t.ai) { t.ai.target=attacker; t.ai.react=0; }
   if(t.hp<=0){ t.hp=0; kill(t,attacker,part,source); }
@@ -3433,9 +3166,6 @@ function swapSlot(i){
 /* =====================================================================
    bots
    ===================================================================== */
-function huntedTarget(){
-  return G.rules&&G.rules.hunted&&G.pl&&G.pl.alive ? G.pl : null;
-}
 function botDesired(wp){
   if(wp.melee) return 1.5;
   if(wp.id==='sniper'||wp.id==='reaper') return 30;
@@ -3447,33 +3177,27 @@ function updateBot(b,dt){
   if(!b.alive) return;
   const K=b.K||SKILLS.regular, wp=W[b.wep], mod=G.world.def.mod||{};
   if(b.ai.target&&!b.ai.target.alive) b.ai.target=null;
-  const marked=huntedTarget();
-  if(marked&&b.ai.target!==marked){
-    b.ai.target=marked; b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0;
-  }
   const think=K.think||0.35, focus=K.focus||1.25, memory=K.memory||1.2;
   b.ai.think-=dt;
   if(b.ai.think<=0){
     b.ai.think=think+Math.random()*think*0.6;
-    let best=marked,bd=marked?0:1e9;
-    if(!marked){
-      const candidates=G.ents.slice(); if(petUp()) candidates.push(G.pet);
-      for(const o of candidates){
-        if(!o.alive||o===b) continue;
-        const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
-        const vis=los(b,o);
-        // focus>1 pushes the player down the list, so low tiers mostly brawl with each
-        // other and a beginner is not swarmed by seven bots at once.
-        let petFocus=1;
-        if(o.isPet){
-          // A pet that just bit this bot becomes the obvious threat. The bear also
-          // wins attention from enemies already pressuring its owner; other pets
-          // remain valid targets without turning every lobby into a pet firing squad.
-          petFocus=o.target===b?0.42:(o.def.perk==='guardian'&&b.ai.target===G.pl?0.62:1.9);
-        }
-        const score=d*(vis?1:2.8)*(o.isPlayer?focus:1)*petFocus;
-        if(score<bd){bd=score;best=o;}
+    let best=null,bd=1e9;
+    const candidates=G.ents.slice(); if(petUp()) candidates.push(G.pet);
+    for(const o of candidates){
+      if(!o.alive||o===b) continue;
+      const d=Math.hypot(o.pos.x-b.pos.x,o.pos.z-b.pos.z);
+      const vis=los(b,o);
+      // focus>1 pushes the player down the list, so low tiers mostly brawl with each
+      // other and a beginner is not swarmed by seven bots at once.
+      let petFocus=1;
+      if(o.isPet){
+        // A pet that just bit this bot becomes the obvious threat. The bear also
+        // wins attention from enemies already pressuring its owner; other pets
+        // remain valid targets without turning every lobby into a pet firing squad.
+        petFocus=o.target===b?0.42:(o.def.perk==='guardian'&&b.ai.target===G.pl?0.62:1.9);
       }
+      const score=d*(vis?1:2.8)*(o.isPlayer?focus:1)*petFocus;
+      if(score<bd){bd=score;best=o;}
     }
     if(best!==b.ai.target){ b.ai.react=K.react+rnd(.25,.6); b.ai.burst=0; }
     b.ai.target=best;
@@ -3487,7 +3211,7 @@ function updateBot(b,dt){
     // Bots used to walk straight to a target's exact position through walls, at every
     // difficulty. Now they remember where it was and give up when memory runs out —
     // a Rookie loses you almost immediately, a Nightmare keeps coming for 4.5 s.
-    if(vis||marked){ b.ai.seen=G.t; b.ai.lx=t.pos.x; b.ai.lz=t.pos.z; }
+    if(vis){ b.ai.seen=G.t; b.ai.lx=t.pos.x; b.ai.lz=t.pos.z; }
     else if(G.t-(b.ai.seen||-99) > memory){ b.ai.target=null; t=null; }
   }
   if(t){
@@ -3948,8 +3672,8 @@ function endMatch(win,draw=false){
   if(G.training){ return; }
   G.over=true;                    // scoring closed; the world keeps running for the outro
   document.exitPointerLock&&document.exitPointerLock();
-  const kills=G.kills, hs=G.hs, rules=G.rules||matchRules();
-  const arena=AR[rules.arena];
+  const kills=G.kills, hs=G.hs;
+  const arena=AR[S.cfg.arena];
   G.draw=draw;
   const place=win?1:(G.ents.filter(e=>e.alive).length+(draw?0:1));
   // No multiplier for opponent skill or lobby size any more. Those are menu settings,
@@ -3961,7 +3685,7 @@ function endMatch(win,draw=false){
   // Lobby size still matters, but honestly rather than as a multiplier — beating
   // seven fighters pays more than beating one because you outlasted seven people,
   // and that is also what stops anyone farming quick wins in a one-bot lobby.
-  const outlasted = Math.max(0, (rules.bots+1) - place);
+  const outlasted = Math.max(0, (S.cfg.bots+1) - place);
   const contribution = PAY.floor + (1-PAY.floor)*Math.min(1, kills/PAY.fullAt);
   const survivalCoin = Math.round((outlasted*PAY.outlast + (win?PAY.winBonus:0)) * contribution);
   const dmgCoin = Math.floor(G.dmgDone/PAY.dmgDiv);
@@ -3974,8 +3698,6 @@ function endMatch(win,draw=false){
     hpLeft:Math.ceil(G.pl.hp), meleeKills:G.meleeKills||0, petKills:G.petKills||0, bigKills:G.bigKills||0,
     wepsUsed:Object.keys(G.wepKills||{}).length, bestStreak:G.bestStreak||0,
     lowHp:!!G.lowHp, ate:G.ate||0 };
-  const challengeOutcome=rules.mode==='challenge'?recordChallengeResult(res,rules):null;
-  const clearedChallenge=!!(challengeOutcome&&challengeOutcome.cleared);
 
   // The level catch-up is gone too. It was making a brand new player's very first
   // match the richest one they would play for a week, which is the exact moment the
@@ -3985,7 +3707,7 @@ function endMatch(win,draw=false){
   /* Harder tiers pay less on their own, because you kill less and die more. This
      puts some of it back — but only on kills and on fighters outlasted, the two
      things you cannot fake by loading Nightmare and walking into a wall. */
-  const reward = (SKILLS[rules.skill]&&SKILLS[rules.skill].reward) || 1;
+  const reward = (SKILLS[S.cfg.skill]&&SKILLS[S.cfg.skill].reward) || 1;
   const tierBonus = Math.round((kills*PAY.kill + survivalCoin) * (reward-1));
   const sub = PAY.turnUp + kills*PAY.kill + hs*PAY.head + dmgCoin + survivalCoin + tierBonus;
   let coins=Math.round(sub*streakMul) + (firstWin?PAY.firstArena:0) + (G.streakCoins||0);
@@ -4039,19 +3761,13 @@ function endMatch(win,draw=false){
   saveState();
   win?AU.win():AU.lose();
   if(rankedUp) setTimeout(()=>AU.levelup(),700);
-  const challengeMiss=win&&challengeOutcome&&!challengeOutcome.qualifying;
-  $('#resTitle').textContent=draw?'Draw':challengeMiss?'Survived':win?'Victory':'Eliminated';
-  $('#resTitle').className=win&&!challengeMiss?'win':'lose';
+  $('#resTitle').textContent=draw?'Draw':win?'Victory':'Eliminated';
+  $('#resTitle').className=win?'win':'lose';
   const nextR=rAfter.next;
   const rBarPct = nextR ? clamp((S.xp-RANKS[rAfter.tier].xp)/(nextR.xp-RANKS[rAfter.tier].xp),0,1)*100 : 100;
   $('#resStats').innerHTML=
-    row('Arena',arena.name)+row('Mode',rules.mode==='challenge'?'Challenge':rules.mode==='custom'?'Custom Battle':'Training Range')+
-    row('Placement',draw?'Time limit · '+place+' survivors':'#'+place+' of '+(rules.bots+1))+
-    row('Survived',fmtTime(rules.time*60-G.left))+
-    (rules.mode==='challenge'?row('Challenge',clearedChallenge?'TIER CLEAR · 6/6 · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase():
-      challengeOutcome.qualifying?'QUALIFYING WIN · '+challengeOutcome.after+'/'+challengeOutcome.winsRequired:
-      'NO QUALIFYING WIN · NEED '+challengeOutcome.requiredKills+' ELIMINATIONS'):
-      rules.mode==='custom'?row('Leaderboard','CUSTOM DOES NOT COUNT'):'')+
+    row('Arena',arena.name)+row('Placement',draw?'Time limit · '+place+' survivors':'#'+place+' of '+(S.cfg.bots+1))+
+    row('Survived',fmtTime(S.cfg.time*60-G.left))+
     (res.petKills?row('Companion kills',res.petKills):'')+
     (earned.length?'<div class="medals">'+earned.map(m=>'<span class="md">\u2726 '+m.name+
         ' <b>+'+m.coins+'</b></span>').join('')+'</div>':'')+
@@ -4066,7 +3782,7 @@ function endMatch(win,draw=false){
       row('Outlasted '+plural(outlasted,'fighter')+(win?' \u2014 last one standing':''),'+'+survivalCoin)+
       (contribution<1?row('\u21B3 '+PAY.fullAt+' kills unlocks all of that, and the full XP',
           '\u00D7'+contribution.toFixed(2)):'')+
-      (tierBonus?row(SKILLS[rules.skill].name.toUpperCase()+' opponents','+'+tierBonus):'')+
+      (tierBonus?row(SKILLS[S.cfg.skill].name.toUpperCase()+' opponents','+'+tierBonus):'')+
       (G.streakCoins?row('Multi-kill bonus','+'+G.streakCoins):'')+
       (medalCoins?row(earned.length+' medal'+(earned.length===1?'':'s'),'+'+medalCoins):'')+
       (chCoins?row(chDone.length+' daily challenge'+(chDone.length===1?'':'s'),'+'+chCoins):'')+
@@ -4075,15 +3791,15 @@ function endMatch(win,draw=false){
       (dailyBonus?row('First win bonus','+'+dailyBonus):'')+
     '</div>'+
     '<div class="big"><span>Coins earned</span><b>+'+coins+'</b></div>'+
-    '<div class="rankrow"><span style="color:'+rAfter.col+'">'+(rankedUp?'LEVEL UP \u2014 ':'')+rAfter.name+'</span>'+
+    '<div class="rankrow"><span style="color:'+rAfter.col+'">'+(rankedUp?'RANK UP \u2014 ':'')+rAfter.name+'</span>'+
       '<span>+'+xpGain+' XP</span></div>'+
     '<div class="xpbar"><i style="width:'+rBarPct+'%"></i></div>'+
-    '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum level')+'</span></div>'+
-    stepUpHint(challengeOutcome);
-  cloudSubmit(res, arena.id, rules.time*60-G.left, rules);
+    '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum rank')+'</span></div>'+
+    stepUpHint();
+  cloudSubmit(res, arena.id, S.cfg.time*60-G.left);
   miniBoardT=0;
   refreshCoins();
-  startOutro(win,challengeOutcome,rules);
+  startOutro(win);
 }
 /* ---------------------------------------------------------------
    The beat between the last shot and the scoreboard. Everything keeps
@@ -4091,20 +3807,15 @@ function endMatch(win,draw=false){
    death reads as something that happened rather than a screen that appeared.
    Skippable, because the fifth time round nobody wants to sit through it.
    --------------------------------------------------------------- */
-function startOutro(win,challengeOutcome,rules){
+function startOutro(win){
   const k=G.lastKiller, part=G.lastPart;
-  const challengeMiss=win&&challengeOutcome&&!challengeOutcome.qualifying;
-  const challengeProgressWin=win&&challengeOutcome&&challengeOutcome.qualifying&&!challengeOutcome.cleared;
   let sub;
   if(G.draw) sub='TIME LIMIT · NO LAST FIGHTER';
-  else if(challengeMiss) sub='NEED '+challengeOutcome.requiredKills+' ELIMINATIONS TO QUALIFY';
-  else if(challengeProgressWin) sub='QUALIFYING WIN '+challengeOutcome.after+'/'+challengeOutcome.winsRequired;
-  else if(challengeOutcome&&challengeOutcome.cleared) sub='TIER CLEAR · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase();
   else if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
   else if(k&&!k.isPlayer) sub=String(k.name||'?').toUpperCase()+' · '+W[k.wep].name.toUpperCase()+(part==='HEAD'?' · HEADSHOT':'');
   else if(k&&k.isPlayer) sub='YOUR OWN BLAST';
   else sub=String(part||'THE ARENA').toUpperCase();
-  $('#otTitle').textContent = G.draw?'DRAW':challengeMiss?'SURVIVED':win?'VICTORY':'ELIMINATED';
+  $('#otTitle').textContent = G.draw?'DRAW':win?'VICTORY':'ELIMINATED';
   $('#otSub').textContent = sub;
   $('#outro').className='on'+(win?' win':'');
   $('#hud').classList.add('dim');
@@ -4151,8 +3862,7 @@ function outroCamera(dt,o){
 /* advance today's three challenges and hand back whatever just completed */
 function challengeUpdate(res){
   const D=dailySet(), done=[];
-  const skill=(G.rules&&G.rules.skill)||S.cfg.skill;
-  const hard = HARD_TIERS.indexOf(skill)>=0;
+  const hard = HARD_TIERS.indexOf(S.cfg.skill)>=0;
   const add={ kills:res.kills, hs:res.hs, wins:res.win?1:0, meleeKills:res.meleeKills,
     dmg:res.dmg, matches:1, wepKinds:res.wepsUsed, bigKills:res.bigKills,
     top3:res.place<=3?1:0, nofoodWin:(res.win&&res.ate===0)?1:0,
@@ -4167,23 +3877,16 @@ function challengeUpdate(res){
   return done;
 }
 function row(k,v){ return '<div><span>'+k+'</span><b>'+v+'</b></div>'; }
-/* Challenge advances automatically. Custom can still offer the familiar
-   difficulty suggestion without changing the player's setup. */
-const TIERS=CHALLENGE_TIERS;
-function stepUpHint(challengeOutcome){
-  const i=TIERS.indexOf((G.rules&&G.rules.skill)||S.cfg.skill);
+/* Difficulty stays the player's choice. Three wins in a row just means the game
+   points at the next tier and then gets out of the way. */
+const TIERS=['rookie','regular','veteran','elite','nightmare'];
+function stepUpHint(){
+  const i=TIERS.indexOf(S.cfg.skill);
   if(i<0||i>=TIERS.length-1) return '';
-  if(G.rules&&G.rules.mode==='challenge'){
-    if(!challengeOutcome||!challengeOutcome.cleared) return '';
-    const next=challengeTargetSkill();
-    if(next===G.rules.skill) return '';
-    return '<div class="rankrow sub" style="color:var(--gold)"><span>\u25B8 CHALLENGE CLEAR \u2014 NEXT TARGET: '+
-      SKILLS[next].name.toUpperCase()+'</span></div>';
-  }
   if((S.stats.streak||0)<3) return '';
   return '<div class="rankrow sub" style="color:var(--gold)"><span>\u25B8 '+
     S.stats.streak+' wins in a row \u2014 ready for '+SKILLS[TIERS[i+1]].name+
-    ' opponents? Custom Battle \u2192 Opponent skill</span></div>';
+    ' opponents? Match setup \u2192 Opponent skill</span></div>';
 }
 function quitMatch(){
   G.on=false; G.over=true; G.paused=false; G.outro=null; $('#outro').className='';
@@ -4200,21 +3903,16 @@ function initInput(){
   const cv=$('#gl');
   cv.addEventListener('click',()=>{
     if(G.outro){ skipOutro(); return; }
-    if(G.on&&!G.over&&document.pointerLockElement!==cv) captureMouse(true); });
+    if(G.on&&!G.paused&&!G.over&&document.pointerLockElement!==cv) cv.requestPointerLock(); });
   document.addEventListener('pointerlockchange',()=>{
-    if(G.on&&!G.over&&document.pointerLockElement===cv){G.softCapture=false;G.paused=false;$('#ovPause').classList.add('hidden');}
+    if(G.on&&!G.over&&document.pointerLockElement===cv){G.paused=false;$('#ovPause').classList.add('hidden');}
     if(G.on&&!G.over&&document.pointerLockElement!==cv){ pauseMatch(true); }
   });
   // Some embedded views and locked-down browsers refuse pointer lock outright. Without this
   // the player gets a match they cannot aim in and no explanation for why.
   document.addEventListener('pointerlockerror',()=>{
-    if(G.on&&!G.over){
-      if(G.softCapture){
-        G.paused=true; $('#ovPause').classList.add('hidden');
-        toast('Click the arena to take control · Chrome or Edge works best',true);
-      } else pauseMatch(true);
-    }
-    G.softCapture=false;
+    if(G.on&&!G.over)pauseMatch(true);
+    toast('This browser blocked mouse capture — try opening the file in Chrome or Edge',true);
   });
   document.addEventListener('mousemove',e=>{
     if(document.pointerLockElement!==cv||!G.on||G.paused) return;
@@ -4284,8 +3982,6 @@ function pauseMatch(on){
   $('#ovPause').classList.toggle('hidden',!on);
   if(on){
     document.exitPointerLock&&document.exitPointerLock();
-    $('#ovPause h3').textContent='Paused';
-    $('#btnResume').textContent='Resume';
     $('#pauseStats').innerHTML=row('Arena',G.world.def.name)+row('Alive',G.ents.filter(e=>e.alive).length)+
       row('Your kills',G.kills)+row('Time left',fmtTime(G.left));
   }
@@ -4382,110 +4078,7 @@ function pvShow(kind,data){
 /* =====================================================================
    screens
    ===================================================================== */
-const CHALLENGE_BRIEF_MS=6000;
-let challengeBriefTimer=null, challengeBriefToken=0, challengeBriefDeadline=0;
-const CUSTOM_BRIEF_MS=3000;
-let customBriefTimer=null, customBriefToken=0, customBriefDeadline=0;
-function cancelChallengeBriefing(){
-  if(challengeBriefTimer) clearInterval(challengeBriefTimer);
-  challengeBriefTimer=null; challengeBriefToken++;
-}
-function cancelCustomBriefing(){
-  if(customBriefTimer) clearInterval(customBriefTimer);
-  customBriefTimer=null; customBriefToken++;
-}
-function challengeBriefSeason(){
-  const status=SEASON_STATUS||localSeasonStatus(), cur=status.current, next=status.next;
-  if(cur&&cur.slug==='preseason'&&next) return 'PRESEASON · '+next.name.toUpperCase()+' IN '+seasonDaysUntil(next.starts_at)+' DAYS';
-  if(cur) return cur.name.toUpperCase()+' · '+seasonDaysUntil(cur.ends_at)+' DAYS LEFT';
-  return 'SEASONAL CHALLENGE';
-}
-function renderChallengeBriefRules(rules){
-  const progress=challengeProgress(), needed=challengeEliminationTarget(rules.skill);
-  $('#briefTier').textContent=SKILLS[rules.skill].name.toUpperCase()+' RUN';
-  $('#briefScore').textContent=progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier;
-  $('#briefRequirement').textContent='WIN WITH '+needed+' ELIMINATIONS';
-}
-function updateChallengeStanding(rows){
-  const me=ACC&&rows&&rows.find(r=>r.handle===ACC.handle);
-  if(me&&Number.isFinite(Number(me.best_tier))){
-    const progress=challengeProgress();
-    progress.bestTier=Math.max(progress.bestTier,clamp(Number(me.best_tier),0,CHALLENGE_TIERS.length));
-  }
-  const rules=matchRules();
-  renderChallengeBriefRules(rules);
-  const progress=challengeProgress();
-  if(!ACC){
-    $('#briefTarget').textContent='Sign in to keep this run across devices.';
-    return;
-  }
-  if(!me){
-    $('#briefTarget').textContent=progress.tierWins?'Keep the run going.':'Six qualifying wins clear this tier.';
-    return;
-  }
-  const at=rows.indexOf(me), ahead=at>0?rows[at-1]:null;
-  if(!ahead){
-    $('#briefTarget').textContent='You lead the board. Keep climbing.';
-    return;
-  }
-  $('#briefTarget').textContent='#'+me.rank+' · Catch '+ahead.handle+' at #'+ahead.rank+'.';
-}
-function deployChallengeBrief(token,capture){
-  if(token!==undefined&&token!==challengeBriefToken) return;
-  cancelChallengeBriefing();
-  startMatch(capture!==false);
-}
-async function showChallengeBriefing(){
-  cancelChallengeBriefing();
-  if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
-  S.cfg.mode='challenge'; saveState();
-  const token=challengeBriefToken;
-  show('scr-challenge');
-  $('#briefSeason').textContent=challengeBriefSeason();
-  updateChallengeStanding(null);
-  challengeBriefDeadline=Date.now()+CHALLENGE_BRIEF_MS;
-  const tick=()=>{
-    if(token!==challengeBriefToken) return;
-    const left=Math.max(0,challengeBriefDeadline-Date.now());
-    $('#briefCount').textContent=left?'DEPLOYING IN '+Math.max(1,Math.ceil(left/1000)):'DEPLOYING';
-    $('#briefBar').style.transform='scaleX('+(left/CHALLENGE_BRIEF_MS)+')';
-    if(left<=0) deployChallengeBrief(token,false);
-  };
-  tick(); challengeBriefTimer=setInterval(tick,100);
-  if(!NET.on()) return;
-  const [board,progress]=await Promise.all([seasonBoard(100,''),seasonProgress()]);
-  if(token!==challengeBriefToken) return;
-  if(progress&&progress.ok) reconcileChallengeProgress(progress);
-  if(board&&board.ok) updateChallengeStanding(board.rows||[]);
-  else updateChallengeStanding(null);
-}
-function deployCustomBrief(token){
-  if(token!==undefined&&token!==customBriefToken) return;
-  cancelCustomBriefing();
-  startMatch(false);
-}
-function showCustomBriefing(){
-  cancelCustomBriefing();
-  const rules=matchRules(), training=rules.mode==='training', token=customBriefToken;
-  saveState();
-  $('#customBriefMode').textContent=training?'TRAINING RANGE':'CUSTOM BATTLE';
-  $('#customBriefTitle').textContent=training?'WARM UP':rules.hunted?'SURVIVE THE HUNT':'LOCKED & LOADED';
-  $('#customBriefTarget').textContent=training?'Safe practice · No rewards'
-    : rules.hunted?'Every bot is coming for you.':'Personal progress · No seasonal rank';
-  show('scr-custom-brief');
-  customBriefDeadline=Date.now()+CUSTOM_BRIEF_MS;
-  const tick=()=>{
-    if(token!==customBriefToken) return;
-    const left=Math.max(0,customBriefDeadline-Date.now());
-    $('#customBriefCount').textContent=left?'DEPLOYING IN '+Math.max(1,Math.ceil(left/1000)):'DEPLOYING';
-    $('#customBriefBar').style.transform='scaleX('+(left/CUSTOM_BRIEF_MS)+')';
-    if(left<=0) deployCustomBrief(token);
-  };
-  tick(); customBriefTimer=setInterval(tick,100);
-}
 function show(id){
-  if(id!=='scr-challenge'&&challengeBriefTimer) cancelChallengeBriefing();
-  if(id!=='scr-custom-brief'&&customBriefTimer) cancelCustomBriefing();
   $$('.screen').forEach(s=>s.classList.add('hidden'));
   const el=$('#'+id); if(el) el.classList.remove('hidden');
   $('#ui').classList.toggle('pass',!el);
@@ -4540,7 +4133,7 @@ function renderPlayerCard(){
     '<div class="pc-xp"><i style="width:'+pct+'%"></i></div>'+
     '<div class="pc-sub">'+(r.next?((r.next.xp-S.xp).toLocaleString()+' XP TO LEVEL '+(lvl+1)):'MAX LEVEL')+'</div>'+
     '<div class="pc-stats">'+
-      '<span>MATCHES<br><b>'+S.stats.matches+'</b></span>'+
+      '<span>TRIALS<br><b>'+S.stats.matches+'</b></span>'+
       '<span>WINS<br><b>'+S.stats.wins+'</b></span>'+
       '<span>KILLS<br><b>'+S.stats.kills+'</b></span>'+
       '<span>BEST<br><b>'+S.stats.best+'</b></span>'+
@@ -4550,23 +4143,6 @@ function renderPlayerCard(){
 
 /* Compact standings rail: the top five, then you, wherever you actually are. */
 let miniBoardT=0;
-async function seasonBoard(limit,seasonSlug){
-  let r=await NET.call('sr_board_v2',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
-  if(r&&r.error==='HTTP_404'){
-    r=await NET.call('sr_board',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit});
-    if(r) r.legacy=true;
-  }
-  return r;
-}
-async function seasonProgress(){
-  if(!ACC||!NET.on()) return null;
-  return NET.call('sr_challenge_progress_v1',{p_handle:ACC.handle,p_pin:ACC.pin});
-}
-async function seasonRecent(limit,seasonSlug){
-  let r=await NET.call('sr_recent_v2',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
-  if(r&&r.error==='HTTP_404') r=await NET.call('sr_recent',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit});
-  return r;
-}
 async function renderMiniBoard(force){
   const el=$('#miniBoard'); if(!el) return;
   const club=(ACC&&ACC.club)||CLOUD.club;
@@ -4580,38 +4156,35 @@ async function renderMiniBoard(force){
   el.onclick=()=>{AU.ui();show('scr-board');};
   const now=Date.now();
   if(!force && now-miniBoardT<15000 && el.dataset.filled==='1') return;
-  const active=(SEASON_STATUS&&SEASON_STATUS.current)||localSeasonStatus().current;
-  const seasonName=active?active.name:'Challenge';
-  if(el.dataset.filled!=='1') el.innerHTML='<h5>'+esc(seasonName.toUpperCase())+' <em>'+esc(club.toUpperCase())+'</em></h5><div class="tp-note">Loading…</div>';
-  const b=await seasonBoard(100,'');
+  if(el.dataset.filled!=='1') el.innerHTML='<h5>LEADERBOARD <em>'+esc(club.toUpperCase())+'</em></h5><div class="tp-note">Loading…</div>';
+  const b=await NET.call('sr_board',{p_club:club,p_limit:100});
   miniBoardT=Date.now();
-  const head='<h5>'+esc(seasonName.toUpperCase())+' <em>'+esc(club.toUpperCase())+'</em></h5>';
+  const head='<h5>LEADERBOARD <em>'+esc(club.toUpperCase())+'</em></h5>';
   if(!b||!b.ok){ el.innerHTML=head+'<div class="tp-note">'+esc(netMsg(b?b.error:'NO_NETWORK'))+'</div>'; return; }
   const rows=b.rows||[];
   if(!rows.length){
-    el.innerHTML=head+'<div class="tp-note">No Challenge tiers cleared yet.<br>Be first to earn 6 qualifying wins.</div>';
+    el.innerHTML=head+'<div class="tp-note">Nobody has finished a trial yet.<br>Be the first one on the board.</div>';
     el.dataset.filled='1'; return;
   }
   const me=ACC?ACC.handle:null;
   const tiered=rows.some(r=>r.best_tier_name!==undefined);
-  const seasonal=!b.legacy&&rows.some(r=>r.season_slug!==undefined);
   const line=r=>'<div class="mb-row'+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
       '<span class="n"'+(tiered?' style="color:'+tierCol(r.best_tier_name)+'"':'')+'>'+esc(r.handle)+'</span>'+
-      '<span class="v">'+(seasonal?r.best_kills:(tiered&&r.tier_wins!==undefined?r.tier_wins:r.wins))+'</span></div>';
+      '<span class="v">'+(tiered&&r.tier_wins!==undefined?r.tier_wins:r.wins)+'</span></div>';
   let html=head+(tiered?'<div class="mb-legend">HARDEST BEATEN '+
       ['NIGHTMARE','ELITE','VETERAN','REGULAR','ROOKIE'].map(t=>'<i style="background:'+tierCol(t)+'"></i>').join('')+
       '</div>':'')+
     '<div class="mb-row" style="color:var(--dim);font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
-    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">'+(seasonal?'BEST':'WINS')+'</span></div>';
+    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">WINS</span></div>';
   html+=rows.slice(0,5).map(line).join('');
   const mine=me?rows.find(r=>r.handle===me):null;
   if(mine && mine.rank>5){ html+='<div class="mb-gap">···</div>'+line(mine); }
   // has to fit one line inside a 278px rail, so this stays short
   html+='<div class="tp-foot">'+(me
       ? (mine?('#'+mine.rank+' OF '+rows.length+(mine.best_tier_name?' · '+mine.best_tier_name:'')+' · FULL BOARD ▸')
-             :'EARN 6 QUALIFYING WINS TO JOIN')
-      : 'JOIN THE CLUB TO COMPETE')+'</div>';
+             :'PLAY A TRIAL TO GET RANKED')
+      : 'JOIN THE CLUB TO GET RANKED')+'</div>';
   el.innerHTML=html;
   el.dataset.filled='1';
 }
@@ -4630,7 +4203,7 @@ function renderAccount(){
       '<div style="font-family:var(--disp);font-size:30px;letter-spacing:.1em;color:var(--gold)">'+ACC.handle+'</div>'+
       '<div class="note">Club: '+ACC.club.toUpperCase()+'</div></div>'+
       '<div class="note" style="margin-bottom:16px;line-height:1.9">Your coins, unlocks and weapon mastery are saved to the server '+
-      'after every match, so you can play on any computer. Just sign in with the same name and PIN.</div>'+
+      'after every trial, so you can play on any computer. Just sign in with the same name and PIN.</div>'+
       '<div class="accrow"><button class="btn" id="accBoard">See the leaderboard</button>'+
       '<button class="btn ghost" id="accOut">Sign out</button></div>'+ accPrivacy();
     $('#accBoard').onclick=()=>{AU.ui();show('scr-board');};
@@ -4704,64 +4277,36 @@ async function accSubmit(joining){
 }
 
 /* ---- leaderboard ---- */
-let BOARD_SEASON='';
-function challengeProgressPanel(requested){
-  if(requested==='preseason'||!ACC) return '';
-  const progress=challengeProgress(), skill=challengeTargetSkill(), needed=challengeEliminationTarget(skill);
-  const complete=progress.bestTier>=CHALLENGE_TIERS.length;
-  return '<div class="seasonprogress"><b>YOUR RUN · '+esc(SKILLS[skill].name)+'</b><strong>'+
-    (complete?'MASTERED':progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier)+'</strong><span>'+
-    (complete?'Nightmare cleared. Improve your best performance before the season resets.':
-      'Qualifying wins need '+needed+' eliminations. Losses do not erase progress.')+'</span></div>';
-}
 async function renderBoard(){
   const body=$('#boardBody'), sub=$('#boardSub');
   const club=(ACC&&ACC.club)||CLOUD.club;
-  const status=SEASON_STATUS||localSeasonStatus();
-  const active=status.current;
-  const requested=BOARD_SEASON||'';
-  const shownName=requested==='preseason'?'Preseason':active?active.name:'Challenge';
-  sub.textContent=club.toUpperCase()+' · '+shownName.toUpperCase();
+  sub.textContent=club.toUpperCase();
   if(!NET.on()){
     body.innerHTML='<div class="lbempty">Online play is not switched on in this copy of the game.<br><br>'+
       'Everything else works — your progress is saved on this computer.</div>';
     return;
   }
   body.innerHTML='<div class="lbempty">Loading the board…</div>';
-  const [b,f,p]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested),requested==='preseason'?null:seasonProgress()]);
-  if(p&&p.ok) reconcileChallengeProgress(p);
+  const [b,f]=await Promise.all([
+    NET.call('sr_board',{p_club:club,p_limit:50}),
+    NET.call('sr_recent',{p_club:club,p_limit:8}),
+  ]);
   if(!b||!b.ok){
     body.innerHTML='<div class="lbempty">'+netMsg(b?b.error:'NO_NETWORK')+'</div>'; return;
   }
   const rows=b.rows||[];
   if(!rows.length){
-    body.innerHTML=seasonPicker(status,requested)+challengeProgressPanel(requested)+
-      '<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has cleared a Challenge tier in '+esc(shownName)+' yet.<br><br>'+
-      'Earn six qualifying wins at Rookie. Each win needs at least 3 eliminations.</div>';
-    wireSeasonPicker();
+    body.innerHTML='<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has finished a trial yet.<br><br>'+
+      'Be the first. Play one match and your name lands here.</div>';
     return;
   }
   const me=ACC?ACC.handle:null;
   const tiered=rows.some(r=>r.best_tier_name!==undefined);
-  const seasonal=!b.legacy&&rows.some(r=>r.season_slug!==undefined);
-  let html=seasonPicker(status,requested)+challengeProgressPanel(requested);
-  if(seasonal) html+='<div class="lbhead s"><span>#</span><span>FIGHTER</span><span>BEAT</span>'+
-    '<span class="v">BEST</span><span class="v">DAMAGE</span><span class="v">RUNS</span></div>';
-  else html+='<div class="lbhead'+(tiered?' t':'')+'"><span>#</span><span>FIGHTER</span>'+
+  let html='<div class="lbhead'+(tiered?' t':'')+'"><span>#</span><span>FIGHTER</span>'+
     (tiered?'<span>BEAT</span><span class="v">WINS</span>':'<span class="v">WINS</span>')+
-    '<span class="v">KILLS</span><span class="v">BEST</span><span class="v">MATCHES</span></div>';
+    '<span class="v">KILLS</span><span class="v">BEST</span><span class="v">TRIALS</span></div>';
   rows.forEach(r=>{
     const tn=r.best_tier_name;
-    if(seasonal){
-      html+='<div class="lbrow s'+(r.handle===me?' me':'')+'">'+
-        '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
-        '<span class="n">'+esc(r.handle)+'</span>'+
-        '<span class="tier" style="color:'+tierCol(tn)+'">'+esc(tn||'UNRANKED')+'</span>'+
-        '<span class="v k">'+r.best_kills+'</span>'+
-        '<span class="v">'+Number(r.best_damage||0).toLocaleString()+'</span>'+
-        '<span class="v">'+r.season_matches+'</span></div>';
-      return;
-    }
     html+='<div class="lbrow'+(tiered?' t':'')+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
       '<span class="n">'+esc(r.handle)+'</span>'+
@@ -4772,34 +4317,19 @@ async function renderBoard(){
       '<span class="v">'+r.best_kills+'</span>'+
       '<span class="v">'+r.matches+'</span></div>';
   });
-  if(seasonal) html+='<div class="lbrule"><b style="color:var(--gold)">Challenge counts. Custom does not.</b> '+
-    'Six qualifying wins clear a tier. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2. Your hardest clear sets your Challenge Tier; '+
-    'ties use eliminations, then damage. Your coins, gear, Fighter Level and mastery never reset.</div>';
-  else if(tiered) html+='<div class="lbrule">Preseason history uses the old rule: hardest difficulty beaten, then wins at that level. '+
-    'Season 1 starts October 1 with everyone at Rookie, without removing any fighter progress.</div>';
+  if(tiered) html+='<div class="lbrule">Your place is the hardest difficulty you have ever won on. '+
+    'Ties go to whoever has the most wins at that level. Playing Rookie a hundred times will not move you up \u2014 '+
+    'beating Veteran once moves you a whole band.</div>';
   if(f&&f.ok&&f.rows&&f.rows.length){
     html+='<div class="feed"><h5>JUST NOW</h5>'+f.rows.map(m=>
-      '<div><b>'+esc(m.handle)+'</b> '+(m.challenge_clear?'<span class="w">cleared</span>':m.won?'<span class="w">won</span>':'went down')+' in '+
+      '<div><b>'+esc(m.handle)+'</b> '+(m.won?'<span class="w">won</span>':'went down')+' in '+
       esc((AR[m.arena]&&AR[m.arena].name)||m.arena||'the arena')+
-      ' · '+m.kills+' elimination'+(m.kills===1?'':'s')+'</div>').join('')+'</div>';
+      ' · '+m.kills+' kill'+(m.kills===1?'':'s')+'</div>').join('')+'</div>';
   }
   if(!ACC) html+='<div class="lbempty">You are not on the board yet. '+
-    '<b style="color:var(--gold);cursor:pointer" id="lbJoin">Join the club</b> and your next Challenge can count.</div>';
+    '<b style="color:var(--gold);cursor:pointer" id="lbJoin">Join the club</b> and your next trial counts.</div>';
   body.innerHTML=html;
   const j=$('#lbJoin'); if(j) j.onclick=()=>{AU.ui();show('scr-account');};
-  wireSeasonPicker();
-}
-function seasonPicker(status,requested){
-  const active=status&&status.current;
-  if(!active||active.slug==='preseason') return '';
-  return '<div class="orow" style="margin:0 0 16px">'+
-    '<button class="btn sm '+(!requested?'primary':'ghost')+'" data-season="">'+esc(active.name)+'</button>'+
-    '<button class="btn sm '+(requested==='preseason'?'primary':'ghost')+'" data-season="preseason">Preseason history</button></div>';
-}
-function wireSeasonPicker(){
-  $$('#boardBody [data-season]').forEach(btn=>btn.onclick=()=>{
-    AU.ui(); BOARD_SEASON=btn.dataset.season||''; renderBoard();
-  });
 }
 function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 /* The board banks into colour groups by difficulty, so the ladder is visible
@@ -4843,60 +4373,45 @@ function chipCard(label,hint,opts,cur,cb){
   });
   return w;
 }
-function toggleCard(label,hint,on,cb,opts){
-  opts=opts||{};
-  const w=document.createElement('div'); w.className='card blk'+(opts.wide?' setup-wide':'');
-  w.innerHTML='<div class="lab">'+label+'</div><div class="hint">'+hint+'</div>';
-  const b=document.createElement('button'); b.type='button';
-  function paint(){
-    b.className='togglebtn'+(opts.danger?' danger':'')+(on?' on':'');
-    b.disabled=!!opts.disabled;
-    b.setAttribute('aria-pressed',on?'true':'false');
-    b.innerHTML='<span>'+esc(on?(opts.onText||'Enabled'):(opts.offText||'Disabled'))+'</span><b>'+(on?'ON':'OFF')+'</b>';
-  }
-  b.onclick=()=>{ if(b.disabled) return; AU.ui(); on=!on; paint(); cb(on); saveState(); };
-  paint(); w.appendChild(b); return w;
-}
-function fixedCard(label,hint,value){
-  const w=document.createElement('div'); w.className='card blk';
-  w.innerHTML='<div class="lab">'+label+'</div><div class="hint">'+hint+'</div>'+
-    '<div class="rulefixed"><span>Standard Challenge rule</span><b>'+value+'</b></div>';
-  return w;
-}
 function renderSetup(){
   const g=$('#setupGrid'); g.innerHTML='';
-  S.cfg.mode=normalizeMode(S.cfg.mode);
-  if(S.cfg.mode==='challenge') S.cfg.mode='custom';
-  g.appendChild(chipCard('Arena','Where the battle runs — unlock more in the armory',
+  g.appendChild(chipCard('Mode','Training is a safe range — no damage taken, infinite ammo, and you can try EVERY weapon in the game before you buy it',
+    [{id:'trial',name:'Trial (ranked)'},{id:'training',name:'Training range'}],S.cfg.mode||'trial',v=>{S.cfg.mode=v;summary();}));
+  g.appendChild(chipCard('Arena','Where the trial runs — unlock more in the armory',
     ARENAS.map(a=>({id:a.id,name:a.name+(a.event?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
     S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();}));
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
-  g.appendChild(slider('Time limit','Minutes before the battle ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
-  g.appendChild(toggleCard('Hunted mode','Want every bot chasing you? Turn this on... if you dare.',
-    !!S.cfg.hunted,v=>{S.cfg.hunted=v;summary();},
-    {danger:true,wide:true,disabled:S.cfg.mode==='training',onText:"They're all coming",offText:'Bots fight everyone'}));
+  g.appendChild(slider('Time limit','Minutes before the trial ends in a draw',1,6,1,S.cfg.time,v=>plural(v,'min'),v=>{S.cfg.time=v;summary();}));
+  g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
   g.appendChild(chipCard('Camera','Switch any time with V — third person shows your skins',
     [{id:'first',name:'First person'},{id:'third',name:'Third person'}],S.cfg.cam,v=>{S.cfg.cam=v;}));
-  g.appendChild(slider('Mouse sensitivity','Degrees turned per unit of mouse travel',20,600,10,S.cfg.sens,null,v=>{S.cfg.sens=v;}));
   g.appendChild(chipCard('Sound','Synthesised gunfire, hits and footsteps',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.sound?'on':'off',v=>{S.cfg.sound=(v==='on');}));
   g.appendChild(chipCard('Nametags','Show names and health above opponents',
     [{id:'on',name:'On'},{id:'off',name:'Off'}],S.cfg.nametags?'on':'off',v=>{S.cfg.nametags=(v==='on');}));
-  g.appendChild(toggleCard('Training Range','Safe weapon testing: no damage, infinite ammo, and no rewards.',
-    S.cfg.mode==='training',v=>{S.cfg.mode=v?'training':'custom'; if(v) S.cfg.hunted=false; renderSetup();},
-    {wide:true,onText:'Safe practice',offText:'Custom Battle'}));
+  const lo=document.createElement('div'); lo.className='card blk';
+  const carried=Object.keys(S.food).filter(k=>S.food[k]>0).reduce((a,k)=>a+S.food[k],0);
+  const kit=[W[S.eq.primary||'sidearm'].name,
+             S.eq.secondary?W[S.eq.secondary].name:'no second gun',
+             W[S.eq.melee||'knife'].name,
+             S.eq.pet?PE[S.eq.pet].name:'no pet',
+             carried?plural(carried,'food item'):'NO FOOD — you will not be able to heal'].join(' · ');
+  lo.innerHTML='<div class="lab">Taking in</div><div class="hint">Everything you are carrying</div>'+
+    '<div style="font-family:var(--mono);font-size:11.5px;line-height:1.9;color:'+
+      (carried?'var(--bone)':'var(--ember)')+'">'+esc(kit)+'</div>'+
+    '<button class="btn sm" style="margin-top:12px" id="btnFighter">See your fighter \u25B8</button>';
+  g.appendChild(lo);
+  $('#btnFighter').onclick=()=>{AU.ui();shopTab='fighter';show('scr-shop');};
   summary();
 }
 function summary(){
-  const mode=normalizeMode(S.cfg.mode), btn=$('#btnDeploy2');
-  $('#setupSummary').textContent = mode==='training'
+  // Was a full restatement of arena, opponent count, skill and time — every one of
+  // which is a chip a few centimetres above it. Just the rule of the mode now.
+  $('#setupSummary').textContent = S.cfg.mode==='training'
     ? 'TRAINING RANGE · NOTHING CAN HURT YOU · NO COINS'
-    : mode==='custom'
-      ? (S.cfg.hunted?"CUSTOM BATTLE · HUNTED · THEY'RE ALL COMING · NO LEADERBOARD":'CUSTOM BATTLE · PERSONAL PROGRESS · NO LEADERBOARD')
-      : 'CHALLENGE · 7 OPPONENTS · 3 MINUTES · 3 ELIMINATIONS TO CLEAR';
-  if(btn) btn.textContent=mode==='training'?'Enter training':mode==='custom'?'Deploy custom':'Deploy challenge';
+    : 'ONE LIFE · NO RESPAWNS · LAST ONE STANDING';
 }
 /* ---------------- armory ---------------- */
 const TABS=[{id:'fighter',n:'Your fighter'},{id:'weapons',n:'Weapons'},{id:'hair',n:'Hair'},{id:'outfit',n:'Outfits'},
@@ -5295,47 +4810,30 @@ function kv(k,v){ return '<div><span class="k">'+k+'</span> · '+v+'</div>'; }
 /* =====================================================================
    flow
    ===================================================================== */
-function captureMouse(soft){
-  G.softCapture=!!soft;
-  const failed=()=>{
-    if(!G.on||G.over) return;
-    if(soft){
-      G.paused=true; $('#ovPause').classList.add('hidden');
-      toast('Click the arena to take control · Chrome or Edge works best',true);
-    } else pauseMatch(true);
-  };
-  const request=$('#gl').requestPointerLock;
-  if(!request){ failed(); return; }
-  try{const result=request.call($('#gl'));if(result&&result.catch)result.catch(failed);}
-  catch(e){failed();}
+function captureMouse(){
+  try{const result=$('#gl').requestPointerLock?.();if(result&&result.catch)result.catch(()=>{if(G.on&&!G.over)pauseMatch(true);});}
+  catch(e){if(G.on&&!G.over)pauseMatch(true);}
 }
-function startMatch(capture){
+function startMatch(){
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
-  G.rules=matchRules();
-  G.training = (G.rules.mode==='training');
+  G.training = (S.cfg.mode==='training');
   AU.init();
   $$('.screen').forEach(s=>s.classList.add('hidden'));
   $('#ui').classList.add('pass'); $('#coinbar').classList.add('hidden');
   $('#ovResult').classList.add('hidden'); $('#ovPause').classList.add('hidden');
   $('#hud').classList.remove('hidden');
   spawnMatch();G.draw=false;
-  G.paused=document.pointerLockElement!==$('#gl');
-  if(!G.paused){ G.softCapture=false; toast('Fight!'); }
-  else if(capture!==false) captureMouse(true);
-  else {
-    $('#clock').textContent='CLICK ARENA TO TAKE CONTROL';
-    toast('Click the arena to take control');
-  }
+  pauseMatch(true);
+  captureMouse();
+  toast('Click to lock the cursor · ESC to release');
 }
 function wireUI(){
-  $('#btnPlay').onclick=()=>{AU.ui();showChallengeBriefing();};
+  $('#btnPlay').onclick=()=>{AU.ui();S.cfg.mode='trial';startMatch();};
   $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-real/';};
   $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
-  $('#btnSetup').onclick=()=>{AU.ui();S.cfg.mode='custom';renderSetup();show('scr-setup');};
+  $('#btnSetup').onclick=()=>{AU.ui();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
-  $('#btnBriefBack').onclick=()=>{AU.ui();G.softCapture=false;document.exitPointerLock&&document.exitPointerLock();show('scr-title');};
-  $('#btnCustomBriefBack').onclick=()=>{AU.ui();show('scr-setup');};
   $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
   $('#pvBackdrop').onclick=()=>closeArmoryDetails(true);
   let resetArmed=0;
@@ -5346,11 +4844,11 @@ function wireUI(){
     refreshCoins(); buildMenuScene();
     toast('This computer reset to 1,500 coins. Your online fighter is untouched — sign back in to get it.');
   };
-  $('#btnDeploy2').onclick=()=>{AU.ui();showCustomBriefing();};
+  $('#btnDeploy2').onclick=()=>{AU.ui();startMatch();};
   $$('[data-back]').forEach(b=>b.onclick=()=>{AU.ui();refreshCoins();show('scr-title');});
   $('#btnResume').onclick=()=>{ captureMouse(); };
   $('#btnQuit').onclick=()=>quitMatch();
-  $('#btnAgain').onclick=()=>{ $('#ovResult').classList.add('hidden'); startMatch(); };
+  $('#btnAgain').onclick=()=>{ $('#ovResult').classList.add('hidden'); S.cfg.mode='trial'; startMatch(); };
   $('#btnToShop').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-shop'); };
   $('#btnToBoard').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-board'); };
   $('#btnToMenu').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-title'); };
@@ -5392,7 +4890,6 @@ function animate(){
 async function boot(){
   loadAcc();
   await loadState();
-  await loadSeasonStatus();
   // Signed in on this machine? Pull the server's copy first, in case they last
   // played on a different computer. Local wins if it is further along.
   if(ACC&&NET.on()){

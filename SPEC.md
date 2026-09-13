@@ -1,7 +1,7 @@
 # Block Royale — Game Design & Technical Specification
 
-**Version:** 2.5 beta · **Date:** 12 September 2026 · **Build:** `index.html`
-· `supabase/migrations/20260912065528_challenge_seasons.sql` · `ONLINE-SETUP.md`
+**Version:** 0.6 · **Date:** 23 August 2026 · **Build:** `index.html` (single file, ~204 KB)
+· `supabase-setup.sql` · `ONLINE-SETUP.md` · `balance-sim.js`
 
 ---
 
@@ -15,7 +15,7 @@ A 3D browser arena shooter with blocky Minecraft-style fighters. One life, 200 H
 2. **Price equals power, visibly.** Every weapon and pet carries a 1–10 POWER rating shown as a bar in the shop, and it rises monotonically with cost. Real balance underneath is more nuanced (a sniper trades sustained damage for lethality), but the player-facing promise is never violated.
 3. **Every weapon has to feel different, and every weapon has to hurt to carry.** Not just different numbers — different light, sound, particles, *and a named drawback printed on the shop card*. A rail beam and a rocket should not read as the same event, and neither should be the obvious answer to every situation.
 4. **Nothing you buy ends the game.** The most expensive weapon in the armory is a three-shot execution tool, not a win button. Buying it should make you want to play more, not less.
-5. **Coming back tomorrow has to be worth something.** Coins alone stop mattering once you own things. Fighter Level, weapon mastery, daily challenges and a doubled first win each day are what keep the tenth session as interesting as the first.
+5. **Coming back tomorrow has to be worth something.** Coins alone stop mattering once you own things. Rank, weapon mastery, daily challenges and a doubled first win each day are what keep the tenth session as interesting as the first.
 
 ---
 
@@ -25,7 +25,7 @@ A 3D browser arena shooter with blocky Minecraft-style fighters. One life, 200 H
 | --- | --- |
 | Starting health | 200 HP for everyone, player and bots |
 | Lives | 1, no respawns |
-| Win condition | Last fighter standing; multiple survivors at the clock produce a draw |
+| Win condition | Last fighter standing, or most kills when the clock runs out |
 | Grace period | 3.2 s at match start; nobody can fire |
 | Headshot multiplier | ×2.5 |
 | Torso multiplier | ×1.0 |
@@ -59,7 +59,7 @@ A 3D browser arena shooter with blocky Minecraft-style fighters. One life, 200 H
 
 Mouse and keyboard only — pointer lock has no touch equivalent, so there is no mobile control scheme.
 
-**Modes.** *Seasonal Challenge* is the competitive mode: seven opponents, three minutes, and the next uncleared opponent tier. Six cumulative qualifying wins clear a tier; Rookie and Regular wins need at least three eliminations, while Veteran and harder wins need at least two. Losses do not erase progress. It opens with a six-second ladder briefing showing only the tier, current run (for example, 4/6), and required eliminations. *Custom Battle* preserves the familiar opponent presets, 1–11 opponent slider and 1–6 minute control; it earns personal progress but never changes the board. Custom and *Training Range* use a three-second briefing that does not repeat the setup choices. Every mode then enters combat without a second Ready screen or firing grace period; the player clicks the arena once to satisfy the browser's mouse-capture requirement and can fire immediately. The full-width red **Hunted Mode** warning is off by default; when on, every bot hunts the player and ignores other bots and pets as targets. *Training Range* is the last Custom Battle setting and pays nothing.
+**Modes.** *Trial* is the ranked mode: one life, coins, XP, challenges. *Training range* is a safe sandbox — you take no damage, ammo never runs down, the dummies never shoot back and respawn two seconds after you drop them, and **T cycles through every weapon in the game whether you own it or not.** Nothing in training pays out. It exists so a new player can learn a gun, and so anyone can feel the Obsidian Reaper before deciding to save fifteen thousand coins for it.
 
 ---
 
@@ -486,7 +486,7 @@ kill with 3 different weapons · 2 splash-or-lightning kills · finish top 3 twi
 **Your first win of each day pays double** (capped at +1,400). This is the single strongest
 reason to open the game tomorrow.
 
-### 10.5 Fighter Level
+### 10.5 Rank
 
 XP is separate from coins and cannot be spent, which is the point — it keeps meaning something
 after you own everything.
@@ -504,14 +504,14 @@ which meant surviving while the bots wiped each other out earned the same rank p
 carrying the match. The participation terms above it stay ungated on purpose — that is what
 keeps a struggling player climbing at all.
 
-Deliberately flatter than the coin curve. **Coins say how well you played; Fighter Level says how much
+Deliberately flatter than the coin curve. **Coins say how well you played; rank says how much
 you have played.** Tie both to the same thing and rank is just a second wallet, and the least
 confident kid in the group never leaves level 1.
 
 Measured at Regular difficulty, best case against worst case: coins spread **4.7:1**,
 XP spread **3.2:1**. The gap is the point.
 
-Ten Fighter Levels: Scrap Rookie (0) → Block Runner (600) → Trench Regular (1,600) → Deck Hunter (3,200)
+Ten ranks: Scrap Rookie (0) → Block Runner (600) → Trench Regular (1,600) → Deck Hunter (3,200)
 → Ironside (5,600) → Arena Veteran (9,000) → Cinder Champion (13,500) → Rail Master (19,500)
 → Obsidian Elite (27,000) → Void Sovereign (37,000). Shown as a coloured chip with an XP bar on
 the title screen and on every results screen.
@@ -585,9 +585,9 @@ anything identifying would put the project under COPPA and require verifiable
 parental consent. There is consequently no "forgot my PIN" flow, which is the
 price of that choice and is worth paying.
 
-**Shape.** `players`, `matches`, and `seasons` all have RLS on and **zero
+**Shape.** Two tables (`players`, `matches`), both with RLS on and **zero
 policies**, so the publishable key embedded in the HTML cannot touch them.
-The original RPCs stay in place for the live `main` client. The feature branch adds versioned RPCs:
+Six `security definer` functions are the entire API surface:
 
 | Function | Does |
 | --- | --- |
@@ -597,29 +597,36 @@ The original RPCs stay in place for the live `main` client. The feature branch a
 | `sr_save(handle, pin, save)` | Pushes progress up without finishing a trial (after shopping) |
 | `sr_board(club, limit)` | Public ranking, by difficulty beaten. Never returns a PIN hash |
 | `sr_recent(club, limit)` | A live "just now" feed of finished trials |
-| `sr_season_status()` | Returns the current/next season and server timestamps |
-| `sr_challenge_progress_v1(handle, pin)` | Returns authoritative tier and cumulative qualifying-win progress for the active season |
-| `sr_submit_v2(…, mode, time_limit, save)` | Records Challenge or Custom while enforcing fixed Challenge rules and tier order |
-| `sr_board_v2(club, limit, season)` | Returns one best eligible clear per fighter for one season |
-| `sr_recent_v2(club, limit, season)` | Returns Challenge activity for one season; excludes Custom |
 
 An internal `sr_auth` helper does PIN verification and lockout, and is explicitly
 revoked from `anon`. It returns a status string rather than raising, because a
 raised exception in Postgres rolls back the transaction — including the
 failed-attempt counter that the lockout depends on.
 
-### Seasonal Challenge ranking
+### Ranking by difficulty
 
-> **Earn six qualifying wins to clear a tier. Rookie and Regular need 3 eliminations per win; Veteran and harder need 2.**
+> **Your place on the board is the hardest difficulty you have ever won on. Ties are broken by
+> how many wins you have at that level.**
 
-Challenge automatically advances Rookie → Regular → Veteran → Elite → Nightmare. Qualifying wins accumulate and losses do not reset them. The database rejects skipped tiers, non-standard opponent/time settings, and Custom results on the seasonal board. Only the sixth qualifying win completes a tier; one best completed-tier result per player is ranked by tier, eliminations, damage, then earliest achievement.
+That is the whole rule, and it is deliberately one sentence a sixth grader can repeat.
 
-It exists because paying more coins for harder tiers cannot solve competitive fairness: accumulated
-rewards can always be farmed. Standing instead comes from one standard clear. Players who want an
-easier tier, a mixed preset, or a different lobby size still have those familiar choices in Custom,
-without affecting anybody else's place.
+It exists because paying more coins for harder tiers cannot work: on a hard tier you perform worse
+at everything, so any reward tied to performance shrinks along with you, and any reward that does
+not shrink can be farmed by loading Nightmare and walking into a wall. **Standing is not a rate**,
+so it cannot be farmed at all. Verified against a seeded database: a player with **530 Rookie wins
+ranks below** one with three Veteran wins, who ranks below one with a single Nightmare win.
 
-Season 1 begins 1 October 2026 at midnight Pacific. Every later season is a Pacific calendar month and every player starts the monthly Challenge at Rookie. Only Challenge standing resets. Existing matches remain read-only Preseason legacy history; no player row, save, coin balance, unlock, Fighter Level, mastery, lifetime statistic, account, or club membership is reset. The title screen shows season messages on days 1, 7, 15, and 27, plus the final two days.
+Two alternatives were considered and rejected. *Locking high-level players out of easy tiers* breaks
+playing beside a lower-level friend and punishes improvement — the reward for getting good should
+not be that an option is taken away. *Easy wins stop counting once you are high level* creates a
+cliff where your wins counted last week and silently stop this week, and a beginner can still farm.
+
+`mixed` lobbies draw bots from Rookie through Elite, so they count as Regular — worth something,
+not the top. Difficulty comes from `matches.skill`, which was validated server-side on submit, so
+the board reads real history rather than anything the client could invent.
+
+Delivered as `supabase-rank-by-tier.sql`: **no schema change**, one function replaced. If it is
+never run, the game falls back to the old most-wins board with no errors and no missing UI.
 
 **Anti-cheat.** The game is client-side JavaScript, so a kid with DevTools can
 edit their own numbers, and that is not fixable in a game of this shape. What the

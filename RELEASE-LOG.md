@@ -7,31 +7,9 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
-## 2.6.1 beta — Brief, ready, fight
+## 2.4.1 — 12 Sep 2026
 
-* The six-second Challenge briefing now shows only the opponent tier, qualifying wins, elimination requirement, and countdown. Fixed arena rules and the player's known weapon and companion no longer compete with the goal.
-* Custom Battle and Training now use their own short, three-second briefing without repeating the setup choices the player just made.
-* Removed the movement-only combat grace period from every mode. Players and bots can act as soon as the arena takes control, so the weapon never appears locked after deployment.
-* The arena camera now moves to the real spawn before waiting for the required click, and the HUD clearly asks the player to click the arena instead of showing a broken-looking world-origin frame.
-* Candidate only; `main` is unchanged.
-
-## 2.6 beta — Six-win calendar seasons
-
-* A tier now takes **6 cumulative qualifying wins** to clear. Rookie and Regular wins need at least 3 eliminations; Veteran, Elite, and Nightmare wins need at least 2. Losses do not erase progress.
-* The six-second Challenge briefing now shows the current opponent tier, qualifying-win progress such as **4 / 6**, and the elimination target. The seasonal leaderboard has a separate **Your Run** strip so unfinished progress is visible without pretending it is a completed rank.
-* Season 1 now starts at midnight Pacific on **1 October 2026**. Seasons reset on the first day of each calendar month, and every player starts each season at Rookie. Coins, Fighter Level, unlocks, mastery, lifetime statistics, accounts, and match history still never reset.
-* The title screen shows lifecycle reminders on season days 1, 7, 15, and 27, plus the final two days. Messages include the player's live tier progress and become a final-push warning near reset.
-* Added a server-authoritative Challenge progress endpoint and serialized match submission. This keeps cumulative progress consistent across devices and prevents two tabs from turning the same fifth win into duplicate clears.
-* The additive migration and browser build passed the full JavaScript suite, local database behavior and permission tests, a real browser check of the six-second briefing, and a rollback-only verification against the hosted database. Candidate only; `main` is unchanged.
-
-## 2.5 beta — Season 1 candidate
-
-* The main menu now separates **Seasonal Challenge** from **Custom Battle**. Challenge uses 7 opponents and 3 minutes, automatically advances through the five opponent tiers, and opens with a six-second ladder briefing instead of a setup form. It then reveals the live arena directly, removing the redundant Ready screen; one click on the arena captures the mouse. Custom keeps the familiar 1–11 opponent, opponent presets, and 1–6 minute controls. Training stays inside Match Setup.
-* Match Setup now groups Arena, Opponents, Opponent Skill, and Time Limit first, keeps Training Range last, and removes the repeated "Taking in" loadout card. A full-width red, off-by-default **Hunted Mode** warning makes every bot hunt you and ignore each other in Custom Battle only.
-* A Challenge only clears with a win and at least 3 eliminations. Custom still earns personal coins, XP, mastery, and challenges, but never changes the seasonal leaderboard.
-* Added four-week seasons with a two-week Preseason transition. Season 1 starts 25 September 2026. Coins, Fighter Level, unlocks, mastery, lifetime statistics, accounts, and old match history never reset.
-* The database change is additive and versioned. Existing matches are marked Preseason/legacy, existing saves are preserved, and the live `main` client continues using its unchanged RPCs until this branch is approved.
-* Candidate only: this entry records feature-branch behavior and is not a production release.
+* Removed the opening arena grace period. Once the arena takes mouse control, movement and weapons are active together with no hidden firing delay.
 
 ## 2.4 — 9 Sep 2026
 
