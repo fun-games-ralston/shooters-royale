@@ -19,12 +19,23 @@ test('Lockjaw and Dragonfire keep the approved balance contract',()=>{
   assert.ok(lockjaw.range>=300); assert.equal(lockjaw.bodyOnly,true); assert.equal(lockjaw.homing,true);
   assert.equal(lockjaw.lockOn.time,1.2); assert.equal(lockjaw.pvp,false);
   assert.ok(flame); assert.equal(flame.name,'Dragonfire');
-  assert.equal(flame.dmg,70); assert.equal(flame.mag,8); assert.equal(flame.range,15);
-  assert.equal(flame.flameDuration,4); assert.equal(flame.bodyOnly,true); assert.equal(flame.pvp,false);
+  assert.equal(flame.dmg,70); assert.equal(flame.rpm,10); assert.equal(flame.mag,30); assert.equal(flame.reserve,0); assert.equal(flame.reload,0); assert.equal(flame.range,15);
+  assert.equal(flame.flameDuration,6); assert.equal(flame.fuelTotal,true); assert.equal(flame.bodyOnly,true); assert.equal(flame.pvp,false);
   assert.equal(Specials.flameDamage(flame.dmg,1),70);
-  assert.equal(Specials.flameDamage(flame.dmg,flame.flameDuration),280);
-  assert.deepEqual(Specials.consumeFlameFuel(8,4,9),{active:4,fuel:4,burstRemaining:0});
-  assert.deepEqual(Specials.consumeFlameFuel(1.5,4,3),{active:1.5,fuel:0,burstRemaining:2.5});
+  assert.equal(Specials.flameDamage(flame.dmg,flame.flameDuration),420);
+  assert.deepEqual(Specials.consumeFlameFuel(30,6,9),{active:6,fuel:24,burstRemaining:0});
+  assert.deepEqual(Specials.consumeFlameFuel(1.5,6,3),{active:1.5,fuel:0,burstRemaining:4.5});
+});
+
+test('Dragonfire carries exactly five full maximum bursts',()=>{
+  let fuel=30;
+  for(let burst=0;burst<5;burst++){
+    const step=Specials.consumeFlameFuel(fuel,6,10);
+    assert.equal(step.active,6);
+    fuel=step.fuel;
+  }
+  assert.equal(fuel,0);
+  assert.equal(Specials.consumeFlameFuel(fuel,6,1).active,0);
 });
 
 test('lock requires one continuous visible target and stays confirmed after cover',()=>{
@@ -93,7 +104,7 @@ test('special PvE mechanics cannot silently degrade into ordinary PvP shots',()=
 test('live HUD includes explicit lock confirmation instructions',()=>{
   assert.match(source,/TARGET LOCKED · LMB FIRE/);
   assert.match(source,/HOLD RMB ON A VISIBLE FIGHTER/);
-  assert.match(source,/HOLD LMB TO BURN FOR UP TO 4 SECONDS/);
+  assert.match(source,/HOLD LMB TO BURN FOR UP TO 6 SECONDS/);
 });
 
 test('training uses real magazines with a bottomless reserve',()=>{
@@ -101,4 +112,5 @@ test('training uses real magazines with a bottomless reserve',()=>{
   assert.equal(Specials.trainingReserve(3,4),3);
   assert.doesNotMatch(source,/wp\.mag>0&&!\(G\.training&&e\.isPlayer\)/);
   assert.match(source,/pool\.r=WS\.trainingReserve\(pool\.r,wp\.mag\)/);
+  assert.match(source,/G\.training&&\(wp\.totalOnly\|\|wp\.fuelTotal\) \? 1\.4/);
 });
