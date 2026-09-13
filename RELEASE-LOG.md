@@ -7,6 +7,12 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## Feature branch — Production fixes synchronized
+
+* Merged production `main` through release `c6379b4`, including fast-win recording, duplicate-safe result retries, removal of hourly score limits, and the optional playtime reminder.
+* Preserved the Seasonal Challenge pages, migrations, progress rules, and both PvE-only special weapons. The seasonal client and seasonal database changes remain a feature-branch candidate.
+* Added the production migration history and opening-grace regression test to the combined branch; no production data or player state was changed by this merge.
+
 ## 2.5 candidate — Lockjaw and Dragonfire
 
 * Added **Lockjaw Launcher**: hold RMB on one visible fighter for 1.2 seconds to confirm a lock, then launch one of four missiles. The visible missile steers around cover, ignores wall impacts after launch, and deals exactly 60 damage to its living target anywhere on the map.
@@ -16,19 +22,17 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 * Kept Friends PvP safe: both weapons are PvE-only until their target locks and continuous damage can be made host-authoritative. Existing PvP loadouts fall back instead of treating them as ordinary shots.
 * Validated the candidate with 69 automated tests, including continuous lock, post-cover commitment, obstacle detour, multi-target flame geometry, five-burst fuel consumption, Training Range magazine behavior, PvP fallback, content synchronization, and the existing solo/PvP suite.
 
-## 2.4.2 — Score limits and optional breaks
-
 ## Feature branch — Reliable win recording
 
 * Fast victories count, including games that finish in under five seconds and wins with no eliminations. There is no hourly match cap or forced break.
 * Completed results wait safely in this browser and retry after connection failures or reloads. Retrying the same result counts it once.
 * The menu and results screen show when a result is waiting to sync or has been recorded.
 * Challenge requirements affect seasonal advancement only. A tier mismatch, nonstandard setup, or season gap no longer discards the lifetime win; the result explains why the Challenge did not advance.
-* Prepared for rollout; the backend migration must be applied before publishing this client. Existing missing wins are not backfilled.
+* The baseline backend migration is live with production `main`; the seasonal client still requires its separate seasonal migrations before release. Existing missing wins are not backfilled.
 
 ## Feature branch — Score limits and optional breaks
 
-* Removed hourly match-count and accumulated-playtime scoring quotas in a migration for both legacy and Challenge submissions. Existing player totals and saves are untouched; the migration has not been applied to production.
+* Removed hourly match-count and accumulated-playtime scoring quotas in both legacy and Challenge submission paths. The production baseline is live; existing player totals and saves were untouched.
 * Added an optional reminder after 30 active minutes of solo play. It appears between matches, offers Take a break or Keep playing, and never imposes a cooldown.
 * Score rejections now explain that the result was not recorded, including when a preview still uses an older capped backend. No historical wins are backfilled.
 

@@ -6,15 +6,15 @@ Three steps, about ten minutes, and it costs nothing. The Season 1 candidate als
 
 ## Reliable win recording update
 
-For an existing deployment, run `supabase/manual/win-sync-fix.sql` in the project's
-SQL Editor. It combines the two September 13 migrations and includes a read-only
-verification query. Apply the earlier hourly-quota migrations first. The script
-removes the minimum match duration, installs private duplicate-safe receipts,
-and separates lifetime credit from seasonal Challenge eligibility when v2 exists.
-It never rewrites or backfills player scores or saves. Publish the updated client
-only after verification reports both scoring gates absent and receipts installed.
-Already-open main clients benefit from removal of the duration gate immediately;
-they need a reload to get the durable retry queue.
+The production project already received this baseline on 13 September 2026. For
+another existing or older deployment, run `supabase/manual/win-sync-fix.sql` in
+that project's SQL Editor. It combines the two September 13 migrations and
+includes a read-only verification query. Apply the earlier hourly-quota
+migrations first. The script removes the minimum match duration, installs
+private duplicate-safe receipts, and separates lifetime credit from seasonal
+Challenge eligibility when v2 exists. It never rewrites or backfills player
+scores or saves. Publish a matching client only after verification reports both
+scoring gates absent and receipts installed.
 
 
 ## 1. Create the database (2 minutes)

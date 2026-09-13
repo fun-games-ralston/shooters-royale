@@ -8,11 +8,13 @@
 > language, newest first. This file is the engineering view: what is measured, what is known broken,
 > and why particular decisions went the way they did.
 
-## Win-sync fix prepared, deployment pending
+## Production win fixes merged; seasonal release pending
 
-The hourly quota is already removed in production, but the latest live probe
-still finds no `sr_submit_once` endpoint. Do not treat local tests as deployment.
-Run `supabase/manual/win-sync-fix.sql`, verify it, then publish the client.
+Production `main` and its Supabase backend now include the verified win-recording
+fix: hourly and minimum-duration gates are absent, duplicate-safe receipts are
+installed, and the browser retries completed results. This branch contains that
+same baseline plus Seasonal Challenge and the two PvE-only special weapons.
+The seasonal migrations and this feature client are still not production.
 
 The patch accepts zero-to-four-second results, keeps completed results in a
 per-account browser queue, retries with a stable UUID, and records each UUID
@@ -30,7 +32,8 @@ rollback and retry, account isolation, and a local browser test using main's
 actual endMatch handler. That browser test simulated a zero-second, zero-kill
 victory, withheld its committed response, reloaded, and confirmed Stats = 1,
 leaderboard = 1, match rows = 1, receipts = 1. It is a synthetic completion test,
-not a physical gameplay or production-write test.
+not a physical gameplay test. The production deployment was separately verified
+before `main` release `c6379b4`.
 
 ## Summary
 

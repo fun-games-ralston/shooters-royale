@@ -2,10 +2,13 @@
 
 ## Deployment status
 
-Prepared and tested locally. At the last read-only production check, the new
-`sr_submit_once` endpoint returned HTTP 404 / PGRST202 and the public main client
-still used the old submission path. Applying SQL and publishing GitHub Pages
-are separate steps. Use `supabase/manual/win-sync-fix.sql` before client rollout.
+The owner applied the combined SQL on September 13. Verification showed both
+hourly and minimum-duration gates absent, receipts installed, and Challenge
+lifetime credit preserved. A read-only API probe reached `sr_submit_once` and
+returned the expected `NO_SUCH_PLAYER` response for an empty handle. Production
+release `c6379b4` ships the matching baseline browser client. The seasonal
+client and seasonal migrations in this branch are still not deployed. No
+production player data was backfilled or modified by verification.
 
 ## Scoring rules reviewed
 
@@ -28,7 +31,7 @@ are separate steps. Use `supabase/manual/win-sync-fix.sql` before client rollout
 
 ## Verified behavior
 
-- Main: 70 JavaScript tests. Feature: 81 JavaScript tests. Generated PvP content unchanged.
+- Main: 70 JavaScript tests. Combined seasonal and weapons branch: 91 JavaScript tests. Generated PvP content unchanged.
 - Legacy-only, original Challenge, and six-win Challenge database configurations tested in disposable local databases.
 - 62 distinct zero-to-four-second wins per receipt endpoint accepted; identical retries leave exactly one match and one increment per ID.
 - More than 60 submissions and more than 3,600 reported seconds in one transaction accepted through the legacy endpoint.
