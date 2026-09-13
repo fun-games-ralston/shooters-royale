@@ -8,6 +8,19 @@
 > language, newest first. This file is the engineering view: what is measured, what is known broken,
 > and why particular decisions went the way they did.
 
+## Main score-limit patch
+
+Main now includes the optional 30-active-minute solo reminder and visible
+submission failures. The targeted migration
+`20260913051501_remove_legacy_score_limits.sql` removes both hourly quotas from
+`sr_submit` without changing player totals, saves, history, authentication,
+per-result validation or leaderboard rules. It adds no Challenge-season code.
+
+Validation: 59 JavaScript tests, generated-content consistency, and an isolated
+local database regression accepting 61 wins while preserving save data and
+validation. Production deployment and database rollout are separate from this
+local commit. No historical score correction is included.
+
 ## Summary
 
 0.5 is a weapon-design and retention pass, and it fixed two bugs that were quietly gutting the game.

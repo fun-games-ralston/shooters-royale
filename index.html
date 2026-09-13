@@ -276,6 +276,9 @@ canvas{display:block}
 .oc h3{font-family:var(--disp);font-size:40px;letter-spacing:.1em;text-transform:uppercase;text-align:center}
 .oc h3.win{color:var(--gold);text-shadow:0 0 30px rgba(242,177,52,.5)}
 .oc h3.lose{color:var(--ember)}
+#ovBreak{z-index:35}
+#ovBreak p{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--dim);margin:18px 0;text-align:center}
+#ovBreak .orow{justify-content:center}
 .statlist{font-family:var(--mono);font-size:13px;margin:18px 0;letter-spacing:.06em}
 .statlist div{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px dashed #2c2439;color:var(--dim)}
 .statlist div b{color:var(--bone);font-weight:normal}
@@ -656,6 +659,18 @@ canvas{display:block}
   </div>
 </div>
 
+<!-- OPTIONAL BREAK REMINDER: shown only after active play has ended. -->
+<div class="overlay hidden" id="ovBreak" role="dialog" aria-modal="true" aria-labelledby="breakTitle" aria-describedby="breakText">
+  <div class="oc blk">
+    <h3 id="breakTitle">Time for a break?</h3>
+    <p id="breakText"></p>
+    <div class="orow">
+      <button class="btn primary" id="btnTakeBreak">Take a break</button>
+      <button class="btn" id="btnKeepPlaying">Keep playing</button>
+    </div>
+  </div>
+</div>
+
 <div id="outro">
   <div class="ot-inner">
     <div class="ot-title" id="otTitle">ELIMINATED</div>
@@ -668,6 +683,7 @@ canvas{display:block}
 <div id="loading"><div class="gametitle" style="font-size:38px">Loading</div><div class="bar"><i></i></div>
 <div class="tagline">Placing blocks</div></div>
 
+<script src="shared/playtime-reminder.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -753,10 +769,8 @@ function cloudSubmit(res, arenaId, durationS){
     p_won:res.win, p_duration:Math.round(durationS), p_save:S,
   }).then(r=>{
     if(r&&r.ok) return;
-    // Stay quiet about things the player can't act on. A trial too short to
-    // count is normal and their local progress is safe either way; only shout
-    // when something is actually wrong with the connection or the account.
-    if(r&&(r.error==='OFFLINE'||r.error==='TOO_SHORT'||r.error==='TOO_FAST')) return;
+    // Keep rejected scores visible, including during backend rollout.
+    if(r&&r.error==='OFFLINE') return;
     toast('Score not sent to the leaderboard: '+netMsg(r?r.error:'NO_NETWORK'),true);
   });
 }
@@ -1249,6 +1263,29 @@ const DEFAULT_STATE = {
 let S = JSON.parse(JSON.stringify(DEFAULT_STATE));
 const memStore = {};
 const SAVE_KEY = 'sr_save_v1';
+// Session storage keeps optional reminder time across reloads in this tab,
+// separately from account saves and competitive statistics.
+const PLAYTIME=BlockRoyalePlaytime.create((()=>{try{return sessionStorage;}catch(e){return null;}})());
+function showBreakReminder(){
+  if(G.on||document.hidden||!PLAYTIME.due()) return;
+  const panel=$('#ovBreak');
+  if(!panel.classList.contains('hidden')) return;
+  $('#breakText').textContent="You've played for "+PLAYTIME.minutes()+" minutes this session. Take a break whenever you're ready, or keep playing.";
+  panel.classList.remove('hidden');
+  $('#btnKeepPlaying').focus();
+}
+function dismissBreakReminder(takeBreak){
+  PLAYTIME.dismiss();
+  $('#ovBreak').classList.add('hidden');
+  if(takeBreak){
+    $('#ovResult').classList.add('hidden');
+    buildMenuScene(); show('scr-title');
+    $('#btnPlay').focus();
+  }else{
+    const next=$('#ovResult').classList.contains('hidden')?$('#btnPlay'):$('#btnAgain');
+    next.focus();
+  }
+}
 /* Three tiers, in order of preference: a host-provided storage bridge, the browser's
    own localStorage, and finally memory. localStorage is the one that matters — without
    it every coin, rank and daily challenge is wiped by a page refresh. */
@@ -3829,6 +3866,7 @@ function finishOutro(){
   $('#hud').classList.remove('dim');
   $('#hud').classList.add('hidden');
   $('#ovResult').classList.remove('hidden');
+  showBreakReminder();
 }
 function tickOutro(dt){
   const o=G.outro, sd=dt*0.34;
@@ -4088,6 +4126,7 @@ function show(id){
   if(id==='scr-board') renderBoard();
   if(id==='scr-account') renderAccount();
   if(id==='scr-title') renderMiniBoard();
+  if(id==='scr-title') showBreakReminder();
 }
 function refreshCoins(){
   $('#coinval').textContent=S.coins.toLocaleString();
@@ -4815,6 +4854,8 @@ function captureMouse(){
   catch(e){if(G.on&&!G.over)pauseMatch(true);}
 }
 function startMatch(){
+  // A reminder never imposes a cooldown.
+  if(!$('#ovBreak').classList.contains('hidden')) dismissBreakReminder(false);
   if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
   G.training = (S.cfg.mode==='training');
   AU.init();
@@ -4828,6 +4869,17 @@ function startMatch(){
   toast('Click to lock the cursor · ESC to release');
 }
 function wireUI(){
+  $('#btnTakeBreak').onclick=()=>dismissBreakReminder(true);
+  $('#btnKeepPlaying').onclick=()=>dismissBreakReminder(false);
+  $('#ovBreak').addEventListener('keydown',e=>{
+    if(e.key==='Tab'){
+      e.preventDefault();
+      (document.activeElement===$('#btnKeepPlaying')?$('#btnTakeBreak'):$('#btnKeepPlaying')).focus();
+    }
+  });
+  const stopPlaytime=()=>{PLAYTIME.update(performance.now(),false);PLAYTIME.save();};
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) stopPlaytime();});
+  window.addEventListener('pagehide',stopPlaytime);
   $('#btnPlay').onclick=()=>{AU.ui();S.cfg.mode='trial';startMatch();};
   $('#btnFriends').onclick=()=>{AU.ui();location.href='pvp-real/';};
   $('#playerCard').onclick=()=>{ if(!NET.on()) return; AU.ui(); show('scr-account'); };
@@ -4854,6 +4906,7 @@ function wireUI(){
   $('#btnToMenu').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-title'); };
   document.addEventListener('keydown',e=>{
     if(e.code==='Escape'){
+      if(!$('#ovBreak').classList.contains('hidden')){e.preventDefault();dismissBreakReminder(false);return;}
       if($('#shopPreview').classList.contains('open')){ closeArmoryDetails(true); return; }
       if(G.on&&!G.over&&!G.paused) pauseMatch(true);
       else if(G.paused){ $('#ovPause').classList.add('hidden'); G.paused=false; }
@@ -4865,6 +4918,7 @@ function wireUI(){
    ===================================================================== */
 function animate(){
   requestAnimationFrame(animate);
+  PLAYTIME.update(performance.now(),G.on&&!G.paused&&!G.over&&!document.hidden);
   const dt=Math.min(0.05,clock.getDelta());
   if(pvRig&&!$('#scr-shop').classList.contains('hidden')){
     pvRig.rotation.y+=dt*0.55; pvRenderer.render(pvScene,pvCamera);

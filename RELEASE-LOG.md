@@ -7,6 +7,13 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.4.2 — Score limits and optional breaks
+
+* Removed the hourly score quotas with a targeted backend migration. Existing wins, saves and match history are preserved.
+* Added an optional break reminder after 30 minutes of active solo play. It appears between matches, with Take a break and Keep playing; neither choice imposes a cooldown.
+* Rejected score submissions now show an error instead of silently disappearing.
+* The official game's Trial mode, leaderboard and opening-grace fix are preserved. Challenge seasons remain on the feature branch.
+
 ## 2.4.1 — 12 Sep 2026
 
 * Removed the opening arena grace period. Once the arena takes mouse control, movement and weapons are active together with no hidden firing delay.

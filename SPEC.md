@@ -633,17 +633,22 @@ edit their own numbers, and that is not fixable in a game of this shape. What th
 database does instead:
 
 - clips the physically impossible (kills can never exceed the lobby size);
-- rate-limits: 25 trials an hour, and you cannot claim more minutes of play in an
-  hour than an hour contains;
+- keeps authentication, bounded results and the five-second minimum duration,
+  without hourly match-count or accumulated-playtime quotas;
 - makes it visible — the board shows each player's trial count beside their kills,
-  and every submission leaves an audited row in `matches`.
+  and every accepted submission leaves an audited row in `matches`.
 
 **A rule that was written and then deliberately removed:** "the trial must be
 long enough for the kills claimed to be possible". It sounded obviously correct
 and then rejected a real 5-kill run during testing, which is exactly the run a
-kid wants on the board. Rate limits can never do that to an honest match, so the
-per-match rule went and the rate limits stayed. Refusing a real achievement is a
-much worse failure than letting an inflated one through where everyone can see it.
+kid wants on the board. The hourly quotas also rejected supported quick matches,
+so they have been removed. Rejected submissions are now visible to the player.
+This change does not add retry or duplicate protection.
+
+**Optional breaks.** After 30 active solo minutes, offer Take a break or Keep
+playing between matches or on leaving Training. No cooldown, no score changes.
+Menus, pauses, hidden tabs and outros are excluded. Session storage keeps the
+timer across reloads; the next reminder needs 30 more active minutes.
 
 **Conflict rule.** On sign-in and at boot, whichever save has played more matches
 wins. A fresh registration always keeps whatever is already on the computer.

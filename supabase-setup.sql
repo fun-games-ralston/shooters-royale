@@ -164,16 +164,10 @@ end $$;
 -- ---------------------------------------------------------------------
 -- 3. submit — record one finished trial
 --
---    The leaderboard ranks only on stats this function can sanity check:
---      * you cannot kill more fighters than were in the lobby
---      * you cannot claim more than 25 trials or more than an hour of play
---        in any one hour
---    This is honestly not unbreakable, and it is not trying to be. A kid who
---    really wants to can submit fabricated matches at 25 an hour. What stops
---    that in practice is that it is *visible*: the board shows everyone's trial
---    count, so 25 trials and 25 wins in an afternoon looks exactly as silly as
---    it is, and every single attempt leaves a row in `matches` with their name
---    on it. Social consequences beat clever validation with twelve year olds.
+--    Authenticate each result and clip impossible per-match numbers. There is
+--    no hourly match-count or accumulated-duration quota: short supported
+--    matches must not cause later completed results to disappear.
+--    Accepted results leave a match row; the client is not cheat-proof.
 -- ---------------------------------------------------------------------
 create or replace function public.sr_submit(
   p_handle text, p_pin text,
@@ -184,7 +178,7 @@ create or replace function public.sr_submit(
 ) returns jsonb
 language plpgsql security definer set search_path = public, extensions as $$
 declare st text; r public.players; h text;
-        k int; hs int; dmg int; b int; dur int; spent int; recent int;
+        k int; hs int; dmg int; b int; dur int;
 begin
   st := public.sr_auth(p_handle, p_pin);
   if st <> 'OK' then
@@ -203,20 +197,6 @@ begin
   -- still count as a trial they turned up for.
   if dur < 5 then
     return jsonb_build_object('ok', false, 'error', 'TOO_SHORT');
-  end if;
-
-  -- Rate limits do the anti-cheat work instead of per-match rules, deliberately.
-  -- A rule like "five kills cannot happen in sixteen seconds" sounds reasonable
-  -- and then throws away a real player's best run of the week, which is exactly
-  -- the run they wanted on the board. Rate limits can never do that to a single
-  -- honest match; they only bite someone submitting on a loop.
-  --   * 25 trials an hour, when a real one runs several minutes
-  --   * you cannot claim more minutes of play in an hour than an hour holds
-  select count(*), coalesce(sum(m.duration_s), 0) into recent, spent
-    from public.matches m
-   where m.handle = h and m.played_at > now() - interval '1 hour';
-  if recent >= 25 or spent + dur > 3600 then
-    return jsonb_build_object('ok', false, 'error', 'TOO_FAST');
   end if;
 
   insert into public.matches (handle, arena, skill, bots, kills, headshots, damage, won, duration_s)

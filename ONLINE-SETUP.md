@@ -15,6 +15,15 @@ touch SQL again unless you want to kick someone off the board.
 
 ---
 
+## Updating an existing database for the score-limit fix
+
+Run `supabase/migrations/20260913051501_remove_legacy_score_limits.sql` in the
+ethan-game SQL Editor as part of the release. It only replaces `sr_submit`;
+existing player totals, saves and match history are untouched. It does not
+install seasons or change leaderboard ranking. Publishing the frontend alone
+will not remove the database's cap. Do not re-run the full setup script on an
+existing project to deploy this fix.
+
 ## 2. Put the key in the game (1 minute)
 
 1. In Supabase: **Project Settings** → **API Keys**
@@ -154,16 +163,23 @@ What the database does instead:
 
 - **Impossible numbers are clipped.** You cannot report more kills than there
   were opponents in the lobby.
-- **Rate limits.** 25 trials an hour, and you cannot claim more minutes of
-  play in an hour than an hour actually contains.
-- **Everything is visible.** The board shows each player's trial count next to
-  their kills, so 25 trials and 25 wins in one afternoon looks exactly as silly
-  as it is. Every submission leaves a row in `matches` with a name on it.
+- **No hourly match or play-duration quotas.** Supported quick matches must not
+  make later results disappear. The score-limit migration removes both gates.
+- **Accepted results remain visible.** Each accepted submission leaves a row
+  in `matches` with its player and result. Rejected attempts do not.
+- **Per-result checks remain.** PIN authentication, the five-second minimum
+  duration, and bounded kills/headshots/damage are unchanged.
 
-Deliberately *not* done: rules like "five kills cannot happen in sixteen
-seconds". They sound sensible and then they throw away a real player's best
-run of the week, which is the exact run they wanted on the board. Rate limits
-can never do that to an honest match.
+The optional break reminder appears between matches or after leaving Training,
+after 30 active minutes in this browser tab. Pauses, menus, hidden-tab time and
+outros do not count. Take a break returns to the menu; Keep playing dismisses
+it. Neither imposes a cooldown. Session storage keeps the timer across reloads;
+it is not an account-wide or cross-device rule. Another reminder needs 30 more
+active minutes after dismissal. Friends PvP is outside this solo-client change.
+
+Failed score submissions now display an error, including against a backend
+that still has the old cap. Reliable retries, duplicate-safe match IDs and
+historical score reconciliation remain separate work; no old wins are backfilled.
 
 With twelve year olds, "everyone can see you did that" works better than
 clever validation. If someone does inflate their score, the fix is a
