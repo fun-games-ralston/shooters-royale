@@ -2,10 +2,12 @@
 
 ## Deployment status
 
-Prepared and tested locally. At the last read-only production check, the new
-`sr_submit_once` endpoint returned HTTP 404 / PGRST202 and the public main client
-still used the old submission path. Applying SQL and publishing GitHub Pages
-are separate steps. Use `supabase/manual/win-sync-fix.sql` before client rollout.
+The owner applied the combined SQL on September 13. The verification output
+shows both hourly and minimum-duration gates absent, receipts installed, and
+Challenge lifetime credit preserved. A subsequent read-only API probe reached
+`sr_submit_once` (HTTP 200 with the expected NO_SUCH_PLAYER response for an
+empty handle). Release 2.4.3 ships the matching browser client from main.
+No production player data was backfilled or modified by verification.
 
 ## Scoring rules reviewed
 

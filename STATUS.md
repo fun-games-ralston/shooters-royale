@@ -8,11 +8,13 @@
 > language, newest first. This file is the engineering view: what is measured, what is known broken,
 > and why particular decisions went the way they did.
 
-## Win-sync fix prepared, deployment pending
+## Win-sync release 2.4.3
 
-The hourly quota is already removed in production, but the latest live probe
-still finds no `sr_submit_once` endpoint. Do not treat local tests as deployment.
-Run `supabase/manual/win-sync-fix.sql`, verify it, then publish the client.
+The manual Supabase migration was applied on September 13. Its verification
+shows no hourly or minimum-duration scoring gates in either endpoint, receipts
+installed, and Challenge lifetime credit preserved. A read-only production probe
+now reaches `sr_submit_once` and returns the expected authentication error for
+an empty handle. Release 2.4.3 publishes the matching retry client from main.
 
 The patch accepts zero-to-four-second results, keeps completed results in a
 per-account browser queue, retries with a stable UUID, and records each UUID
