@@ -7,6 +7,13 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.4.3 candidate — Reliable win recording
+
+* Fast victories count, including games that finish in under five seconds and wins with no eliminations. There is no hourly match cap or forced break.
+* Completed results wait safely in this browser and retry after connection failures or reloads. Retrying the same result counts it once.
+* The menu and results screen show when a result is waiting to sync or has been recorded.
+* Prepared for rollout; the backend migration must be applied before publishing this client. Existing missing wins are not backfilled.
+
 ## 2.4.2 — Score limits and optional breaks
 
 * Removed the hourly score quotas with a targeted backend migration. Existing wins, saves and match history are preserved.

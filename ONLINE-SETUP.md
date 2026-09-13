@@ -4,6 +4,19 @@ Three steps, about ten minutes, and it costs nothing.
 
 ---
 
+## Reliable win recording update
+
+For an existing deployment, run `supabase/manual/win-sync-fix.sql` in the project's
+SQL Editor. It combines the two September 13 migrations and includes a read-only
+verification query. Apply the earlier hourly-quota migrations first. The script
+removes the minimum match duration, installs private duplicate-safe receipts,
+and separates lifetime credit from seasonal Challenge eligibility when v2 exists.
+It never rewrites or backfills player scores or saves. Publish the updated client
+only after verification reports both scoring gates absent and receipts installed.
+Already-open main clients benefit from removal of the duration gate immediately;
+they need a reload to get the durable retry queue.
+
+
 ## 1. Create the database (2 minutes)
 
 1. Open the **ethan-game** project at [supabase.com](https://supabase.com)
@@ -167,8 +180,8 @@ What the database does instead:
   make later results disappear. The score-limit migration removes both gates.
 - **Accepted results remain visible.** Each accepted submission leaves a row
   in `matches` with its player and result. Rejected attempts do not.
-- **Per-result checks remain.** PIN authentication, the five-second minimum
-  duration, and bounded kills/headshots/damage are unchanged.
+- **Per-result checks remain.** PIN authentication, malformed-result validation, and bounded
+  kills/headshots/damage remain. Those numeric bounds do not reject wins.
 
 The optional break reminder appears between matches or after leaving Training,
 after 30 active minutes in this browser tab. Pauses, menus, hidden-tab time and
@@ -177,9 +190,11 @@ it. Neither imposes a cooldown. Session storage keeps the timer across reloads;
 it is not an account-wide or cross-device rule. Another reminder needs 30 more
 active minutes after dismissal. Friends PvP is outside this solo-client change.
 
-Failed score submissions now display an error, including against a backend
-that still has the old cap. Reliable retries, duplicate-safe match IDs and
-historical score reconciliation remain separate work; no old wins are backfilled.
+Completed results use one durable localStorage entry per account and match UUID.
+They retry automatically and across reloads; the server records each ID once.
+Pending and rejected results remain visible. PINs and cloud saves are not stored
+in queued payloads, and replaying a result cannot overwrite a newer cloud save.
+Historical score reconciliation remains separate; no old wins are backfilled.
 
 With twelve year olds, "everyone can see you did that" works better than
 clever validation. If someone does inflate their score, the fix is a

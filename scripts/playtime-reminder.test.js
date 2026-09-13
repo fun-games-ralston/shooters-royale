@@ -110,17 +110,16 @@ test('a due reminder waits until the match and outro finish; both choices leave 
   assert.equal(ctx.S.stats.wins, 9);
 });
 
-test('server rejections are visible, including a preview using the old capped backend', async () => {
-  const start = source.indexOf('function cloudSubmit('), end = source.indexOf('\nconst HEAD_MULT', start);
-  for (const error of ['TOO_FAST', 'TOO_SHORT', 'NO_NETWORK']) {
-    const notices = [];
-    const ctx = { ACC: { handle: 'TEST', pin: '0000' }, S: { cfg: { skill: 'rookie', bots: 7 } }, NET: { on: () => true, call: async () => ({ ok: false, error }) }, toast: message => notices.push(message), netMsg: e => e };
-    vm.createContext(ctx);
-    vm.runInContext(source.slice(start, end), ctx);
-    ctx.cloudSubmit({ kills: 1, hs: 0, dmg: 200, win: true }, 'foundry', 10, { skill: 'rookie', bots: 7, time: 3, mode: 'challenge' });
-    await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(notices, [`Score not sent to the leaderboard: ${error}`]);
-  }
+test('pending and rejected scores have persistent status text', () => {
+  const start=source.indexOf('function renderScoreStatus('), end=source.indexOf('function retryScores(',start);
+  const el={};const ctx={document:{querySelectorAll:()=>[el]},netMsg:e=>e};
+  vm.runInNewContext(source.slice(start,end),ctx);
+  ctx.renderScoreStatus({handle:'TEST',pending:1,failed:0,error:'HTTP_404'});
+  assert.match(el.textContent,/waiting to sync/);assert.match(el.textContent,/temporarily unavailable/);
+  ctx.renderScoreStatus({handle:'TEST',pending:1,failed:0,error:'BAD_PIN'});
+  assert.match(el.textContent,/Sign in again/);
+  ctx.renderScoreStatus({handle:'TEST',pending:0,failed:1,error:'BAD_DURATION'});
+  assert.match(el.textContent,/not accepted/);
 });
 
 

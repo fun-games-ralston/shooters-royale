@@ -633,8 +633,8 @@ edit their own numbers, and that is not fixable in a game of this shape. What th
 database does instead:
 
 - clips the physically impossible (kills can never exceed the lobby size);
-- keeps authentication, bounded results and the five-second minimum duration,
-  without hourly match-count or accumulated-playtime quotas;
+- keeps authentication and malformed-result checks, with no minimum duration,
+  hourly match-count quota or accumulated-playtime quota;
 - makes it visible — the board shows each player's trial count beside their kills,
   and every accepted submission leaves an audited row in `matches`.
 
@@ -643,7 +643,8 @@ long enough for the kills claimed to be possible". It sounded obviously correct
 and then rejected a real 5-kill run during testing, which is exactly the run a
 kid wants on the board. The hourly quotas also rejected supported quick matches,
 so they have been removed. Rejected submissions are now visible to the player.
-This change does not add retry or duplicate protection.
+Completed results persist per account and match UUID, retry after reloads, and
+are recorded once by the receipt endpoint. Existing score gaps are not backfilled.
 
 **Optional breaks.** After 30 active solo minutes, offer Take a break or Keep
 playing between matches or on leaving Training. No cooldown, no score changes.

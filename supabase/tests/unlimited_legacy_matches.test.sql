@@ -20,8 +20,8 @@ begin
   end if;
   result := public.sr_submit('LIMIT_V1_TEST','9999','foundry','rookie',1,1,0,200,true,60,'{}');
   if result->>'error' <> 'BAD_PIN' then raise exception 'auth check changed'; end if;
-  result := public.sr_submit('LIMIT_V1_TEST','1234','foundry','rookie',1,1,0,200,true,4,'{}');
-  if result->>'error' <> 'TOO_SHORT' then raise exception 'duration check changed'; end if;
+  result := public.sr_submit('LIMIT_V1_TEST','1234','foundry','rookie',1,1,0,200,true,-1,'{}');
+  if result->>'error' <> 'BAD_DURATION' then raise exception 'duration check changed'; end if;
   result := public.sr_submit('LIMIT_V1_TEST','1234','foundry','rookie',1,999,999,999999,true,10,'{}');
   if (select max(kills) from public.matches where handle='LIMIT_V1_TEST') <> 1 then
     raise exception 'impossible kills no longer clipped';

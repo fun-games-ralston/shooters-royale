@@ -369,6 +369,7 @@ canvas{display:block}
   .lrail{order:2;flex:0 1 320px;width:auto}
   .rrail{order:3;flex:0 1 320px;width:auto;align-self:stretch}
 }
+.score-sync{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--gold);margin:12px 0;padding:10px;background:#201a2c;border:1px solid #514060}
 /* leaderboard */
 .lbhead,.lbrow{display:grid;grid-template-columns:44px 1fr 62px 62px 62px 74px;gap:8px;align-items:center;
   padding:9px 10px;font-family:var(--mono);font-size:12px;letter-spacing:.08em}
@@ -511,6 +512,7 @@ canvas{display:block}
       <div class="lrail">
         <div class="playercard blk" id="playerCard"></div>
         <aside class="tpanel blk" id="miniBoard"></aside>
+        <p class="score-sync" data-score-sync role="status" aria-live="polite" hidden></p>
       </div>
       <div class="titlecenter">
         <h1 class="gametitle">Block<span>Royale</span></h1>
@@ -650,6 +652,7 @@ canvas{display:block}
   <div class="oc blk">
     <h3 id="resTitle" class="win">Victory</h3>
     <div class="statlist" id="resStats"></div>
+    <p class="score-sync" data-score-sync role="status" aria-live="polite" hidden></p>
     <div class="orow">
       <button class="btn primary" id="btnAgain">Run it back</button>
       <button class="btn" id="btnToShop">Armory</button>
@@ -684,6 +687,7 @@ canvas{display:block}
 <div class="tagline">Placing blocks</div></div>
 
 <script src="shared/playtime-reminder.js"></script>
+<script src="shared/score-queue.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -716,8 +720,11 @@ const NETERR = {
   BAD_HANDLE    : '3 to 14 letters or numbers, and keep it clean',
   BAD_PIN_FORMAT: 'The PIN has to be exactly 4 digits',
   TAKEN         : 'Somebody already took that name',
-  TOO_FAST      : 'Slow down — too many trials in one hour',
-  TOO_SHORT     : 'That trial was too short to count',
+  TOO_FAST      : 'This server still has an old hourly scoring rule',
+  BAD_DURATION  : 'The result has an invalid duration',
+  MATCH_ID_CONFLICT: 'The result identifier conflicts with an earlier submission',
+  BAD_RESULT    : 'The result could not be validated',
+  TOO_SHORT     : 'This server still has an old minimum-duration scoring rule',
 };
 const netMsg = e => NETERR[e] || ('Something went wrong ('+e+')');
 
@@ -725,9 +732,10 @@ const NET = {
   on(){ return !!(CLOUD.url && CLOUD.key); },
   async call(fn, body){
     if(!this.on()) return {ok:false, error:'OFFLINE'};
+    const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),15000);
     try{
       const r = await fetch(CLOUD.url.replace(/\/+$/,'')+'/rest/v1/rpc/'+fn, {
-        method:'POST',
+        method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json','apikey':CLOUD.key,'Authorization':'Bearer '+CLOUD.key},
         body:JSON.stringify(body||{}),
       });
@@ -735,6 +743,7 @@ const NET = {
       const j = await r.json();
       return Array.isArray(j) ? {ok:true, rows:j} : j;   // table functions come back as arrays
     }catch(e){ return {ok:false, error:'NO_NETWORK'}; }
+    finally{clearTimeout(timeout);}
   }
 };
 
@@ -744,7 +753,9 @@ const ACC_KEY='sr_account_v1';
 let ACC=null;
 function loadAcc(){ try{ ACC=JSON.parse(localStorage.getItem(ACC_KEY)||'null'); }catch(e){ ACC=null; } }
 function storeAcc(a){
+  clearTimeout(cloudPushT);
   ACC=a;
+  queueMicrotask(()=>{if(scoreReady) SCORES.resume();});
   try{ a ? localStorage.setItem(ACC_KEY,JSON.stringify(a)) : localStorage.removeItem(ACC_KEY); }catch(e){}
 }
 
@@ -753,25 +764,58 @@ let cloudPushT=null;
 function cloudPush(){
   if(!ACC||!NET.on()) return;
   clearTimeout(cloudPushT);
+  const owner=ACC;
   cloudPushT=setTimeout(()=>{
-    NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
+    if(ACC!==owner) return;
+    NET.call('sr_save',{p_handle:owner.handle,p_pin:owner.pin,p_save:S});
   },2500);
 }
 
-/* Report a finished trial. Fire and forget — a dead network must never block
-   the results screen or lose the local save. */
-function cloudSubmit(res, arenaId, durationS){
-  if(!ACC||!NET.on()) return;
-  NET.call('sr_submit',{
-    p_handle:ACC.handle, p_pin:ACC.pin,
-    p_arena:arenaId, p_skill:S.cfg.skill, p_bots:S.cfg.bots,
-    p_kills:res.kills, p_headshots:res.hs, p_damage:res.dmg,
-    p_won:res.win, p_duration:Math.round(durationS), p_save:S,
-  }).then(r=>{
-    if(r&&r.ok) return;
-    // Keep rejected scores visible, including during backend rollout.
-    if(r&&r.error==='OFFLINE') return;
-    toast('Score not sent to the leaderboard: '+netMsg(r?r.error:'NO_NETWORK'),true);
+/* Completed results survive reloads and are acknowledged exactly once. */
+let scoreReady=false, scoreStorage=null;
+try{scoreStorage=window.localStorage;}catch(e){}
+const SCORES=BlockRoyaleScores.create({
+  storage:scoreStorage,
+  account:()=>ACC,
+  send:body=>NET.call('sr_submit_once',body),
+  onChange:renderScoreStatus,
+  onAccepted:async (result,entry)=>{
+    miniBoardT=0;
+
+    if(!$('#scr-title').classList.contains('hidden')) renderMiniBoard(true);
+    if(!$('#scr-board').classList.contains('hidden')) renderBoard();
+  },
+});
+function renderScoreStatus(status){
+  status=status||SCORES.status();
+  let text='';
+  if(!status.handle) text='Sign in before playing to record leaderboard results.';
+  else if(status.pending){
+    text=status.pending+' result'+(status.pending===1?'':'s')+' waiting to sync to the leaderboard.';
+    if(['BAD_PIN','LOCKED','NO_SUCH_PLAYER'].includes(status.error)) text+=' Sign in again to resume.';
+    else if(status.error==='HTTP_404'||status.error==='SERVER_UPGRADE_REQUIRED') text+=' Leaderboard syncing is temporarily unavailable.';
+    else text+=' Retrying automatically.';
+  }else if(status.last&&status.last.state==='sent') text='Result recorded on the leaderboard.';
+  if(status.failed) text+=(text?' ':'')+status.failed+' result'+(status.failed===1?' was':'s were')+' not accepted: '+netMsg(status.failedError||status.error)+'.';
+  if(status.volatile) text+=' Browser storage is unavailable. Keep this tab open until syncing finishes.';
+  document.querySelectorAll('[data-score-sync]').forEach(el=>{
+    el.textContent=text; el.hidden=!text;
+  });
+}
+function retryScores(){if(scoreReady) SCORES.flush();}
+window.addEventListener('online',retryScores);
+window.addEventListener('storage',e=>{
+  if(e.key&&e.key.startsWith(BlockRoyaleScores.PREFIX)) SCORES.refresh();
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) retryScores();});
+
+function cloudSubmit(res,arenaId,durationS){
+  if(!ACC||!NET.on()){renderScoreStatus();return;}
+
+  SCORES.enqueue(1,{
+    p_arena:arenaId,p_skill:S.cfg.skill,p_bots:S.cfg.bots,
+    p_kills:res.kills,p_headshots:res.hs,p_damage:res.dmg,
+    p_won:res.win,p_duration:Math.round(durationS)
   });
 }
 
@@ -4964,6 +5008,8 @@ async function boot(){
   initPreview(); initInput(); wireUI();
   buildMenuScene(); refreshCoins(); show('scr-title');
   $('#loading').classList.add('hidden');
+  scoreReady=true; SCORES.resume();
+  setInterval(retryScores,5000);
   animate();
 }
 if(window.THREE) boot();
