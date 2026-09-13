@@ -108,9 +108,9 @@
 
 {fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:20,mag:8,reserve:8,reload:3.4,
  flameDuration:3,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
- role:'Hold a fuel cell for up to three seconds and sweep a 15 m cone across every fighter in it.',
- limit:'A full three-second exposure deals 70 damage. Walls stop the fire, and a tap still spends the cell.',
- desc:'Eight fuel cells turn a doorway into a furnace. Hold the trigger to keep the jet alive, sweep across a crowd, or release early to save yourself from standing still too long.',
+ role:'Burn for 70 damage each second and sweep a 15 m cone across every fighter in it.',
+ limit:'Needs nearly a full cell to defeat 200 HP. Walls stop the fire, and a tap still spends the cell.',
+ desc:'Eight fuel cells turn a doorway into a furnace. A full three-second burn reaches 210 damage; hold the trigger to keep the jet alive and sweep it across a crowd.',
  parts:[{w:.15,h:.19,d:.68,x:0,y:.02,z:-.24,c:0x46362e},{w:.13,h:.13,d:.48,x:0,y:.04,z:-.78,c:0x6f3020},
         {w:.18,h:.18,d:.22,x:0,y:.02,z:-1.12,c:0xff6b2c,e:.75},{w:.17,h:.34,d:.34,x:0,y:-.2,z:.12,c:0x7a4b28},
         {w:.08,h:.2,d:.12,x:0,y:-.18,z:-.3,c:0x262328},{w:.05,h:.05,d:.38,x:.1,y:.12,z:-.72,c:0xffb347,e:.55},
@@ -363,5 +363,5 @@
  mod:{grav:0.55},void:true},
 ];
 
-  return {CONTENT_VERSION:'4e9a698049f26406',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
+  return {CONTENT_VERSION:'d1c38077a56a4eac',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
 });

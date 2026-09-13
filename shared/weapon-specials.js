@@ -107,5 +107,9 @@
     return hits.map(hit=>hit.candidate);
   }
 
-  return {normalize,selectLockTarget,advanceLock,turnTowards,homingDirection,segmentPointDistance,flameTargets};
+  function flameDamage(damagePerSecond,exposureSeconds){
+    return Math.max(0,damagePerSecond||0)*Math.max(0,exposureSeconds||0);
+  }
+
+  return {normalize,selectLockTarget,advanceLock,turnTowards,homingDirection,segmentPointDistance,flameTargets,flameDamage};
 });

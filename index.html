@@ -1118,9 +1118,9 @@ const WEAPONS = [
 
 {fx:'flame',fxName:'Rolling fire cone + ember wake',flash:0xff8a2b,flashSize:2.0,id:'dragonfire',pw:7,name:'Dragonfire',cls:'FLAMETHROWER',rar:'ench',cost:6100,dmg:70,rpm:20,mag:8,reserve:8,reload:3.4,
  flameDuration:3,flameRadius:1.35,bodyOnly:true,pvp:false,spread:0,auto:false,range:15,speed:.9,recoil:1.8,tracer:0xff6b2c,sfx:'flame',
- role:'Hold a fuel cell for up to three seconds and sweep a 15 m cone across every fighter in it.',
- limit:'A full three-second exposure deals 70 damage. Walls stop the fire, and a tap still spends the cell.',
- desc:'Eight fuel cells turn a doorway into a furnace. Hold the trigger to keep the jet alive, sweep across a crowd, or release early to save yourself from standing still too long.',
+ role:'Burn for 70 damage each second and sweep a 15 m cone across every fighter in it.',
+ limit:'Needs nearly a full cell to defeat 200 HP. Walls stop the fire, and a tap still spends the cell.',
+ desc:'Eight fuel cells turn a doorway into a furnace. A full three-second burn reaches 210 damage; hold the trigger to keep the jet alive and sweep it across a crowd.',
  parts:[{w:.15,h:.19,d:.68,x:0,y:.02,z:-.24,c:0x46362e},{w:.13,h:.13,d:.48,x:0,y:.04,z:-.78,c:0x6f3020},
         {w:.18,h:.18,d:.22,x:0,y:.02,z:-1.12,c:0xff6b2c,e:.75},{w:.17,h:.34,d:.34,x:0,y:-.2,z:.12,c:0x7a4b28},
         {w:.08,h:.2,d:.12,x:0,y:-.18,z:-.3,c:0x262328},{w:.05,h:.05,d:.38,x:.1,y:.12,z:-.72,c:0xffb347,e:.55},
@@ -2998,7 +2998,7 @@ function stepFlame(e,aim,dt){
   for(const target of targets){
     let entry=e.flameDamage.get(target);
     if(!entry){ entry={target,carry:0,point:null}; e.flameDamage.set(target,entry); }
-    entry.carry+=wp.dmg/wp.flameDuration*active;
+    entry.carry+=WS.flameDamage(wp.dmg,active);
     entry.point={x:target.pos.x,y:target.pos.y+1.15,z:target.pos.z};
     if(entry.carry>=3){ const amount=Math.floor(entry.carry); entry.carry-=amount; damage(target,amount,'BODY',e,entry.point,wp.id); }
   }
@@ -5272,7 +5272,7 @@ const WEAPON_CARD_COPY={
   lmg:['60 rounds; accurate while planted','Slow movement; 3.2 s reload'],
   claws:['Every hit heals 15 HP','Must fight inside 3.2 m'],
   minigun:['Highest DPS; 150-round belt','Spin-up, slow movement, 5.5 s reload'],
-  dragonfire:['Sweeps every target in a 15 m fire cone','70 damage needs three seconds of exposure'],
+  dragonfire:['70 damage/sec across a 15 m fire cone','Needs nearly a full cell to defeat 200 HP'],
   sniper:['275 head damage at 250 m','Four shots; must scope'],
   bazooka:['Splash damage and rocket jumps','Only eight rockets; slow reload'],
   lockjaw:['Confirmed lock guarantees 60 damage','Only four missiles; 1.2 s visible lock'],
@@ -5281,7 +5281,7 @@ const WEAPON_CARD_COPY={
 };
 function weaponCardDamage(w){
   if(w.dmg>900) return 'lethal anywhere';
-  if(w.bodyOnly) return w.dmg+(w.flameDuration?' per full burst':' any hit');
+  if(w.bodyOnly) return w.flameDuration?(w.dmg+' / sec · '+Math.round(w.dmg*w.flameDuration)+' max'):(w.dmg+' any hit');
   if(w.pellets) return w.dmg+' × '+w.pellets+' · '+Math.round(w.dmg*HEAD_MULT)+' head';
   return w.dmg+' body · '+Math.round(w.dmg*HEAD_MULT)+' head';
 }
@@ -5444,13 +5444,15 @@ function buyFood(f,n){
   AU.eat(f.glow>0); toast(f.name+' ×'+n+' added to your kit'); renderShop('food');
 }
 function pvInfoWeapon(w){
-  const dps = w.dmg>900 ? 'instant' : w.flameDuration ? Math.round(w.dmg/w.flameDuration) :
+  const dps = w.dmg>900 ? 'instant' :
     w.burst ? Math.round(w.dmg*w.burst/(w.burst*60/w.rpm+w.burstGap)) :
     w.melee||w.proj ? Math.round(w.dmg*w.rpm/60) : Math.round(w.dmg*(w.pellets||1)*w.rpm/60);
+  const damageRows=w.flameDuration
+    ?kv('Damage per second',w.dmg)+kv('Full cell damage',Math.round(w.dmg*w.flameDuration))+kv('Hit zones','same damage anywhere')
+    :kv('Body damage',w.dmg>900?'lethal':w.dmg)+kv('Head damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*HEAD_MULT))+
+      kv('Leg damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*LEG_MULT))+kv('Damage per second',dps);
   $('#pvInfo').innerHTML='<h4>'+w.name+'</h4><div>'+w.desc+'</div>'+
-    kv('Power',pwBar(w.pw))+kv('Class',w.cls)+kv(w.flameDuration?'Full exposure':'Body damage',w.dmg>900?'lethal':w.dmg)+kv('Head damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*HEAD_MULT))+
-    kv('Leg damage',w.dmg>900?'lethal':w.bodyOnly?w.dmg:Math.round(w.dmg*LEG_MULT))+
-    kv('Damage per second',dps)+
+    kv('Power',pwBar(w.pw))+kv('Class',w.cls)+damageRows+
     (w.mag>0?kv('Fire rate',w.flameDuration?'one cell lasts up to '+w.flameDuration+'s':w.rpm+' rpm')+kv('Magazine',w.mag)+kv('Spare ammo',w.reserve)+
         (w.totalOnly?kv('Reload','none \u2014 four missiles total'):kv('Reload',(w.shellReload?w.shellReload+'s per shell':w.reload+'s'))):
       w.heat?kv('Fire rate',w.rpm+' rpm')+kv('Ammo','heat bar — '+Math.floor(100/w.heat.per)+' shots')+kv('Overheat lock',w.heat.lock+'s')
