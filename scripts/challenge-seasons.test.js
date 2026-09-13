@@ -202,11 +202,33 @@ test('Challenge progress appears in both the six-second briefing and the leaderb
   const briefing = functionSource('renderChallengeBriefRules');
   const board = functionSource('challengeProgressPanel');
   assert.match(source, /const CHALLENGE_BRIEF_MS=6000/);
-  assert.match(briefing, /'WINS: '\+progress\.tierWins\+' \/ '\+CHALLENGE_RULES\.winsPerTier/);
-  assert.match(briefing, /' ELIMINATIONS EACH'/);
+  assert.match(briefing, /briefScore.*progress\.tierWins\+' \/ '\+CHALLENGE_RULES\.winsPerTier/);
+  assert.match(briefing, /briefRequirement.*'WIN WITH '\+needed\+' ELIMINATIONS'/);
+  assert.doesNotMatch(briefing, /AR\[|S\.eq\.(primary|pet)|\bOPPONENTS\b|\bMIN\b/);
+  const briefHtml = source.slice(source.indexOf('id="scr-challenge"'), source.indexOf('<!-- SETUP -->'));
+  assert.doesNotMatch(briefHtml, /briefPills|Deploy now/);
   assert.match(board, /YOUR RUN/);
   assert.match(board, /progress\.tierWins\+' \/ '\+CHALLENGE_RULES\.winsPerTier/);
   assert.match(board, /Losses do not erase progress/);
+});
+
+test('Challenge enters combat without a second firing lock or an origin-frame flash', () => {
+  const spawn = functionSource('spawnMatch');
+  const start = functionSource('startMatch');
+  assert.doesNotMatch(source, /G\.grace|BATTLE BEGINS IN/);
+  assert.match(spawn, /updateCamera\(0\); updateModels\(0\); updateHUD\(\); drawMinimap\(\)/);
+  assert.match(start, /CLICK ARENA TO TAKE CONTROL/);
+});
+
+test('Custom and Training use a short briefing instead of a combat grace period', () => {
+  const briefing = functionSource('showCustomBriefing');
+  const customHtml = source.slice(source.indexOf('id="scr-custom-brief"'), source.indexOf('<!-- SETUP -->'));
+  assert.match(source, /const CUSTOM_BRIEF_MS=3000/);
+  assert.match(source, /btnDeploy2'\)\.onclick=.*showCustomBriefing\(\)/);
+  assert.match(briefing, /rules\.mode==='training'/);
+  assert.match(briefing, /rules\.hunted\?'SURVIVE THE HUNT':'LOCKED & LOADED'/);
+  assert.doesNotMatch(customHtml, /Arena|Weapon|Pet|Opponent|Time limit/);
+  assert.doesNotMatch(source, /G\.grace|BATTLE BEGINS IN/);
 });
 
 test('Custom setup prioritizes match choices and keeps Training last', () => {

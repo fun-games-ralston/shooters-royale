@@ -65,18 +65,18 @@ canvas{display:block}
   box-shadow:inset 0 0 0 2px var(--gold),0 0 24px rgba(242,177,52,.2)}
 .seasonbar.lifecycle b{display:block;color:var(--gold);font-family:var(--disp);font-size:16px;letter-spacing:.14em}
 .seasonbar.lifecycle span{display:block;margin-top:2px;letter-spacing:.07em}
-.briefcard{width:min(610px,92vw);padding:30px;text-align:center;background:rgba(21,16,32,.96)}
+.briefcard{width:min(540px,92vw);padding:26px 30px 22px;text-align:center;background:rgba(21,16,32,.96)}
 .briefseason{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
-.brieftitle{font-family:var(--disp);font-size:clamp(34px,6vw,58px);letter-spacing:.1em;text-transform:uppercase;margin:9px 0}
-.briefplace{font-family:var(--disp);font-size:25px;letter-spacing:.1em;color:var(--bone);text-transform:uppercase}
-.brieftarget{font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--dim);margin:8px auto 18px;max-width:510px}
-.brieftip{font-family:var(--mono);font-size:11px;line-height:1.7;letter-spacing:.08em;color:var(--leaf);margin:-7px auto 16px;max-width:500px}
-.briefpills{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin:0 auto 22px}
-.briefpills span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text2);padding:7px 10px;
-  text-transform:uppercase;background:#120e1c;box-shadow:inset 0 0 0 1px var(--edge)}
-.briefcount{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
-.briefbar{height:4px;background:#100c18;margin:0 auto 20px;max-width:430px;overflow:hidden}
+.brieftitle{font-family:var(--disp);font-size:clamp(30px,5vw,44px);letter-spacing:.1em;text-transform:uppercase;margin:8px 0 20px}
+.brieftier{font-family:var(--disp);font-size:20px;letter-spacing:.14em;color:var(--bone);text-transform:uppercase}
+.briefscore{font-family:var(--disp);font-size:clamp(52px,9vw,72px);line-height:1;color:var(--gold);letter-spacing:.08em;margin:7px 0 0}
+.briefscorelabel{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase}
+.briefrequirement{font-family:var(--mono);font-size:12px;line-height:1.6;letter-spacing:.08em;color:var(--leaf);margin:18px auto 0;text-transform:uppercase}
+.brieftarget{font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--dim);margin:7px auto 21px;max-width:430px}
+.briefcount{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+.briefbar{height:4px;background:#100c18;margin:0 auto 17px;max-width:390px;overflow:hidden}
 .briefbar i{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left center}
+.orow .btn.briefback{flex:0 0 auto;min-width:140px;font-size:14px;padding:9px 24px}
 .seasonprogress{display:grid;grid-template-columns:1fr auto;gap:5px 18px;align-items:center;margin:0 0 16px;padding:12px 14px;
   background:#120e1c;box-shadow:inset 0 0 0 2px var(--edge);font-family:var(--mono);text-transform:uppercase}
 .seasonprogress b{font-family:var(--disp);font-size:18px;letter-spacing:.11em;color:var(--gold)}
@@ -574,15 +574,30 @@ canvas{display:block}
     <div class="briefcard blk">
       <div class="briefseason" id="briefSeason">Preseason</div>
       <div class="brieftitle">Seasonal challenge</div>
-      <div class="briefplace" id="briefPlace">Finding your place…</div>
-      <div class="brieftarget" id="briefTarget">Loading your next target.</div>
-      <div class="brieftip" id="briefTip">Three eliminations makes the clear count.</div>
-      <div class="briefpills" id="briefPills"></div>
+      <div class="brieftier" id="briefTier">Rookie run</div>
+      <div class="briefscore" id="briefScore">0 / 6</div>
+      <div class="briefscorelabel">Qualifying wins</div>
+      <div class="briefrequirement" id="briefRequirement">Win with 3 eliminations</div>
+      <div class="brieftarget" id="briefTarget">One good win at a time.</div>
       <div class="briefcount" id="briefCount">Deploying in 6</div>
       <div class="briefbar"><i id="briefBar"></i></div>
       <div class="orow" style="justify-content:center">
-        <button class="btn primary" id="btnBriefDeploy">Deploy now</button>
-        <button class="btn ghost" id="btnBriefBack">Back</button>
+        <button class="btn ghost briefback" id="btnBriefBack">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM / TRAINING BRIEFING -->
+  <div class="screen hidden" id="scr-custom-brief">
+    <div class="briefcard blk">
+      <div class="briefseason" id="customBriefMode">Custom battle</div>
+      <div class="brieftitle" id="customBriefTitle">Locked &amp; loaded</div>
+      <div class="brieftier">Get ready</div>
+      <div class="brieftarget" id="customBriefTarget">Personal progress · No seasonal rank</div>
+      <div class="briefcount" id="customBriefCount">Deploying in 3</div>
+      <div class="briefbar"><i id="customBriefBar"></i></div>
+      <div class="orow" style="justify-content:center">
+        <button class="btn ghost briefback" id="btnCustomBriefBack">Back</button>
       </div>
     </div>
   </div>
@@ -2685,17 +2700,19 @@ function spawnMatch(){
   G.yaw=Math.atan2(-p.pos.x,-p.pos.z); G.pitch=0; p.yaw=G.yaw;
   if(G.pet) warpPetToFormation(G.pet,p,petTactic(G.pet.def));
   G.t=0; G.left=rules.time*60; G.on=true; G.over=false; G.paused=false;
-  G.cam=S.cfg.cam; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
-  G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.lastAttacker=null; G.lastAttackerT=-99; G.grace=3.2;
+  G.cam=S.cfg.cam; G.camD=0; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
+  G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.lastAttacker=null; G.lastAttackerT=-99;
   G.events=[]; G.lastKiller=null; G.lastPart=null; G.outro=null; scheduleEvent();
   G.wepKills={}; G.petKills=0; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
   G.streakCoins=0; G.lowHp=false; G.ate=0; G.swing=0;
-  if(G.training){ G.left=99999; G.grace=1.0; }
+  if(G.training) G.left=99999;
   $('#killfeed').innerHTML=''; $('#dmgnums').innerHTML=''; lastHud='';
   $('#mapName').textContent=def.name.toUpperCase();
   const hz=arenaHazards(def);
   if(hz.length) setTimeout(()=>{ if(G.on) toast(def.name.toUpperCase()+' — '+hz[hz.length-1]); }, 900);
-  updateHUD(); drawMinimap();
+  // Paint the real spawn before an automatic transition waits for pointer lock.
+  // Otherwise the first paused frame renders the camera at the world origin.
+  updateCamera(0); updateModels(0); updateHUD(); drawMinimap();
 }
 const tagTex={};
 function makeTag(name){
@@ -3340,7 +3357,7 @@ function updatePlayer(dt){
   if(wp.shellReload&&p.reloadT>0&&mouseDown&&p.ammo>0){ p.reloadT=0; }
   // charged weapons: hold, glow, release
   if(wp.charge){
-    if(mouseDown&&canFire(p)&&G.grace<=0){
+    if(mouseDown&&canFire(p)){
       if(p.chargeT<=0) AU.charge();
       p.chargeT+=dt;
       const mz=muzzlePos(p);
@@ -3353,7 +3370,7 @@ function updatePlayer(dt){
     wantFire=false;
   } else {
     const shoot = (wp.burst&&p.burstLeft>0) ? true : (wp.auto ? mouseDown : wantFire);
-    if(shoot && p.reloadT<=0 && G.grace<=0){ fire(p,playerAim()); }
+    if(shoot && p.reloadT<=0){ fire(p,playerAim()); }
     wantFire=false;
   }
   // ads
@@ -3512,7 +3529,7 @@ function updateBot(b,dt){
   }
   // shoot
   const maxEngage=Math.min(wp.range*0.92,(wp.id==='sniper'||wp.id==='reaper')?110:(wp.fall?wp.fall[1]*0.95:46));
-  if(!G.training&&t&&vis&&dist<maxEngage&&G.grace<=0){
+  if(!G.training&&t&&vis&&dist<maxEngage){
     b.ai.react-=dt;
     if(b.ai.react<=0&&canFire(b)){
       const eyeO={x:b.pos.x,y:b.pos.y+1.45,z:b.pos.z};
@@ -3824,7 +3841,6 @@ function updateHUD(){
   const alive=G.ents.filter(e=>e.alive).length;
   $('#alive').innerHTML=G.training?'<b>SAFE</b> \u00B7 NO DAMAGE TAKEN':('<b>'+alive+'</b> ALIVE');
   $('#clock').textContent = G.training ? ('TRAINING RANGE   ·   T = NEXT WEAPON   ·   ' + wp.name.toUpperCase())
-    : G.grace>0 ? ('BATTLE BEGINS IN '+Math.ceil(G.grace))
     : (fmtTime(G.left)+'   ·   '+G.kills+' KILLS');
   const PB=$('#petbar');
   if(!G.pet) PB.innerHTML='';
@@ -3885,7 +3901,6 @@ function drawMinimap(){
 let mmT=0;
 function tick(dt){
   G.t+=dt; G.left-=dt;
-  if(G.grace>0) G.grace-=dt;
   if(G.pl.eatT>0) G.pl.eatT-=dt;
   updatePlayer(dt);
   for(const e of G.ents){ if(!e.isPlayer) updateBot(e,dt); statusTick(e,dt); }
@@ -4369,9 +4384,15 @@ function pvShow(kind,data){
    ===================================================================== */
 const CHALLENGE_BRIEF_MS=6000;
 let challengeBriefTimer=null, challengeBriefToken=0, challengeBriefDeadline=0;
+const CUSTOM_BRIEF_MS=3000;
+let customBriefTimer=null, customBriefToken=0, customBriefDeadline=0;
 function cancelChallengeBriefing(){
   if(challengeBriefTimer) clearInterval(challengeBriefTimer);
   challengeBriefTimer=null; challengeBriefToken++;
+}
+function cancelCustomBriefing(){
+  if(customBriefTimer) clearInterval(customBriefTimer);
+  customBriefTimer=null; customBriefToken++;
 }
 function challengeBriefSeason(){
   const status=SEASON_STATUS||localSeasonStatus(), cur=status.current, next=status.next;
@@ -4380,15 +4401,10 @@ function challengeBriefSeason(){
   return 'SEASONAL CHALLENGE';
 }
 function renderChallengeBriefRules(rules){
-  const arena=AR[rules.arena]||AR.foundry, primary=W[S.eq.primary||'sidearm'];
-  const pet=S.eq.pet&&PE[S.eq.pet];
   const progress=challengeProgress(), needed=challengeEliminationTarget(rules.skill);
-  $('#briefPills').innerHTML=[
-    'TARGET: '+SKILLS[rules.skill].name.toUpperCase(),
-    'WINS: '+progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier,
-    needed+' ELIMINATIONS EACH', CHALLENGE_RULES.bots+' OPPONENTS', CHALLENGE_RULES.time+' MIN', arena.name,
-    primary.name, pet?pet.name:'NO PET'
-  ].map(x=>'<span>'+esc(x)+'</span>').join('');
+  $('#briefTier').textContent=SKILLS[rules.skill].name.toUpperCase()+' RUN';
+  $('#briefScore').textContent=progress.tierWins+' / '+CHALLENGE_RULES.winsPerTier;
+  $('#briefRequirement').textContent='WIN WITH '+needed+' ELIMINATIONS';
 }
 function updateChallengeStanding(rows){
   const me=ACC&&rows&&rows.find(r=>r.handle===ACC.handle);
@@ -4398,36 +4414,21 @@ function updateChallengeStanding(rows){
   }
   const rules=matchRules();
   renderChallengeBriefRules(rules);
-  const progress=challengeProgress(), needed=challengeEliminationTarget(rules.skill);
-  const run=SKILLS[rules.skill].name+' run: '+progress.tierWins+'/'+CHALLENGE_RULES.winsPerTier+' qualifying wins';
-  const tips={
-    rookie:'Three eliminations makes a Rookie win qualify. Pick one clean fight at a time.',
-    regular:'Three eliminations makes it count. Use cover, finish your fights, and keep moving.',
-    veteran:'Two eliminations makes it count. Make every reload safe.',
-    elite:'Own the high ground. Do not give away free damage.',
-    nightmare:'No hiding now. Make every shot count.'
-  };
-  $('#briefTip').textContent=tips[rules.skill];
+  const progress=challengeProgress();
   if(!ACC){
-    $('#briefPlace').textContent='PLAY FOR YOUR BEST';
-    $('#briefTarget').textContent=run+'. Sign in to protect this progress across devices and place completed tiers on the board.';
+    $('#briefTarget').textContent='Sign in to keep this run across devices.';
     return;
   }
   if(!me){
-    $('#briefPlace').textContent=progress.tierWins?'BUILD YOUR '+SKILLS[rules.skill].name.toUpperCase()+' RUN':'MAKE THE BOARD';
-    $('#briefTarget').textContent=run+'. Win with at least '+needed+' eliminations. Six qualifying wins clear the tier.';
+    $('#briefTarget').textContent=progress.tierWins?'Keep the run going.':'Six qualifying wins clear this tier.';
     return;
   }
-  $('#briefPlace').textContent='#'+me.rank+' THIS SEASON';
   const at=rows.indexOf(me), ahead=at>0?rows[at-1]:null;
   if(!ahead){
-    $('#briefPlace').textContent='DEFEND THE CROWN';
-    $('#briefTarget').textContent='You lead the board. '+run+'. Keep climbing to make the target harder to catch.';
+    $('#briefTarget').textContent='You lead the board. Keep climbing.';
     return;
   }
-  $('#briefPlace').textContent='CLIMB FROM #'+me.rank+' TO #'+ahead.rank;
-  const tier=ahead.best_tier_name||'Unranked';
-  $('#briefTarget').textContent=run+'. Catch #'+ahead.rank+' '+ahead.handle+' · '+tier+' · '+ahead.best_kills+' eliminations · '+Number(ahead.best_damage||0).toLocaleString()+' damage.';
+  $('#briefTarget').textContent='#'+me.rank+' · Catch '+ahead.handle+' at #'+ahead.rank+'.';
 }
 function deployChallengeBrief(token,capture){
   if(token!==undefined&&token!==challengeBriefToken) return;
@@ -4458,8 +4459,33 @@ async function showChallengeBriefing(){
   if(board&&board.ok) updateChallengeStanding(board.rows||[]);
   else updateChallengeStanding(null);
 }
+function deployCustomBrief(token){
+  if(token!==undefined&&token!==customBriefToken) return;
+  cancelCustomBriefing();
+  startMatch(false);
+}
+function showCustomBriefing(){
+  cancelCustomBriefing();
+  const rules=matchRules(), training=rules.mode==='training', token=customBriefToken;
+  saveState();
+  $('#customBriefMode').textContent=training?'TRAINING RANGE':'CUSTOM BATTLE';
+  $('#customBriefTitle').textContent=training?'WARM UP':rules.hunted?'SURVIVE THE HUNT':'LOCKED & LOADED';
+  $('#customBriefTarget').textContent=training?'Safe practice · No rewards'
+    : rules.hunted?'Every bot is coming for you.':'Personal progress · No seasonal rank';
+  show('scr-custom-brief');
+  customBriefDeadline=Date.now()+CUSTOM_BRIEF_MS;
+  const tick=()=>{
+    if(token!==customBriefToken) return;
+    const left=Math.max(0,customBriefDeadline-Date.now());
+    $('#customBriefCount').textContent=left?'DEPLOYING IN '+Math.max(1,Math.ceil(left/1000)):'DEPLOYING';
+    $('#customBriefBar').style.transform='scaleX('+(left/CUSTOM_BRIEF_MS)+')';
+    if(left<=0) deployCustomBrief(token);
+  };
+  tick(); customBriefTimer=setInterval(tick,100);
+}
 function show(id){
   if(id!=='scr-challenge'&&challengeBriefTimer) cancelChallengeBriefing();
+  if(id!=='scr-custom-brief'&&customBriefTimer) cancelCustomBriefing();
   $$('.screen').forEach(s=>s.classList.add('hidden'));
   const el=$('#'+id); if(el) el.classList.remove('hidden');
   $('#ui').classList.toggle('pass',!el);
@@ -5296,7 +5322,10 @@ function startMatch(capture){
   G.paused=document.pointerLockElement!==$('#gl');
   if(!G.paused){ G.softCapture=false; toast('Fight!'); }
   else if(capture!==false) captureMouse(true);
-  else toast('Click the arena to take control');
+  else {
+    $('#clock').textContent='CLICK ARENA TO TAKE CONTROL';
+    toast('Click the arena to take control');
+  }
 }
 function wireUI(){
   $('#btnPlay').onclick=()=>{AU.ui();showChallengeBriefing();};
@@ -5305,8 +5334,8 @@ function wireUI(){
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();S.cfg.mode='custom';renderSetup();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
-  $('#btnBriefDeploy').onclick=()=>{AU.ui();deployChallengeBrief(undefined,true);};
   $('#btnBriefBack').onclick=()=>{AU.ui();G.softCapture=false;document.exitPointerLock&&document.exitPointerLock();show('scr-title');};
+  $('#btnCustomBriefBack').onclick=()=>{AU.ui();show('scr-setup');};
   $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
   $('#pvBackdrop').onclick=()=>closeArmoryDetails(true);
   let resetArmed=0;
@@ -5317,7 +5346,7 @@ function wireUI(){
     refreshCoins(); buildMenuScene();
     toast('This computer reset to 1,500 coins. Your online fighter is untouched — sign back in to get it.');
   };
-  $('#btnDeploy2').onclick=()=>{AU.ui();startMatch();};
+  $('#btnDeploy2').onclick=()=>{AU.ui();showCustomBriefing();};
   $$('[data-back]').forEach(b=>b.onclick=()=>{AU.ui();refreshCoins();show('scr-title');});
   $('#btnResume').onclick=()=>{ captureMouse(); };
   $('#btnQuit').onclick=()=>quitMatch();

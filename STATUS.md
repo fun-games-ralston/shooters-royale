@@ -1,6 +1,6 @@
 # Block Royale — Build Status
 
-**Version:** 2.6 beta · **Date:** 12 September 2026 · **Branch:** `codex/challenge-seasons`
+**Version:** 2.6.1 beta · **Date:** 12 September 2026 · **Branch:** `codex/challenge-seasons`
 
 ---
 
@@ -10,7 +10,7 @@
 
 ## Summary
 
-The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules and automatically advances through opponent tiers after six cumulative qualifying wins. Rookie and Regular wins need at least 3 eliminations; Veteran and harder wins need at least 2. Losses do not erase qualifying wins. The six-second briefing and leaderboard both show progress such as 4/6. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Its optional Hunted rule is off by default and makes every bot hunt the player without changing Challenge AI. Season 1 starts 1 October 2026; each calendar month begins a new season at Rookie while permanent fighter progress and Preseason history remain intact.
+The current candidate separates Seasonal Challenge from Custom Battle without changing `main`. Seasonal Challenge has fixed 7-opponent, 3-minute rules and automatically advances through opponent tiers after six cumulative qualifying wins. Rookie and Regular wins need at least 3 eliminations; Veteran and harder wins need at least 2. Losses do not erase qualifying wins. Its six-second briefing now shows only the tier, progress such as 4/6, and the elimination requirement. Custom and Training use a shorter three-second briefing without repeating setup details. After any briefing, taking control enables combat immediately; there is no movement-only firing lock. Custom retains the familiar controls and personal progression but cannot affect the seasonal board. Its optional Hunted rule is off by default and makes every bot hunt the player without changing Challenge AI. Season 1 starts 1 October 2026; each calendar month begins a new season at Rookie while permanent fighter progress and Preseason history remain intact.
 
 The database change is additive and versioned. It preserves every player row and adds server-authoritative cumulative progress plus Pacific calendar-month season rows. The current Challenge tests pass in Node and local Supabase, and a rollback-only hosted-database test verified that wins 1–5 do not clear Rookie, win 6 does, and the authenticated progress read advances to Regular at 0/6. Browser validation confirmed the updated six-second briefing and its 0/6 progress display. The title-screen lifecycle schedule is covered at days 1, 7, 15, 27, and the final two days. The existing PvE and Friends PvP boundaries remain unchanged.
 

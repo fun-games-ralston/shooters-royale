@@ -7,6 +7,14 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.6.1 beta — Brief, ready, fight
+
+* The six-second Challenge briefing now shows only the opponent tier, qualifying wins, elimination requirement, and countdown. Fixed arena rules and the player's known weapon and companion no longer compete with the goal.
+* Custom Battle and Training now use their own short, three-second briefing without repeating the setup choices the player just made.
+* Removed the movement-only combat grace period from every mode. Players and bots can act as soon as the arena takes control, so the weapon never appears locked after deployment.
+* The arena camera now moves to the real spawn before waiting for the required click, and the HUD clearly asks the player to click the arena instead of showing a broken-looking world-origin frame.
+* Candidate only; `main` is unchanged.
+
 ## 2.6 beta — Six-win calendar seasons
 
 * A tier now takes **6 cumulative qualifying wins** to clear. Rookie and Regular wins need at least 3 eliminations; Veteran, Elite, and Nightmare wins need at least 2. Losses do not erase progress.
