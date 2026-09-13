@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Block Royale Fair Play Review</title>
+  <meta name="description" content="A visual decision guide for Block Royale Challenge, seasons, difficulty, and fair play.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0811'/%3E%3Cpath d='M13 14h38v10H23v8h24v9H23v10H13z' fill='%23f7b32b'/%3E%3C/svg%3E">
+  <style>
+    :root{--ink:#f6f0e7;--muted:#aca2b7;--bg:#08060d;--panel:#151020;--panel2:#1d162a;--line:#3b2e4d;--gold:#f7b32b;--gold2:#ffd166;--cyan:#73d9ff;--green:#8fd66c;--red:#ff6b57;--violet:#aa7cff;--shadow:0 22px 70px rgba(0,0,0,.42)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:radial-gradient(circle at 78% -10%,#29183c 0,transparent 37%),linear-gradient(180deg,#0b0711 0,#08060d 70%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.17;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 72%)}
+    a{color:inherit}
+    button{font:inherit}
+    .shell{width:min(1180px,calc(100% - 36px));margin:auto;position:relative}
+    .topbar{position:sticky;top:0;z-index:20;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(8,6,13,.84);backdrop-filter:blur(18px)}
+    .topbar .shell{height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .brand-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--gold);color:#17100a;clip-path:polygon(10% 0,100% 0,88% 100%,0 100%)}
+    .top-meta{display:flex;align-items:center;gap:24px}.snapshot{color:var(--muted);font-size:.84rem}.top-nav{display:flex;gap:18px}.top-nav a{color:#c8bdce;text-decoration:none;font-size:.82rem;font-weight:750}.top-nav a:hover,.top-nav a:focus-visible{color:var(--gold2)}
+    .hero{padding:76px 0 28px;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:stretch}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--gold2);font-size:.8rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase}
+    .eyebrow:before{content:"";width:28px;height:2px;background:var(--gold)}
+    h1{font-size:clamp(2.8rem,7vw,6.6rem);line-height:.88;letter-spacing:-.055em;margin:18px 0 22px;max-width:820px;text-transform:uppercase}
+    .lede{font-size:clamp(1.12rem,2vw,1.42rem);line-height:1.55;color:#d9d0df;max-width:760px;margin:0 0 30px}
+    .lede strong{color:var(--ink)}
+    .actions{display:flex;flex-wrap:wrap;gap:12px}
+    .btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:13px 18px;font-weight:800;letter-spacing:.03em;text-decoration:none;cursor:pointer;transition:.18s ease}
+    .btn:hover,.btn:focus-visible{transform:translateY(-2px);border-color:var(--gold)}
+    .btn.primary{background:var(--gold);border-color:var(--gold);color:#181006}
+    .verdict{background:linear-gradient(145deg,rgba(247,179,43,.13),rgba(170,124,255,.08)),var(--panel);border:1px solid #584333;padding:28px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;min-height:340px;position:relative;overflow:hidden}
+    .verdict:after{content:"FAIR";position:absolute;right:-18px;bottom:-24px;color:rgba(247,179,43,.06);font-size:8rem;font-weight:950;letter-spacing:-.07em}
+    .verdict .label{color:var(--red);font-weight:900;letter-spacing:.12em;font-size:.78rem;text-transform:uppercase}
+    .verdict h2{font-size:2rem;line-height:1.15;margin:18px 0 12px;max-width:430px}
+    .verdict p{color:var(--muted);line-height:1.6;margin:0;max-width:430px}
+    .rule{position:relative;z-index:1;margin-top:24px;padding-top:20px;border-top:1px solid var(--line);font-weight:850;font-size:1.05rem;color:var(--gold2)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 28px}
+    .stat{background:rgba(21,16,32,.86);border:1px solid var(--line);padding:20px;min-height:122px}
+    .stat span{display:block;color:var(--muted);font-size:.8rem;letter-spacing:.11em;text-transform:uppercase;margin-bottom:16px}
+    .stat strong{display:block;font-size:2.25rem;line-height:1;color:var(--gold2)}
+    .stat small{display:block;color:var(--muted);margin-top:10px}
+    .section{padding:44px 0;scroll-margin-top:82px}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:22px}
+    .section h2{font-size:clamp(2rem,4vw,3.4rem);letter-spacing:-.04em;margin:0;line-height:1}
+    .section-intro{max-width:590px;color:var(--muted);line-height:1.55;margin:0}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .card{background:linear-gradient(145deg,rgba(255,255,255,.025),transparent),var(--panel);border:1px solid var(--line);padding:24px;box-shadow:var(--shadow)}
+    .card h3{font-size:1.25rem;margin:0 0 6px}
+    .card .sub{color:var(--muted);margin:0 0 24px;line-height:1.5}
+    .bar-row{display:grid;grid-template-columns:116px 1fr 54px;gap:12px;align-items:center;margin:16px 0;font-size:.92rem}
+    .bar-track{height:12px;background:#0a0710;border:1px solid #2d2438;overflow:hidden}
+    .bar-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan));transform-origin:left;animation:grow .8s cubic-bezier(.2,.7,.2,1) both}
+    .bar-row b{text-align:right;color:var(--ink)}
+    @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    .takeaway{display:flex;gap:14px;align-items:flex-start;margin-top:20px;background:#0c0912;border-left:4px solid var(--gold);padding:16px;color:#ddd4e2;line-height:1.55}
+    .takeaway strong{color:var(--gold2)}
+    .rank-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:end;height:202px;padding:18px 0 0;border-bottom:1px solid var(--line)}
+    .column{display:flex;flex-direction:column;justify-content:end;align-items:center;height:100%;gap:8px;text-align:center}
+    .column .value{font-weight:900;color:var(--ink)}
+    .column .bar{width:min(72px,70%);background:linear-gradient(var(--cyan),#387a9b);border:1px solid #77dfff;min-height:8px}
+    .column:nth-child(1) .bar{background:linear-gradient(var(--red),#8e2f31);border-color:#ff8b78}
+    .column small{height:34px;color:var(--muted);font-size:.76rem}
+    .footnote{color:#8f849a;font-size:.82rem;line-height:1.5;margin-top:18px}
+    .section-kicker{color:var(--gold);font-size:.77rem;letter-spacing:.16em;text-transform:uppercase;font-weight:900;margin-bottom:12px}.signal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.signal{background:#0c0912;border:1px solid var(--line);padding:18px}.signal strong{display:block;font-size:1.5rem;color:var(--gold2);margin-bottom:6px}.signal span{color:var(--muted);font-size:.88rem;line-height:1.45}.table-wrap{overflow-x:auto;border:1px solid var(--line);background:#0b0810}table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:14px 16px;text-align:right;border-bottom:1px solid #2d2438;white-space:nowrap}th:first-child,td:first-child{text-align:left}th{color:#9d91a7;font-size:.73rem;text-transform:uppercase;letter-spacing:.09em;background:#120d1b}td{font-variant-numeric:tabular-nums;font-size:.9rem}tbody tr:last-child td{border-bottom:0}.handle{font-weight:900;color:var(--ink)}.watch{display:inline-block;color:var(--red);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;margin-left:8px}.caveat{background:linear-gradient(90deg,rgba(115,217,255,.08),transparent);border:1px solid #284657;padding:18px 20px;color:#d5dce3;line-height:1.55;margin-top:16px}.caveat strong{color:var(--cyan)}
+    .recent-visual{display:grid;grid-template-columns:1fr auto;gap:22px;align-items:center}.donut{width:184px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--red) 0 87.5%,#33283d 87.5% 100%);display:grid;place-items:center;box-shadow:inset 0 0 0 1px #58405a}.donut:after{content:"35 of 40";display:grid;place-items:center;text-align:center;width:118px;aspect-ratio:1;border-radius:50%;background:var(--panel);font-weight:950;font-size:1.15rem;color:var(--ink)}.recent-copy strong{display:block;font-size:2.5rem;color:var(--red);line-height:1}.recent-copy p{color:var(--muted);line-height:1.55}.mini-list{display:grid;gap:8px;margin-top:14px}.mini-list div{display:flex;justify-content:space-between;border-bottom:1px solid #31273c;padding-bottom:8px}.mini-list b{color:var(--gold2)}
+    .tier-chart{display:grid;gap:13px;margin:20px 0}.tier-row{display:grid;grid-template-columns:104px 1fr 76px;gap:12px;align-items:center}.tier-name{font-weight:850;font-size:.82rem;letter-spacing:.06em}.tier-track{height:24px;background:#0a0710;border:1px solid #2c2238;overflow:hidden}.tier-fill{height:100%;display:flex;align-items:center;padding-left:8px;color:#0b0710;font-size:.72rem;font-weight:950;background:linear-gradient(90deg,var(--gold),var(--gold2));animation:grow .8s cubic-bezier(.2,.7,.2,1) both}.tier-row:nth-child(2) .tier-fill{background:linear-gradient(90deg,#d7ab3c,#f4d47d)}.tier-row:nth-child(3) .tier-fill{background:linear-gradient(90deg,var(--violet),#d0b7ff)}.tier-row:nth-child(4) .tier-fill{background:linear-gradient(90deg,var(--cyan),#bceeff)}.tier-row:nth-child(5) .tier-fill{background:linear-gradient(90deg,var(--red),#ff9b89)}.tier-count{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.why{padding:18px;border:1px solid var(--line);background:#0c0912}.why b{display:block;color:var(--gold2);margin-bottom:7px}.why p{margin:0;color:var(--muted);line-height:1.5;font-size:.9rem}
+    .mode-map{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.mode{position:relative;border:1px solid var(--line);background:var(--panel);padding:22px;min-height:260px}.mode.featured{border-color:#7b5c2a;background:linear-gradient(160deg,rgba(247,179,43,.12),transparent 54%),var(--panel)}.mode-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);font-weight:850}.mode h3{font-size:1.55rem;margin:12px 0}.mode p{color:var(--muted);line-height:1.5}.mode ul{padding:0;list-style:none;margin:18px 0 0;display:grid;gap:9px}.mode li{font-size:.88rem;color:#d8cfde;padding-left:18px;position:relative}.mode li:before{content:"◆";position:absolute;left:0;color:var(--gold);font-size:.63rem;top:3px}.mode-result{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-weight:900;color:var(--green)}.mode:not(.featured) .mode-result{color:var(--cyan)}
+    .flow{display:flex;align-items:stretch;gap:8px;overflow-x:auto;padding:10px 2px 18px}.step{flex:1 0 148px;min-height:148px;border:1px solid var(--line);background:var(--panel);padding:17px;position:relative}.step .n{color:var(--gold);font-size:.72rem;letter-spacing:.12em;font-weight:900}.step strong{display:block;margin:13px 0 8px;font-size:1rem}.step span{color:var(--muted);font-size:.82rem;line-height:1.45}.arrow{display:grid;place-items:center;color:var(--gold);font-size:1.3rem}.branch{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.branch .path{border:1px solid var(--line);background:#0c0912;padding:18px;line-height:1.5;color:var(--muted)}.branch .path b{color:var(--ink)}.branch .yes{border-left:4px solid var(--green)}.branch .no{border-left:4px solid var(--red)}
+    .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.status-panel{padding:24px;border:1px solid var(--line);background:var(--panel)}.status-panel h3{display:flex;align-items:center;gap:9px;margin:0 0 18px}.dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 14px rgba(143,214,108,.7)}.pending .dot{background:var(--gold);box-shadow:0 0 14px rgba(247,179,43,.7)}.checklist{display:grid;gap:11px}.check{display:grid;grid-template-columns:22px 1fr;gap:8px;color:#d8cfdf;line-height:1.45;font-size:.92rem}.check i{font-style:normal;color:var(--green)}.pending .check i{color:var(--gold)}
+    .decision-shell{background:linear-gradient(135deg,rgba(170,124,255,.09),rgba(247,179,43,.05)),#100b18;border:1px solid #4d3b61;padding:clamp(20px,4vw,38px);box-shadow:var(--shadow)}.decision-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px}.progress-text{color:var(--muted)}.progress-text b{color:var(--gold2)}.reset{border:0;background:transparent;color:var(--muted);text-decoration:underline;cursor:pointer}.decision-list{display:grid;gap:12px}.decision{background:var(--panel);border:1px solid var(--line);padding:20px;transition:.2s ease}.decision.resolved{border-color:#5d814f}.decision-top{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:start}.decision-num{width:32px;height:32px;display:grid;place-items:center;background:#2b2038;color:var(--gold2);font-weight:950}.decision h3{margin:2px 0 7px;font-size:1.08rem}.decision p{margin:0;color:var(--muted);line-height:1.5;font-size:.9rem}.recommend{color:var(--green);font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;font-weight:900;white-space:nowrap;margin-top:6px}.choices{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;margin-left:50px}.choice{border:1px solid #51405f;background:#0c0912;color:#c9becf;padding:9px 12px;cursor:pointer;font-weight:750;font-size:.82rem}.choice:hover,.choice:focus-visible{border-color:var(--gold);color:var(--ink)}.choice.selected{background:var(--gold);border-color:var(--gold);color:#160f07}.summary{display:none;margin-top:20px;padding:20px;background:#0a0710;border:1px solid var(--line)}.summary.show{display:block}.summary h3{margin:0 0 12px}.summary ul{margin:0;padding-left:20px;color:#d9d0df;line-height:1.7}
+    .bottom-line{display:grid;grid-template-columns:1fr 1fr;gap:16px}.boundary-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.boundary{padding:13px 14px;background:#0b0810;border:1px solid #30253b;color:#c7bccd;font-size:.88rem}.source details{border-top:1px solid var(--line);padding:15px 0}.source details:first-of-type{margin-top:16px}.source summary{cursor:pointer;font-weight:850;color:var(--ink)}.source details p{color:var(--muted);line-height:1.55;margin-bottom:0}.footer{padding:38px 0 58px;color:#80758a;font-size:.82rem;border-top:1px solid #241b2e;margin-top:40px}.footer .shell{display:flex;justify-content:space-between;gap:20px}.tag{display:inline-block;border:1px solid var(--line);padding:5px 8px;color:var(--muted);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase}.tag.gold{border-color:#755a2b;color:var(--gold2)}
+    @media(max-width:960px){.top-nav{display:none}.mode-map,.why-grid{grid-template-columns:1fr}.mode{min-height:0}.recent-visual{grid-template-columns:1fr}.donut{width:160px}.status-grid,.bottom-line{grid-template-columns:1fr}}
+    @media(max-width:820px){.hero{grid-template-columns:1fr;padding-top:50px}.stats{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}.section-head{display:block}.section-intro{margin-top:14px}.snapshot{display:none}.signal-grid{grid-template-columns:1fr}.branch{grid-template-columns:1fr}.flow{display:grid}.arrow{transform:rotate(90deg);height:24px}.decision-top{grid-template-columns:38px 1fr}.recommend{grid-column:2}.choices{margin-left:0}.boundary-list{grid-template-columns:1fr}}
+    @media(max-width:500px){.shell{width:min(100% - 24px,1180px)}.stats{grid-template-columns:1fr}.topbar .shell{height:60px}.hero{padding-top:38px}.verdict{min-height:auto}.bar-row{grid-template-columns:92px 1fr 42px}.card{padding:18px}}
+
+    /* Paper-first light theme */
+    :root{--ink:#18141d;--muted:#625b69;--bg:#fff;--panel:#fff;--panel2:#f7f4f8;--line:#d8d0dc;--gold:#e6a21d;--gold2:#9a6200;--cyan:#197ea4;--green:#397d2d;--red:#c94334;--violet:#7046ad;--shadow:0 12px 34px rgba(39,26,46,.09)}
+    body{background:#fff;color:var(--ink)}
+    body:before{opacity:.5;background-image:linear-gradient(rgba(73,55,85,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(73,55,85,.045) 1px,transparent 1px);mask-image:linear-gradient(to bottom,black,transparent 58%)}
+    .topbar{background:rgba(255,255,255,.94);border-bottom-color:#ddd5e1;box-shadow:0 2px 16px rgba(35,24,41,.05)}
+    .top-nav a{color:#625869}.lede{color:#4f4855}.verdict{background:linear-gradient(145deg,rgba(247,179,43,.14),rgba(170,124,255,.06)),#fff;border-color:#d7bb82}.verdict p{color:#5d5662}.verdict:after{color:rgba(154,98,0,.055)}
+    .stat,.card,.mode,.step,.status-panel,.decision{background:linear-gradient(145deg,rgba(68,46,78,.018),transparent),#fff}
+    .bar-track,.rank-compare,.table-wrap,.signal,.why,.takeaway,.branch .path,.choice,.summary,.boundary{background:#faf8fb;border-color:#ded7e2}
+    .takeaway{color:#413a47}.caveat{background:linear-gradient(90deg,rgba(25,126,164,.075),transparent);border-color:#b8d4df;color:#3c4b51}
+    th{background:#f1edf3;color:#665d6d}th,td{border-bottom-color:#e3dde6}.watch{color:#aa3229}
+    .donut{background:conic-gradient(var(--red) 0 87.5%,#e8e1eb 87.5% 100%);box-shadow:inset 0 0 0 1px #dbcfdc}.donut:after{background:#fff}
+    .tier-track{background:#f5f1f6;border-color:#ddd4e1}.mode li,.check,.summary ul{color:#37313b}.mode-result{border-top-color:#ddd5e0}.decision-shell{background:linear-gradient(135deg,rgba(112,70,173,.055),rgba(230,162,29,.06)),#fbf9fc;border-color:#d4c8de}.decision-num{background:#efe7f5;color:#69409f}.choice{color:#4f4655}.choice.selected{background:var(--gold);border-color:var(--gold);color:#171108}.boundary{color:#4e4653}.footer{color:#6f6676;border-top-color:#ddd6e1}
+    .column .bar{background:linear-gradient(#4fb0d2,#197ea4);border-color:#197ea4}.column:nth-child(1) .bar{background:linear-gradient(#e46b5c,#b83c31);border-color:#b83c31}
+
+    @media print{
+      @page{margin:.5in}
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      html{font-size:11pt;scroll-behavior:auto}
+      body{background:#fff}
+      body:before,.top-nav,.snapshot,.actions,.reset{display:none!important}
+      .topbar{position:static;box-shadow:none;background:#fff}.topbar .shell{height:46px}
+      .shell{width:100%;max-width:none}.hero{padding:28px 0 18px;grid-template-columns:1.15fr .85fr;gap:18px}.hero h1{font-size:42pt}.lede{font-size:13pt}.verdict{min-height:0;padding:20px}
+      .stats{margin:10px 0 18px}.stat{min-height:0;padding:14px}.stat strong{font-size:22pt}.section{padding:24px 0;scroll-margin-top:0}.section h2{font-size:25pt}.card,.verdict,.stat,.mode,.step,.status-panel,.decision,.decision-shell{box-shadow:none;break-inside:avoid}
+      .grid-2,.mode-map,.status-grid,.bottom-line{gap:10px}.card,.mode,.status-panel{padding:16px}.mode{min-height:0}.flow{overflow:visible}.step{min-height:126px}.decision{padding:14px}.choices{margin-top:10px}.choice{padding:6px 9px}
+      .footer{margin-top:20px;padding:20px 0}.footer .shell{align-items:center}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell">
+      <div class="brand"><span class="brand-mark">BR</span><span>Fair Play Review</span></div>
+      <div class="top-meta"><nav class="top-nav" aria-label="Review sections"><a href="#evidence">Evidence</a><a href="#difficulty">Difficulty</a><a href="#solution">System</a><a href="#decisions">Decisions</a></nav><div class="snapshot">Live-data snapshot · Sep 12, 2026</div></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero shell">
+      <div>
+        <div class="eyebrow">Decision guide for Reynold + Ethan</div>
+        <h1>What should count?</h1>
+        <p class="lede">The old leaderboard mixed <strong>choose-anything Custom games</strong> with <strong>competitive ranking</strong>. The result: the fastest path up was often one easy opponent, not the strongest performance.</p>
+        <div class="actions">
+          <a class="btn primary" href="#evidence">See the evidence</a>
+          <a class="btn" href="#decisions">Make the decisions</a>
+        </div>
+      </div>
+      <aside class="verdict">
+        <div>
+          <div class="label">Recommended direction</div>
+          <h2>Separate the playground from the test.</h2>
+          <p>Keep Custom Battle flexible and familiar. Give Seasonal Challenge one fixed ruleset that everyone can understand and compare.</p>
+        </div>
+        <div class="rule">Challenge counts. Custom does not. Fighter progress stays forever.</div>
+      </aside>
+    </section>
+
+    <section class="shell" aria-label="Leaderboard snapshot">
+      <div class="stats">
+        <div class="stat"><span>Players</span><strong>43</strong><small>public fighter profiles</small></div>
+        <div class="stat"><span>Matches</span><strong>4,854</strong><small>lifetime recorded</small></div>
+        <div class="stat"><span>Wins</span><strong>3,376</strong><small>69.6% of matches</small></div>
+        <div class="stat"><span>High volume</span><strong>16</strong><small>players with 100+ matches</small></div>
+      </div>
+    </section>
+
+    <section id="evidence" class="section shell">
+      <div class="section-head">
+        <h2>The fairness signal</h2>
+        <p class="section-intro">The top of the old leaderboard wins more often, but records fewer eliminations per win. That is what we would expect when quick, small matches are valuable.</p>
+      </div>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Eliminations per win</h3>
+          <p class="sub">Lower is not automatically worse, but a large gap shows the matches are not comparable.</p>
+          <div class="bar-row"><span>Ranks 1–10</span><div class="bar-track"><div class="bar-fill" style="width:49.6%;background:linear-gradient(90deg,var(--red),#ff9a6f)"></div></div><b>2.26</b></div>
+          <div class="bar-row"><span>Ranks 11–20</span><div class="bar-track"><div class="bar-fill" style="width:84.4%"></div></div><b>3.85</b></div>
+          <div class="bar-row"><span>Ranks 21–43</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><b>4.56</b></div>
+          <div class="takeaway"><div>→</div><div><strong>Meaning:</strong> old rank measures match choice and repetition as well as skill.</div></div>
+        </article>
+
+        <article class="card">
+          <h3>Win rate by old rank band</h3>
+          <p class="sub">The highest-ranked group combines the highest win rate with the lowest eliminations per win.</p>
+          <div class="rank-compare" aria-label="Win rate comparison chart">
+            <div class="column"><span class="value">76.0%</span><div class="bar" style="height:152px"></div><small>Ranks<br>1–10</small></div>
+            <div class="column"><span class="value">72.2%</span><div class="bar" style="height:144px"></div><small>Ranks<br>11–20</small></div>
+            <div class="column"><span class="value">49.5%</span><div class="bar" style="height:99px"></div><small>Ranks<br>21–43</small></div>
+          </div>
+          <p class="footnote">Snapshot taken Sep 12, 2026 at 2:11 PM Pacific from the game’s public leaderboard functions.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-head">
+        <div><div class="section-kicker">Named examples</div><h2>What “farming” looks like</h2></div>
+        <p class="section-intro">These public handles match a narrow warning pattern. The pattern supports a rules problem. It does not prove that a child changed code or acted dishonestly.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fighter handle</th><th>Old rank</th><th>Matches</th><th>Wins</th><th>Win rate</th><th>Elims / match</th><th>Elims / win</th></tr></thead>
+          <tbody>
+            <tr><td><span class="handle">CAPYBARA</span><span class="watch">pattern</span></td><td>1</td><td>411</td><td>335</td><td>81.5%</td><td>0.98</td><td>1.20</td></tr>
+            <tr><td><span class="handle">LEVIFOR3</span><span class="watch">pattern</span></td><td>2</td><td>371</td><td>306</td><td>82.5%</td><td>0.96</td><td>1.17</td></tr>
+            <tr><td><span class="handle">MRBERKI</span><span class="watch">pattern</span></td><td>15</td><td>96</td><td>79</td><td>82.3%</td><td>1.13</td><td>1.37</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="signal-grid">
+        <div class="signal"><strong>878</strong><span>matches from these three profiles</span></div>
+        <div class="signal"><strong>18.1%</strong><span>of all recorded matches</span></div>
+        <div class="signal"><strong>21.3%</strong><span>of all recorded wins</span></div>
+      </div>
+      <div class="caveat"><strong>Important:</strong> the public feed does not show opponent count. “One-opponent-like” means the numbers match that strategy; it is not proof of intent or a technical hack.</div>
+    </section>
+
+    <section class="section shell">
+      <div class="grid-2">
+        <article class="card recent-visual">
+          <div class="recent-copy">
+            <div class="section-kicker">Latest 40 results</div>
+            <strong>87.5%</strong>
+            <p>were wins with exactly one elimination. The matches arrived within about one hour.</p>
+            <div class="mini-list"><div><span>LEVIFOR3</span><b>24</b></div><div><span>BENDYDIDTHINGS</span><b>8</b></div><div><span>ALBERT43</span><b>3</b></div></div>
+          </div>
+          <div class="donut" aria-label="35 of the latest 40 results were one-elimination wins"></div>
+        </article>
+        <article class="card">
+          <div class="section-kicker">Plain-language finding</div>
+          <h3>The game taught the wrong strategy.</h3>
+          <p class="sub">If the board says “most wins,” and every setup counts, a smart player learns to finish the smallest match quickly. The player is responding to the system.</p>
+          <div class="takeaway"><div>→</div><div><strong>Fix the incentive:</strong> compare only standard Challenge matches. Leave the easy setup available in Custom.</div></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="difficulty" class="section shell">
+      <div class="section-head">
+        <div><div class="section-kicker">Difficulty history</div><h2>A strange-shaped ladder</h2></div>
+        <p class="section-intro">This is the highest opponent skill used in any legacy win. It is useful evidence that the old settings were mixed, but it is not a clean measurement of ability.</p>
+      </div>
+      <div class="card">
+        <div class="tier-chart" aria-label="Legacy highest winning difficulty distribution">
+          <div class="tier-row"><div class="tier-name">ROOKIE</div><div class="tier-track"><div class="tier-fill" style="width:100%">16</div></div><div class="tier-count">38.1%</div></div>
+          <div class="tier-row"><div class="tier-name">REGULAR</div><div class="tier-track"><div class="tier-fill" style="width:62.5%">10</div></div><div class="tier-count">23.8%</div></div>
+          <div class="tier-row"><div class="tier-name">VETERAN</div><div class="tier-track"><div class="tier-fill" style="width:25%">4</div></div><div class="tier-count">9.5%</div></div>
+          <div class="tier-row"><div class="tier-name">ELITE</div><div class="tier-track"><div class="tier-fill" style="width:6.25%"></div></div><div class="tier-count">2.4%</div></div>
+          <div class="tier-row"><div class="tier-name">NIGHTMARE</div><div class="tier-track"><div class="tier-fill" style="width:68.75%">11</div></div><div class="tier-count">26.2%</div></div>
+        </div>
+        <div class="why-grid">
+          <div class="why"><b>Many stay low</b><p>9 of 16 players with 100+ matches have no legacy win above Veteran.</p></div>
+          <div class="why"><b>Nightmare spikes</b><p>More players show Nightmare than Elite, which is unlikely to be a normal step-by-step learning curve.</p></div>
+          <div class="why"><b>Why it happens</b><p>Players could jump directly to Nightmare and lower the opponent count, so “difficulty” was not standardized.</p></div>
+        </div>
+      </div>
+      <div class="caveat"><strong>Do not label ability from this chart.</strong> A one-opponent Nightmare win may be easier than a full Rookie lobby. Season 1 needs fixed rules before we can learn the real difficulty curve.</div>
+    </section>
+
+    <section id="solution" class="section shell">
+      <div class="section-head">
+        <div><div class="section-kicker">Proposed structure</div><h2>One job for each mode</h2></div>
+        <p class="section-intro">The game does not need a total redesign. It needs a clear boundary between competitive standing, free play, and friend battles.</p>
+      </div>
+      <div class="mode-map">
+        <article class="mode featured"><div class="mode-label">The fair test</div><h3>Seasonal Challenge</h3><p>Everyone faces comparable conditions and climbs one visible ladder.</p><ul><li>7 opponents</li><li>3 minutes</li><li>Win + at least 3 eliminations</li><li>Rookie → Nightmare</li><li>Armory loadout still matters</li></ul><div class="mode-result">Counts for seasonal rank</div></article>
+        <article class="mode"><div class="mode-label">The playground</div><h3>Custom Battle</h3><p>Keep the familiar choices, presets, and experiments players already enjoy.</p><ul><li>1 to 11 opponents</li><li>Any opponent skill</li><li>Any time and arena</li><li>Optional Hunted Mode</li><li>Coins, level, mastery stay</li></ul><div class="mode-result">Never changes seasonal rank</div></article>
+        <article class="mode"><div class="mode-label">The social match</div><h3>Play with Friends</h3><p>Use the same weapons, pets, maps, and look in an unranked two-player room.</p><ul><li>Host-authoritative round</li><li>Shared PvE content</li><li>No solo rewards</li><li>No seasonal rank</li><li>Separate PvP score</li></ul><div class="mode-result">Fun together, not ladder proof</div></article>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-head">
+        <div><div class="section-kicker">Current feature-branch logic</div><h2>How a tier advances</h2></div>
+        <p class="section-intro">There is no hidden difficulty adjustment. One qualifying win moves the player one step. A miss repeats the same target.</p>
+      </div>
+      <div class="flow" aria-label="Challenge progression steps">
+        <div class="step"><div class="n">STEP 01</div><strong>Start at Rookie</strong><span>A new season begins with no seasonal clear.</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 02</div><strong>See briefing</strong><span>Six seconds of ladder position, target, and fixed rules.</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 03</div><strong>Play the match</strong><span>Seven opponents. Three minutes. Your Armory setup.</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 04</div><strong>Check the clear</strong><span>Did you win and score at least three eliminations?</span></div><div class="arrow">→</div>
+        <div class="step"><div class="n">STEP 05</div><strong>Record or retry</strong><span>Advance one tier, or repeat the same target.</span></div>
+      </div>
+      <div class="branch"><div class="path yes"><b>YES: tier cleared.</b><br>Record the best result, then move Rookie → Regular → Veteran → Elite → Nightmare.</div><div class="path no"><b>NO: no tier clear.</b><br>Surviving with fewer than 3 eliminations is not enough. The player retries the same tier.</div></div>
+    </section>
+
+    <section class="section shell">
+      <div class="section-head"><div><div class="section-kicker">Release boundary</div><h2>Built versus still open</h2></div><p class="section-intro">Nothing here has been merged into the live `main` game. The core fairness slice exists only on the feature branch.</p></div>
+      <div class="status-grid">
+        <article class="status-panel"><h3><span class="dot"></span>Built for testing</h3><div class="checklist">
+          <div class="check"><i>✓</i><span>Seasonal Challenge and Custom are separate menu choices.</span></div>
+          <div class="check"><i>✓</i><span>Challenge locks 7 opponents, 3 minutes, and the next tier.</span></div>
+          <div class="check"><i>✓</i><span>One win plus 3 eliminations clears a tier.</span></div>
+          <div class="check"><i>✓</i><span>Custom keeps presets and Hunted Mode but cannot affect rank.</span></div>
+          <div class="check"><i>✓</i><span>Four-week seasons preserve coins, gear, level, mastery, and history.</span></div>
+          <div class="check"><i>✓</i><span>Preseason is preserved as legacy history.</span></div>
+        </div></article>
+        <article class="status-panel pending"><h3><span class="dot"></span>Open for discussion</h3><div class="checklist">
+          <div class="check"><i>?</i><span>Add an unranked Rally Round after two failed attempts?</span></div>
+          <div class="check"><i>?</i><span>Start Season 2 one tier below last season's best?</span></div>
+          <div class="check"><i>?</i><span>Add three simple achievements after Season 1?</span></div>
+          <div class="check"><i>?</i><span>Use the proposed Sep 25 launch after a small playtest?</span></div>
+          <div class="check"><i>?</i><span>How should the first standardized data change Rookie difficulty?</span></div>
+        </div></article>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="grid-2">
+        <article class="card">
+          <div class="section-kicker">Optional relief idea</div><h3>Rally Round</h3><p class="sub">After two failed ranked attempts, offer one clearly labeled easier match. Personal rewards count; rank does not. Then return to the same target, with no demotion.</p>
+          <div class="signal-grid" style="grid-template-columns:1fr 1fr"><div class="signal"><strong>2 misses</strong><span>triggers an offer, not a forced change</span></div><div class="signal"><strong>0 rank</strong><span>the easier match cannot promote</span></div></div>
+          <div class="takeaway"><div>→</div><div><strong>Why:</strong> give confidence without secretly changing the competitive test.</div></div>
+        </article>
+        <article class="card">
+          <div class="section-kicker">Keep achievements small</div><h3>Three goals, no new currency</h3><div class="mini-list"><div><span>Hunted Survivor</span><b>Custom</b></div><div><span>Arsenal Complete</span><b>Armory</b></div><div><span>Nightmare Clear</span><b>Challenge</b></div></div><p class="footnote">Use the existing medal or profile presentation. Achievements should never affect rank or combat power.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="decisions" class="section shell">
+      <div class="section-head"><div><div class="section-kicker">Review together</div><h2>Decide with Ethan</h2></div><p class="section-intro">Tap one answer for each question. Your choices stay only in this browser so you can work through the system together.</p></div>
+      <div class="decision-shell">
+        <div class="decision-toolbar"><div class="progress-text"><b id="doneCount">0</b> of 6 decisions marked</div><button class="reset" id="resetChoices" type="button">Reset choices</button></div>
+        <div class="decision-list" id="decisionList">
+          <article class="decision" data-id="custom"><div class="decision-top"><div class="decision-num">1</div><div><h3>Should adjustable Custom games affect the leaderboard?</h3><p>Players can still earn personal progress. This only decides whether Custom changes competitive standing.</p></div><div class="recommend">Recommend: No</div></div><div class="choices"><button class="choice" data-value="No">No</button><button class="choice" data-value="Yes">Yes</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
+          <article class="decision" data-id="clear"><div class="decision-top"><div class="decision-num">2</div><div><h3>Is one win plus 3 eliminations enough to clear a tier?</h3><p>Three wins per tier would require at least 15 wins to finish the ladder.</p></div><div class="recommend">Recommend: Yes</div></div><div class="choices"><button class="choice" data-value="Yes">Yes</button><button class="choice" data-value="Require more">Require more</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
+          <article class="decision" data-id="rally"><div class="decision-top"><div class="decision-num">3</div><div><h3>Should we add an unranked Rally Round after two misses?</h3><p>It may reduce frustration, but Season 1 data might show that it is unnecessary.</p></div><div class="recommend">Recommend: Wait for data</div></div><div class="choices"><button class="choice" data-value="Wait for data">Wait for data</button><button class="choice" data-value="Add at launch">Add at launch</button><button class="choice" data-value="No Rally">No Rally</button></div></article>
+          <article class="decision" data-id="season2"><div class="decision-top"><div class="decision-num">4</div><div><h3>Where should experienced players begin Season 2?</h3><p>Legacy results are not trustworthy enough for Season 1 seeding. Season 1 results will be standardized.</p></div><div class="recommend">Recommend: One tier below</div></div><div class="choices"><button class="choice" data-value="One tier below last best">One tier below</button><button class="choice" data-value="Everyone at Rookie">Everyone Rookie</button><button class="choice" data-value="Decide later">Decide later</button></div></article>
+          <article class="decision" data-id="achievements"><div class="decision-top"><div class="decision-num">5</div><div><h3>Should we add three simple achievements?</h3><p>Hunted Survivor, Arsenal Complete, and Nightmare Clear. No new currency or power.</p></div><div class="recommend">Recommend: Later</div></div><div class="choices"><button class="choice" data-value="Add after Season 1">After Season 1</button><button class="choice" data-value="Add at launch">At launch</button><button class="choice" data-value="Skip">Skip</button></div></article>
+          <article class="decision" data-id="launch"><div class="decision-top"><div class="decision-num">6</div><div><h3>Should Season 1 start September 25?</h3><p>Only after a small playtest confirms the rules are clear and existing progress is safe.</p></div><div class="recommend">Recommend: Yes, after test</div></div><div class="choices"><button class="choice" data-value="Yes, after playtest">Yes, after playtest</button><button class="choice" data-value="Delay">Delay</button><button class="choice" data-value="Discuss">Discuss</button></div></article>
+        </div>
+        <div class="summary" id="summary"><h3>Your review notes</h3><ul id="summaryList"></ul></div>
+      </div>
+    </section>
+
+    <section class="section shell">
+      <div class="bottom-line">
+        <article class="card"><div class="section-kicker">Do not redo the whole game</div><h3>Protected boundaries</h3><div class="boundary-list"><div class="boundary">Keep familiar Custom presets</div><div class="boundary">Keep the Armory</div><div class="boundary">Keep permanent progress</div><div class="boundary">Keep bot-vs-bot combat</div><div class="boundary">Keep Friends PvP unranked</div><div class="boundary">No new season currency</div></div></article>
+        <article class="card source"><div class="section-kicker">Evidence notes</div><h3>What the data can and cannot say</h3>
+          <details><summary>Where did the numbers come from?</summary><p>The game's public read-only leaderboard, recent-results, Preseason-board, and season-status functions. The snapshot was recorded on September 12, 2026 at 2:11 PM Pacific.</p></details>
+          <details><summary>Can we prove someone hacked the game?</summary><p>No. The aggregate data shows unusual, one-opponent-like play. The public feed does not include opponent count or a replay, so it cannot prove intent or developer-tools tampering.</p></details>
+          <details><summary>Do we know the correct Rookie difficulty?</summary><p>Not yet. There are no Season 1 results under the fixed 7-opponent format. Measure clears within 1, 3, and 5 attempts before changing the ladder.</p></details>
+        </article>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><div class="shell"><span>Block Royale Fair Play Review</span><span><span class="tag gold">Feature branch only</span> <span class="tag">Main game unchanged</span></span></div></footer>
+  <script>
+    (()=>{
+      const key='block-royale-fair-play-review-v1';
+      const labels={custom:'Custom affects rank',clear:'Tier clear rule',rally:'Rally Round',season2:'Season 2 start',achievements:'Achievements',launch:'Season 1 launch'};
+      let state={};
+      try{state=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){state={}}
+      const decisions=[...document.querySelectorAll('.decision')];
+      const render=()=>{
+        let done=0; const items=[];
+        decisions.forEach(card=>{
+          const id=card.dataset.id,value=state[id];
+          card.classList.toggle('resolved',!!value);
+          card.querySelectorAll('.choice').forEach(btn=>btn.classList.toggle('selected',btn.dataset.value===value));
+          if(value){done++;items.push('<li><strong>'+labels[id]+':</strong> '+value+'</li>')}
+        });
+        document.getElementById('doneCount').textContent=done;
+        const summary=document.getElementById('summary'); summary.classList.toggle('show',done>0);
+        document.getElementById('summaryList').innerHTML=items.join('');
+      };
+      document.getElementById('decisionList').addEventListener('click',e=>{
+        const btn=e.target.closest('.choice'); if(!btn)return;
+        const card=btn.closest('.decision'); state[card.dataset.id]=btn.dataset.value;
+        try{localStorage.setItem(key,JSON.stringify(state))}catch(err){}
+        render();
+      });
+      document.getElementById('resetChoices').addEventListener('click',()=>{state={};try{localStorage.removeItem(key)}catch(e){}render()});
+      render();
+    })();
+  </script>
+</body>
+</html>
