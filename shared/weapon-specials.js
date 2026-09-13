@@ -111,5 +111,15 @@
     return Math.max(0,damagePerSecond||0)*Math.max(0,exposureSeconds||0);
   }
 
-  return {normalize,selectLockTarget,advanceLock,turnTowards,homingDirection,segmentPointDistance,flameTargets,flameDamage};
+  function consumeFlameFuel(fuel,burstRemaining,dt){
+    const available=Math.max(0,fuel||0),remaining=Math.max(0,burstRemaining||0);
+    const active=Math.min(Math.max(0,dt||0),available,remaining);
+    return {active,fuel:Math.max(0,available-active),burstRemaining:Math.max(0,remaining-active)};
+  }
+
+  function trainingReserve(reserve,magazine){
+    return Math.max(0,reserve||0)>0?reserve:Math.max(0,magazine||0);
+  }
+
+  return {normalize,selectLockTarget,advanceLock,turnTowards,homingDirection,segmentPointDistance,flameTargets,flameDamage,consumeFlameFuel,trainingReserve};
 });

@@ -20,9 +20,11 @@ test('Lockjaw and Dragonfire keep the approved balance contract',()=>{
   assert.equal(lockjaw.lockOn.time,1.2); assert.equal(lockjaw.pvp,false);
   assert.ok(flame); assert.equal(flame.name,'Dragonfire');
   assert.equal(flame.dmg,70); assert.equal(flame.mag,8); assert.equal(flame.range,15);
-  assert.equal(flame.flameDuration,3); assert.equal(flame.bodyOnly,true); assert.equal(flame.pvp,false);
+  assert.equal(flame.flameDuration,4); assert.equal(flame.bodyOnly,true); assert.equal(flame.pvp,false);
   assert.equal(Specials.flameDamage(flame.dmg,1),70);
-  assert.equal(Specials.flameDamage(flame.dmg,flame.flameDuration),210);
+  assert.equal(Specials.flameDamage(flame.dmg,flame.flameDuration),280);
+  assert.deepEqual(Specials.consumeFlameFuel(8,4,9),{active:4,fuel:4,burstRemaining:0});
+  assert.deepEqual(Specials.consumeFlameFuel(1.5,4,3),{active:1.5,fuel:0,burstRemaining:2.5});
 });
 
 test('lock requires one continuous visible target and stays confirmed after cover',()=>{
@@ -91,5 +93,12 @@ test('special PvE mechanics cannot silently degrade into ordinary PvP shots',()=
 test('live HUD includes explicit lock confirmation instructions',()=>{
   assert.match(source,/TARGET LOCKED · LMB FIRE/);
   assert.match(source,/HOLD RMB ON A VISIBLE FIGHTER/);
-  assert.match(source,/HOLD LMB TO BURN FOR UP TO 3 SECONDS/);
+  assert.match(source,/HOLD LMB TO BURN FOR UP TO 4 SECONDS/);
+});
+
+test('training uses real magazines with a bottomless reserve',()=>{
+  assert.equal(Specials.trainingReserve(0,4),4);
+  assert.equal(Specials.trainingReserve(3,4),3);
+  assert.doesNotMatch(source,/wp\.mag>0&&!\(G\.training&&e\.isPlayer\)/);
+  assert.match(source,/pool\.r=WS\.trainingReserve\(pool\.r,wp\.mag\)/);
 });
