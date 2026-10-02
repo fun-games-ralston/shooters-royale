@@ -7,10 +7,18 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.7 — 1 Oct 2026 · Season 1
+
+* Launched Seasonal Challenge with a fresh Rookie start for every fighter. Six qualifying wins clear each tier; Rookie and Regular wins need 3 eliminations, while Veteran and harder wins need 2.
+* Kept completed seasons available from the full leaderboard. Season 1 shows **Preseason results**; future seasons automatically show the immediately previous season's final standings.
+* Custom Battle still earns lifetime progress without changing the seasonal ladder. Coins, equipment, Fighter Level, mastery, lifetime statistics, and match history never reset.
+* Released Lockjaw Launcher and Dragonfire for solo play and Training. They remain unavailable in Friends PvP until their special mechanics are host-authoritative there.
+* Preserved the production win-recording fixes: fast wins count, completed results retry safely, and duplicate retries count once. No historical results were backfilled.
+
 ## Feature branch — Production fixes synchronized
 
 * Merged production `main` through release `c6379b4`, including fast-win recording, duplicate-safe result retries, removal of hourly score limits, and the optional playtime reminder.
-* Preserved the Seasonal Challenge pages, migrations, progress rules, and both PvE-only special weapons. The seasonal client and seasonal database changes remain a feature-branch candidate.
+* Preserved the Seasonal Challenge pages, migrations, progress rules, and both PvE-only special weapons through the final Season 1 release.
 * Added the production migration history and opening-grace regression test to the combined branch; no production data or player state was changed by this merge.
 
 ## 2.5 candidate — Lockjaw and Dragonfire
@@ -28,7 +36,7 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 * Completed results wait safely in this browser and retry after connection failures or reloads. Retrying the same result counts it once.
 * The menu and results screen show when a result is waiting to sync or has been recorded.
 * Challenge requirements affect seasonal advancement only. A tier mismatch, nonstandard setup, or season gap no longer discards the lifetime win; the result explains why the Challenge did not advance.
-* The baseline backend migration is live with production `main`; the seasonal client still requires its separate seasonal migrations before release. Existing missing wins are not backfilled.
+* The production backend includes the baseline and seasonal migrations. Existing missing wins were not backfilled.
 
 ## Feature branch — Score limits and optional breaks
 

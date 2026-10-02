@@ -132,6 +132,27 @@ test('calendar seasons begin October 1 at Pacific midnight and follow month boun
   assert.equal(context.result.current.ends_at, '2026-12-01T08:00:00.000Z', 'Pacific DST must not move the local reset hour');
 });
 
+test('the full leaderboard keeps the immediately previous season available', () => {
+  const context = { result: null, esc: value => String(value) };
+  vm.runInNewContext(
+    functionSource('previousSeason') + '\n' + functionSource('seasonPicker'),
+    context
+  );
+  vm.runInNewContext("result=previousSeason({current:{slug:'season-1',name:'Season 1'}})", context);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.result)), { slug: 'preseason', name: 'Preseason' });
+  vm.runInNewContext("result=seasonPicker({current:{slug:'season-1',name:'Season 1'}},'preseason')", context);
+  assert.match(context.result, /Season 1/);
+  assert.match(context.result, /Preseason results/);
+  assert.match(context.result, /data-season="preseason"/);
+
+  vm.runInNewContext("result=previousSeason({current:{slug:'season-2',name:'Season 2'}})", context);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.result)), { slug: 'season-1', name: 'Season 1' });
+  vm.runInNewContext("result=seasonPicker({current:{slug:'season-2',name:'Season 2'}},'season-1')", context);
+  assert.match(context.result, /Season 1 results/);
+  assert.match(functionSource('renderBoard'), /requested\?'FINAL RESULTS':'JUST NOW'/);
+  assert.match(functionSource('challengeProgressPanel'), /if\(requested\|\|!ACC\) return ''/);
+});
+
 test('season lifecycle messages appear on launch, checkpoints, and the final two days', () => {
   const context = { result: null };
   vm.runInNewContext(

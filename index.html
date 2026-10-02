@@ -4984,8 +4984,18 @@ async function accSubmit(joining){
 
 /* ---- leaderboard ---- */
 let BOARD_SEASON='';
+function previousSeason(status){
+  const active=status&&status.current;
+  if(!active||active.slug==='preseason') return null;
+  const match=/^season-(\d+)$/.exec(active.slug||'');
+  if(!match) return null;
+  const number=Number(match[1]);
+  return number===1
+    ? {slug:'preseason',name:'Preseason'}
+    : {slug:'season-'+(number-1),name:'Season '+(number-1)};
+}
 function challengeProgressPanel(requested){
-  if(requested==='preseason'||!ACC) return '';
+  if(requested||!ACC) return '';
   const progress=challengeProgress(), skill=challengeTargetSkill(), needed=challengeEliminationTarget(skill);
   const complete=progress.bestTier>=CHALLENGE_TIERS.length;
   return '<div class="seasonprogress"><b>YOUR RUN · '+esc(SKILLS[skill].name)+'</b><strong>'+
@@ -4999,7 +5009,8 @@ async function renderBoard(){
   const status=SEASON_STATUS||localSeasonStatus();
   const active=status.current;
   const requested=BOARD_SEASON||'';
-  const shownName=requested==='preseason'?'Preseason':active?active.name:'Challenge';
+  const previous=previousSeason(status);
+  const shownName=requested&&previous&&requested===previous.slug?previous.name:active?active.name:'Challenge';
   sub.textContent=club.toUpperCase()+' · '+shownName.toUpperCase();
   if(!NET.on()){
     body.innerHTML='<div class="lbempty">Online play is not switched on in this copy of the game.<br><br>'+
@@ -5007,7 +5018,7 @@ async function renderBoard(){
     return;
   }
   body.innerHTML='<div class="lbempty">Loading the board…</div>';
-  const [b,f,p]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested),requested==='preseason'?null:seasonProgress()]);
+  const [b,f,p]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested),requested?null:seasonProgress()]);
   if(p&&p.ok) reconcileChallengeProgress(p);
   if(!b||!b.ok){
     body.innerHTML='<div class="lbempty">'+netMsg(b?b.error:'NO_NETWORK')+'</div>'; return;
@@ -5051,14 +5062,15 @@ async function renderBoard(){
       '<span class="v">'+r.best_kills+'</span>'+
       '<span class="v">'+r.matches+'</span></div>';
   });
-  if(seasonal) html+='<div class="lbrule"><b style="color:var(--gold)">Challenge counts. Custom does not.</b> '+
+  if(requested==='preseason') html+='<div class="lbrule">Preseason history uses the old rule: hardest difficulty beaten, then wins at that level. '+
+    'Season 1 started fresh at Rookie without removing any fighter progress.</div>';
+  else if(seasonal) html+='<div class="lbrule"><b style="color:var(--gold)">Challenge counts. Custom does not.</b> '+
     'Six qualifying wins clear a tier. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2. Your hardest clear sets your Challenge Tier; '+
     'ties use eliminations, then damage. Your coins, gear, Fighter Level and mastery never reset.</div>';
-  else if(tiered) html+='<div class="lbrule">Preseason history uses the old rule: hardest difficulty beaten, then wins at that level. '+
-    'Season 1 starts October 1 with everyone at Rookie, without removing any fighter progress.</div>';
   if(f&&f.ok&&f.rows&&f.rows.length){
-    html+='<div class="feed"><h5>JUST NOW</h5>'+f.rows.map(m=>
-      '<div><b>'+esc(m.handle)+'</b> '+(m.challenge_clear?'<span class="w">cleared</span>':m.won?'<span class="w">won</span>':'went down')+' in '+
+    html+='<div class="feed"><h5>'+(requested?'FINAL RESULTS':'JUST NOW')+'</h5>'+f.rows.map(m=>
+      '<div><b>'+esc(m.handle)+'</b> '+(requested==='preseason'?(m.won?'<span class="w">won</span>':'went down'):
+        m.challenge_clear?'<span class="w">cleared</span>':m.won?'<span class="w">won</span>':'went down')+' in '+
       esc((AR[m.arena]&&AR[m.arena].name)||m.arena||'the arena')+
       ' · '+m.kills+' elimination'+(m.kills===1?'':'s')+'</div>').join('')+'</div>';
   }
@@ -5070,10 +5082,11 @@ async function renderBoard(){
 }
 function seasonPicker(status,requested){
   const active=status&&status.current;
-  if(!active||active.slug==='preseason') return '';
+  const previous=previousSeason(status);
+  if(!active||!previous) return '';
   return '<div class="orow" style="margin:0 0 16px">'+
     '<button class="btn sm '+(!requested?'primary':'ghost')+'" data-season="">'+esc(active.name)+'</button>'+
-    '<button class="btn sm '+(requested==='preseason'?'primary':'ghost')+'" data-season="preseason">Preseason history</button></div>';
+    '<button class="btn sm '+(requested===previous.slug?'primary':'ghost')+'" data-season="'+esc(previous.slug)+'">'+esc(previous.name)+' results</button></div>';
 }
 function wireSeasonPicker(){
   $$('#boardBody [data-season]').forEach(btn=>btn.onclick=()=>{

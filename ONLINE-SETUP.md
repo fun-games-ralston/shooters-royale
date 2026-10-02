@@ -1,6 +1,6 @@
 # Getting the leaderboard running
 
-Three steps, about ten minutes, and it costs nothing. The Season 1 candidate also has one additive dated migration after the original setup.
+Three steps, about ten minutes, and it costs nothing. The Season 1 release also has additive dated migrations after the original setup.
 
 ---
 
