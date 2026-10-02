@@ -621,7 +621,7 @@ canvas{display:block}
           <div class="seasonhero-label">New map · Free for everyone</div>
           <div class="seasonhero-copy">
             <h3>Ghostlight Playground</h3>
-            <p>A playground the town forgot. Fight around a giant pumpkin carousel, climb the boarded houses, and slip through the swing yard. Orange-ringed ghosts chase fighters through cover and deal 12 HP on contact before fading. Keep running to escape.</p>
+            <p>A playground the town forgot. Fight around a giant pumpkin carousel, climb the boarded houses, and slip through the swing yard. Orange-ringed ghosts chase through cover, hit for 12 HP, then recoil and hunt again. Keep moving: each hunt ends after three hits or ten seconds.</p>
             <button class="btn sm primary" id="btnSeasonMap">Try the map</button>
             <span class="seasonfooter">Challenge · Custom Battle · Training · Friends PvP</span>
           </div>
@@ -843,7 +843,7 @@ canvas{display:block}
 <script src="shared/playtime-reminder.js"></script>
 <script src="shared/score-queue.js"></script>
 <script src="shared/weapon-specials.js"></script>
-<script src="shared/halloween.js?v=2"></script>
+<script src="shared/halloween.js?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -1547,8 +1547,8 @@ const ARENAS = [
  mod:{grav:0.55},void:true},
 {id:'ghosttown',name:'Ghostlight Playground',cost:0,size:80,seed:173,
  sky:0x171329,fog:0x282338,fogD:0.007,ground:0x343340,accent:0xff963f,wall:0x655078,light:0xe9deff,
- fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground with roaming ghosts. They glow orange before chasing fighters through cover: 12 HP on contact, then they fade. Outrun them. Free for everyone.',
- mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:1.5,radius:1.35}},
+ fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground with roaming ghosts. They warn, chase through cover, hit for 12 HP, then recoil and hunt again. Outrun them: three hits or ten seconds ends the hunt. Free for everyone.',
+ mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:2,radius:1.35,maxHits:3,recoil:2.5}},
 ];
 const AR = {}; ARENAS.forEach(a=>AR[a.id]=a);
 
@@ -3487,7 +3487,7 @@ function updateGhosts(dt){
   for(const ev of BlockRoyaleHalloween.stepHaunt(G.haunt,dt,fighters)){
     const target=G.ents[ev.targetId];
     if(ev.type==='ghost_warning'&&target.isPlayer){
-      toast('GHOST HUNTING YOU · RUN TO ESCAPE');AU.tone(300,520,.45,.14,'sine');
+      toast(ev.repeat?'GHOST RETURNING · KEEP MOVING':'GHOST HUNTING YOU · RUN TO ESCAPE');AU.tone(300,520,.45,.14,'sine');
     }
     if(ev.type==='ghost_hit'&&!G.over){
       damage(target,ev.damage,'BODY',null,{x:target.pos.x,y:target.pos.y+1,z:target.pos.z},'ghost');
@@ -5308,7 +5308,7 @@ function renderSetup(){
   const ghostWarning=document.createElement('div');ghostWarning.className='hint bad';
   const refreshGhostWarning=()=>{
     const haunt=AR[S.cfg.arena].haunt;ghostWarning.classList.toggle('hidden',!haunt);
-    ghostWarning.textContent=haunt?(S.cfg.mode==='training'?'Ghosts still chase here. Training prevents damage.':'Ghosts warn before chasing through cover. '+haunt.damage+' HP on touch, then they fade. Run to escape.'):'';
+    ghostWarning.textContent=haunt?(S.cfg.mode==='training'?'Ghosts still chase here. Training prevents damage.':'Ghosts warn, chase through cover, and hit for '+haunt.damage+' HP. They recoil and hunt again: three hits or ten seconds, then fade. Keep moving.'):'';
   };
   const arenaCard=chipCard('Arena','Where the battle runs — unlock more in the armory',
     ARENAS.map(a=>({id:a.id,name:a.name+(a.event||a.haunt?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
@@ -5734,7 +5734,7 @@ function arenaHazards(a){
   if(a.mod&&a.mod.grav) out.push('Low gravity — '+Math.round(a.mod.grav*100)+'% weight, higher jumps');
   if(a.void) out.push('No floor at the edges. Falling is fatal');
   if(a.hazard) out.push('Lava pools — '+a.hazard.dps+' damage a second');
-  if(a.haunt) out.push('Ghosts chase through cover · '+a.haunt.damage+' HP on touch, then fade · outrun the orange ring');
+  if(a.haunt) out.push('Ghosts chase through cover · '+a.haunt.damage+' HP per touch · recoil between strikes · three hits or ten seconds per hunt');
   if(a.event){
     const nm=a.event.label||(EVENT_LOOK[a.event.type]&&EVENT_LOOK[a.event.type].name)||'HAZARD';
     out.push(nm.charAt(0)+nm.slice(1).toLowerCase()+' every '+a.event.every[0]+'–'+a.event.every[1]+

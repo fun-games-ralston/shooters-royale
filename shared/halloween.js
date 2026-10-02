@@ -119,8 +119,11 @@
   // One simulation powers solo and the Friends host. Positions are ghost body
   // centres; fighters supply feet coordinates. No renderer decides damage.
   function createHaunt(config){
-    return {config,time:0,nextHit:Object.create(null),ghosts:HOMES.map(([x,z],id)=>({id,x,y:1.4,z,
-      homeX:x,homeZ:z,phase:'idle',targetId:null,fade:1,until:config.grace}))};
+    // A cached older page can fetch this newer module during deployment.
+    // Keep its original single-contact behavior until it reloads new content.
+    const c=Object.assign({maxHits:1,recoil:0},config);
+    return {config:c,time:0,nextHit:Object.create(null),ghosts:HOMES.map(([x,z],id)=>({id,x,y:1.4,z,
+      homeX:x,homeZ:z,phase:'idle',targetId:null,fade:1,hits:0,huntUntil:0,until:c.grace}))};
   }
   function stepHaunt(state,dt,fighters){
     dt=Math.max(0,Math.min(dt,.05));
@@ -131,7 +134,7 @@
       if(g.phase==='rest'){
         g.fade=Math.max(0,g.fade-dt*3);
         if(t<g.until)continue;
-        g.x=g.homeX;g.y=1.4;g.z=g.homeZ;g.phase='idle';g.fade=1;
+        g.x=g.homeX;g.y=1.4;g.z=g.homeZ;g.phase='idle';g.fade=1;g.hits=0;g.huntUntil=0;
       }
       const rest=()=>{g.phase='rest';g.targetId=null;g.fade=1;g.until=t+c.rest;};
       let target=alive.find(p=>p.id===g.targetId);
@@ -145,13 +148,14 @@
         events.push({type:'ghost_warning',ghostId:g.id,targetId:target.id});
       }
       if(!target||distance(g,target)>c.leash){rest();continue;}
+      // Recovery warnings never extend the original hunt deadline.
+      if(g.huntUntil&&t>=g.huntUntil){rest();continue;}
       g.yaw=Math.atan2(target.x-g.x,target.z-g.z);
       if(g.phase==='warning'){
         if(t<g.until)continue;
-        g.phase='chase';g.until=t+c.chase;
+        g.phase='chase';if(!g.huntUntil)g.huntUntil=t+c.chase;
       }
       if(g.phase==='chase'){
-        if(t>=g.until){rest();continue;}
         const d=distance(g,target),move=Math.min(d,c.speed*dt),f=move/(d||1);
         g.x+=(target.x-g.x)*f;g.y+=(target.y+1-g.y)*f;g.z+=(target.z-g.z)*f;
         if(distance(g,target)<=c.radius){
@@ -159,8 +163,14 @@
           if(t>=(state.nextHit[target.id]||0)){
             state.nextHit[target.id]=t+c.cooldown;
             events.push({type:'ghost_hit',ghostId:g.id,targetId:target.id,damage:c.damage});
+            g.hits++;
+            if(g.hits>=c.maxHits){rest();continue;}
+            // Recoil leaves room to run. The next chase gets the same visible
+            // warning, with a longer pause rather than another instant touch.
+            g.x-=Math.sin(g.yaw)*c.recoil;g.z-=Math.cos(g.yaw)*c.recoil;
+            g.phase='warning';g.until=t+c.cooldown;
+            events.push({type:'ghost_warning',ghostId:g.id,targetId:target.id,repeat:true});
           }
-          rest();
         }
       }
     }

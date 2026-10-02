@@ -1,8 +1,10 @@
 # Block Royale — Build Status
 
-**Version:** 2.8.1 · **Date:** 1 October 2026 · **Production branch:** `main`
+**Version:** 2.8.2 · **Date:** 1 October 2026 · **Production branch:** `main`
 
 **Halloween update:** Ghostlight Playground is free for every fighter and shares its cover, stairs, and clear spawn positions between solo and Friends PvP. The season banner opens a highlights page with a live 3D map preview and links to the map, both new weapons, and the leaderboard. The release passed all 96 JavaScript and PvP tests, plus browser checks of the highlights page, Training, narrow-screen layout, and both clients in a Friends room.
+
+**2.8.2 release:** Ghost contacts now recoil 2.5 m and warn for two seconds before another pursuit. Damage remains 12 HP; the ghost rests after three hits or its original ten-second chase deadline. The shared victim cooldown is two seconds. The 108-test JavaScript/PvP suite covers repeated host damage, recoil, escape after the first hit, recovery timing, expiry during a repeat warning, Training immunity, respawn protection, and compatibility with cached older map settings. The local browser demo uses the real host simulation and renderer to verify that the ghost remains after the first hit and pursues again. Its testing panel is outside the repository and is not shipped.
 
 **2.8.1 release:** The four ghosts are shared solo/Friends hazards. Hunts have five seconds of opening grace, a 1.25-second warning, speed 3.6 m/s, a ten-second chase timeout, 12 HP contact damage, five seconds of rest, and a shared 1.5-second victim cooldown. Host snapshots replicate the ghost poses and phases; Training and protected Friends respawns remain immune. The release passed 104 JavaScript/PvP tests. A local browser demo using the real host authority and Halloween renderer verified the warning and a 200-to-188 HP contact; pointer-lock gameplay still needs physical playtesting. The demo panel is a temporary test fixture outside the repository and is not shipped. No migration or player-data changes.
 

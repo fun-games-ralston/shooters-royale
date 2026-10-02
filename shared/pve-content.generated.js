@@ -363,9 +363,9 @@
  mod:{grav:0.55},void:true},
 {id:'ghosttown',name:'Ghostlight Playground',cost:0,size:80,seed:173,
  sky:0x171329,fog:0x282338,fogD:0.007,ground:0x343340,accent:0xff963f,wall:0x655078,light:0xe9deff,
- fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground with roaming ghosts. They glow orange before chasing fighters through cover: 12 HP on contact, then they fade. Outrun them. Free for everyone.',
- mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:1.5,radius:1.35}},
+ fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground with roaming ghosts. They warn, chase through cover, hit for 12 HP, then recoil and hunt again. Outrun them: three hits or ten seconds ends the hunt. Free for everyone.',
+ mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:2,radius:1.35,maxHits:3,recoil:2.5}},
 ];
 
-  return {CONTENT_VERSION:'c4fa61d58d74ee69',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
+  return {CONTENT_VERSION:'9ede228cf45683c3',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
 });
