@@ -7,6 +7,12 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.8.2 — 1 Oct 2026 · Ghosts keep hunting
+
+* Ghosts stay after their first touch: they recoil, pulse their orange warning ring for two seconds, and chase again. Each touch still deals 12 HP, and running away remains the escape.
+* Each hunt ends after three hits or ten seconds of pursuit, then the ghost fades and rests. Repeat warnings never extend the hunt timer. Solo and Friends use the same behavior; Training stays safe.
+* Updated the map descriptions and repeat-warning messages. Released on the official site. No extra controls, database migration, or player-data changes.
+
 ## 2.8.1 — 1 Oct 2026 · Ghost hunts
 
 * Ghostlight Playground's four ghosts now hunt nearby fighters, including bots. An orange warning ring and a message give 1.25 seconds to react before each chase. Ghosts phase through cover and follow rooftop routes, but run slower than fighters.

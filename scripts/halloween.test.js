@@ -79,15 +79,22 @@ function advanceHaunt(state,seconds,fighters){
   const events=[];for(let i=0;i<Math.round(seconds/.05);i++)events.push(...Halloween.stepHaunt(state,.05,fighters));return events;
 }
 
-test('ghosts give opening grace and a full warning before a contact hit, then fade',()=>{
+test('ghosts warn, recoil after contact, and return before fading on the third hit',()=>{
   const state=Halloween.createHaunt(hauntConfig),p=hauntFighter();
   assert.deepEqual(advanceHaunt(state,4.9,[p]),[]);
   const warning=advanceHaunt(state,.2,[p]);assert.equal(warning.length,1);assert.equal(warning[0].type,'ghost_warning');
   assert.equal(state.ghosts[0].phase,'warning');
   assert.equal(advanceHaunt(state,1.1,[p]).filter(e=>e.type==='ghost_hit').length,0);
   const hits=advanceHaunt(state,.3,[p]).filter(e=>e.type==='ghost_hit');
-  assert.equal(hits.length,1);assert.equal(hits[0].damage,12);assert.equal(state.ghosts[0].phase,'rest');
-  assert.equal(advanceHaunt(state,4,[p]).filter(e=>e.type==='ghost_hit').length,0);
+  assert.equal(hits.length,1);assert.equal(hits[0].damage,12);
+  const g=state.ghosts[0];assert.equal(g.phase,'warning');assert.equal(g.targetId,p.id);
+  assert.ok(Math.hypot(g.x-p.x,g.z-p.z)>hauntConfig.radius,'recoil opens space to escape');
+  assert.equal(advanceHaunt(state,1.8,[p]).filter(e=>e.type==='ghost_hit').length,0,'recovery cannot deal another contact hit');
+  const deadline=g.huntUntil,again=advanceHaunt(state,5,[p]);
+  assert.equal(again.filter(e=>e.type==='ghost_hit').length,2);
+  assert.ok(again.some(e=>e.type==='ghost_warning'&&e.repeat));
+  assert.equal(g.hits,3);assert.equal(g.phase,'rest');assert.equal(g.huntUntil,deadline,'repeat strikes never reset the hunt timer');
+  assert.equal(advanceHaunt(state,1,[p]).filter(e=>e.type==='ghost_hit').length,0);
 });
 
 test('running fighters escape, ghosts time out, and a new target gets a fresh warning',()=>{
@@ -101,7 +108,7 @@ test('running fighters escape, ghosts time out, and a new target gets a fresh wa
   const fresh=advanceHaunt(state,.05,[replacement]);assert.equal(fresh[0].type,'ghost_warning');
   assert.equal(fresh[0].targetId,'bot');assert.equal(state.ghosts[0].phase,'warning');
   // A nearby but evasive target is not pursued forever.
-  const g=state.ghosts[0];g.phase='chase';g.until=state.time+.1;
+  const g=state.ghosts[0];g.phase='chase';g.huntUntil=state.time+.1;
   replacement.x=g.x+10;advanceHaunt(state,.2,[replacement]);assert.equal(g.phase,'rest');
 });
 
@@ -145,8 +152,9 @@ test('Friends host enforces ghost damage and replicates positions, warnings and 
   const snap=a.createSnapshot();assert.equal(p.hp,188);assert.equal(other.hp,200);
   assert.ok(snap.events.some(e=>e.type==='ghost_warning'&&e.targetId==='host'));
   assert.ok(snap.events.some(e=>e.type==='hit'&&e.weapon==='ghost'&&e.damage===12&&e.playerId===null));
-  assert.equal(snap.ghosts.length,4);assert.equal(snap.ghosts[0].phase,'rest');
+  assert.equal(snap.ghosts.length,4);assert.equal(snap.ghosts[0].phase,'warning');
   assert.equal(snap.ghosts[0].x,a.haunt.ghosts[0].x);
+  assert.equal(snap.ghosts[0].targetId,'host');
   snap.ghosts[0].x=999;assert.notEqual(a.haunt.ghosts[0].x,999,'snapshot cannot mutate host simulation');
   assert.equal(other.kills,0);
 });
@@ -156,6 +164,39 @@ test('ghosts phase through haunted-house walls to reach a fighter inside',()=>{
   const p=a.addPlayer('host',{x:-24,y:0,z:-24});a.addPlayer('guest',{x:30,y:0,z:0});a.startRound();
   for(let i=0;i<230;i++)a.step(50,a.serverTimeMs+50);
   assert.equal(p.hp,188);assert.equal(a.metrics.hazardHits,1);
+});
+
+test('repeat contacts are spaced by two seconds and a host hunt deals at most 36 HP',()=>{
+  const a=new Sim.Authority({world:Sim.makeArenaWorld('ghosttown'),startTimeMs:1000,durationMs:180000});
+  const p=a.addPlayer('host',{x:-11,y:0,z:-13});a.addPlayer('guest',{x:30,y:0,z:0});a.startRound();
+  for(let i=0;i<280;i++)a.step(50,a.serverTimeMs+50);
+  const events=a.createSnapshot().events,hits=events.filter(e=>e.type==='hit'&&e.weapon==='ghost'&&e.targetId==='host');
+  assert.equal(hits.length,3);assert.equal(p.hp,164);assert.equal(a.haunt.ghosts[0].phase,'rest');
+  for(let i=1;i<hits.length;i++)assert.ok(hits[i].serverTimeMs-hits[i-1].serverTimeMs>=2000);
+  assert.equal(events.filter(e=>e.type==='ghost_warning'&&e.repeat&&e.targetId==='host').length,2);
+});
+
+test('a hunt times out during its recovery warning instead of extending after contact',()=>{
+  const state=Halloween.createHaunt(hauntConfig),p=hauntFighter();
+  advanceHaunt(state,6.5,[p]);const g=state.ghosts[0];assert.equal(g.phase,'warning');
+  g.huntUntil=state.time+.2;advanceHaunt(state,.3,[p]);assert.equal(g.phase,'rest');
+});
+
+test('running away after the first contact avoids later strikes in that hunt',()=>{
+  const state=Halloween.createHaunt(hauntConfig),p=hauntFighter();
+  advanceHaunt(state,6.5,[p]);assert.equal(state.ghosts[0].hits,1);
+  const events=[];
+  for(let i=0;i<160;i++){p.x-=6*.05;events.push(...Halloween.stepHaunt(state,.05,[p]));}
+  assert.equal(events.filter(e=>e.type==='ghost_hit').length,0);
+  assert.equal(state.ghosts[0].targetId,null);
+});
+
+test('cached single-contact map settings still work when loading the newer ghost module',()=>{
+  const legacy={...hauntConfig};delete legacy.maxHits;delete legacy.recoil;
+  const state=Halloween.createHaunt(legacy),events=advanceHaunt(state,6.5,[hauntFighter()]);
+  assert.equal(events.filter(e=>e.type==='ghost_hit').length,1);
+  assert.equal(state.ghosts[0].phase,'rest');
+  for(const g of state.ghosts)assert.ok([g.x,g.y,g.z].every(Number.isFinite));
 });
 
 test('ghost deaths award no kill, respect respawn protection and stop after round end',()=>{

@@ -528,7 +528,7 @@
       return;
     }
     if (event.type === 'ghost_warning') {
-      log(`Ghost hunting ${shortName(event.targetId)} · run to escape`, 'bad');
+      log(`Ghost ${event.repeat?'returning for':'hunting'} ${shortName(event.targetId)} · keep moving`, 'bad');
       return;
     }
     if (event.type === 'arena_impact') {
