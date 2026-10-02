@@ -134,7 +134,7 @@ begin
   end if;
 
   select count(*) into board_count
-    from public.sr_board_v2('ralston',50,'preseason') b
+    from public.sr_board_v2('ralston',50,'') b
    where b.handle = 'SIXWIN_TEST' and b.best_tier = 2;
   if board_count <> 1 then
     raise exception 'completed Regular tier is missing from the board';

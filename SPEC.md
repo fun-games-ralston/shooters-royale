@@ -84,7 +84,7 @@ your chosen melee weapon, so you are never completely disarmed when a magazine r
 | 12 | Dragonfire | Flamethrower | 6,100 | 7 | 70/sec, 420/max burst | 10 | 30 s total fuel | none | 15 m flame cone | 0.90× | 6 s held burst |
 | 13 | Bazooka | Launcher | 7,000 | 8 | 95 + 85 splash | 55 | 2 / 6 | 3.2 s | no falloff, 150 m | 0.84× | semi |
 | 14 | Tesla Arc | Energy | 8,600 | 9 | 46 + 2 chains | 300 | **heat bar** | — | no falloff, 42 m | 1.04× | auto |
-| 15 | Lockjaw Launcher | Smart launcher | 10,000 | 9 | 60 to any body part | 40 | **4 total** | none | whole-map confirmed lock | 0.82× | locked |
+| 15 | Lockjaw Launcher | Smart launcher | 10,000 | 9 | 90 to any body part | 40 | **4 total** | none | whole-map confirmed lock | 0.82× | locked |
 | 16 | Obsidian Reaper | Mythic | 15,000 | 10 | lethal on any hit | 30 | 1 / 2 | 3.2 s | no falloff, 260 m | 0.90× | charged |
 
 ### 4.1 Mechanics glossary
@@ -126,7 +126,7 @@ Every one of them is surfaced on the shop card as a green ▲ *what it is for* l
 - **Dragonfire** — sweep a 15 m flame cone across several fighters for 70 damage per second. Its 30-second match supply supports five full six-second bursts; walls stop it and there is no spare tank.
 - **Bazooka** — two rockets a tube, 5.6 m splash, hits people behind cover, and rocket-jumping works (self-splash is 35%). Eight rockets a life.
 - **Tesla Arc** — never reloads, chains to two more fighters within 9 m at 55%. Overheats after 18 shots, and only reaches 42 m.
-- **Lockjaw Launcher** — keep one visible fighter inside the brackets for 1.2 seconds, then spend one of four guaranteed 60-damage missiles. The lock persists after they hide.
+- **Lockjaw Launcher** — keep one visible fighter inside the brackets for 1.2 seconds, then spend one of four guaranteed 90-damage missiles. The lock persists after they hide.
 - **Obsidian Reaper** — kills on any hit to any body part. **Three shots per match.** A full second of charging at half speed, glowing purple, before each one.
 
 ### 4.3 Why the Reaper is not the end of the game

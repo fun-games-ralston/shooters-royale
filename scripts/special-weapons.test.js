@@ -15,7 +15,7 @@ const weapon=id=>weapons.find(item=>item.id===id);
 test('Lockjaw and Dragonfire keep the approved balance contract',()=>{
   const lockjaw=weapon('lockjaw'),flame=weapon('dragonfire');
   assert.ok(lockjaw); assert.equal(lockjaw.name,'Lockjaw Launcher');
-  assert.equal(lockjaw.dmg,60); assert.equal(lockjaw.mag,4); assert.equal(lockjaw.reserve,0);
+  assert.equal(lockjaw.dmg,90); assert.equal(lockjaw.mag,4); assert.equal(lockjaw.reserve,0);
   assert.ok(lockjaw.range>=300); assert.equal(lockjaw.bodyOnly,true); assert.equal(lockjaw.homing,true);
   assert.equal(lockjaw.lockOn.time,1.2); assert.equal(lockjaw.pvp,false);
   assert.ok(flame); assert.equal(flame.name,'Dragonfire');

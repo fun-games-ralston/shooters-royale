@@ -134,9 +134,9 @@
         {w:.05,h:.24,d:.05,x:.07,y:.12,z:-.66,c:0x8fe9ff},{w:.05,h:.24,d:.05,x:-.07,y:.12,z:-.66,c:0x8fe9ff},
         {w:.08,h:.22,d:.11,x:0,y:-.17,z:-.06,c:0x1a2c3d},{w:.08,h:.13,d:.28,x:0,y:-.02,z:.26,c:0x16232f}]},
 
-{fx:'homing',fxName:'Lock-on brackets + wall-hunting missile',flash:0xff475d,flashSize:2.3,id:'lockjaw',pw:9,name:'Lockjaw Launcher',cls:'SMART LAUNCHER',rar:'ench',cost:10000,dmg:60,rpm:40,mag:4,reserve:0,reload:0,
+{fx:'homing',fxName:'Lock-on brackets + wall-hunting missile',flash:0xff475d,flashSize:2.3,id:'lockjaw',pw:9,name:'Lockjaw Launcher',cls:'SMART LAUNCHER',rar:'ench',cost:10000,dmg:90,rpm:40,mag:4,reserve:0,reload:0,
  lockOn:{time:1.2,cone:3},homing:true,projSpeed:27,turnRate:4.8,bodyOnly:true,totalOnly:true,pvp:false,spread:0,auto:false,range:320,speed:.82,recoil:4.4,tracer:0xff475d,sfx:'lockjaw',
- role:'Hold RMB on a visible fighter for 1.2 seconds. Once confirmed, the missile hunts them around cover for a guaranteed 60 damage.',
+ role:'Hold RMB on a visible fighter for 1.2 seconds. Once confirmed, the missile hunts them around cover for a guaranteed 90 damage.',
  limit:'Four missiles total. It cannot launch without a lock, and losing sight before confirmation resets the scan.',
  desc:'Paint one fighter, wait for the red brackets, then fire. The missile steers around the arena and ignores walls after launch; hiding only makes the chase look better.',
  parts:[{w:.17,h:.2,d:1.12,x:0,y:.02,z:-.42,c:0x333743},{w:.21,h:.21,d:.18,x:0,y:.02,z:-1.03,c:0xff475d,e:.8},
@@ -367,5 +367,5 @@
  mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:2,radius:1.35,maxHits:3,recoil:2.5}},
 ];
 
-  return {CONTENT_VERSION:'9ede228cf45683c3',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
+  return {CONTENT_VERSION:'26f95b01c3c8cc6c',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
 });
