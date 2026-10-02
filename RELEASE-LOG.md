@@ -7,13 +7,13 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
-## 2.8 preview — Halloween playground and season highlights
+## 2.8 — 1 Oct 2026 · Halloween playground and season highlights
 
 * Added **Ghostlight Playground**, a free Halloween arena for new and returning fighters. Its pumpkin carousel, four climbable haunted houses, swing yard, climbing slide, and cemetery create distinct combat routes.
 * Added glowing jack-o'-lanterns, a moon, floating ghosts, circling bats, gently moving swings, and low mist. The moving decorations do not block movement or shots, and the map has no damage hazards.
 * Made the season banner clickable. **What's new** opens a live 3D map preview, introduces Lockjaw Launcher and Dragonfire, and links directly to Match Setup, weapon details, and the leaderboard.
 * Shared the Halloween layout between solo and Friends PvP. The two special weapons continue to be available in solo and Training only.
-* Preview on `codex/halloween-playground`; production remains on Season 1 release 2.7 until this update is merged. No database migration is required.
+* Released on the official site with Season 1. No database migration is required.
 
 ## 2.7 — 1 Oct 2026 · Season 1
 
