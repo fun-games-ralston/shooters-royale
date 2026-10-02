@@ -7,12 +7,12 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
-## 2.8.1 candidate · Ghost hunts
+## 2.8.1 — 1 Oct 2026 · Ghost hunts
 
 * Ghostlight Playground's four ghosts now hunt nearby fighters, including bots. An orange warning ring and a message give 1.25 seconds to react before each chase. Ghosts phase through cover and follow rooftop routes, but run slower than fighters.
 * A ghost touch deals 12 HP, then the ghost fades for five seconds. A shared contact cooldown prevents stacked hits. Hunts expire after ten seconds, and the first five seconds of each match are safe from ghosts.
 * Training keeps its damage immunity. Friends PvP uses host-authoritative ghost movement and damage, shares each ghost's position and warning with both players, and respects respawn protection. Ghost eliminations award no player kill.
-* Added the hazard explanation to the season highlights, Match Setup, arena details, and Friends map selection. No database migration is required. Candidate on the feature branch; production is unchanged.
+* Added the hazard explanation to the season highlights, Match Setup, arena details, and Friends map selection. Released on the official site. No database migration is required.
 
 ## 2.8 — 1 Oct 2026 · Halloween playground and season highlights
 
