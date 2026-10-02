@@ -7,6 +7,14 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
+## 2.9 candidate · Challenge records and map rotation
+
+* The seasonal board shows your **current tier**, total Challenge wins, completed Challenge runs, and separate single-game highs for kills and damage at your current tier. Rank follows current tier, season wins, max kills, then max damage. Players appear after their first completed Challenge, including a loss.
+* Recent Challenges show timestamps and actual tier completions. Custom games affect recorded lifetime Stats and never seasonal totals, ranking, or recent Challenges. Signed-in Stats read recorded server counters instead of browser-save totals.
+* Challenge starts and rematches wait for pending results and server progress before the countdown. Connection failures offer Try again; a slow leaderboard cannot start a match at the wrong tier. Legitimate damage and headshot totals are no longer silently clipped.
+* Seasonal Challenge asks unsigned players to sign in with a fighter name and PIN. Custom offers a simple guest option. Challenge maps rotate in shuffled cycles through every arena; Custom settings stay in Custom.
+* Requires `20261002060000_season_record_consistency.sql` before publishing the client. Candidate only; production has not been migrated or deployed. Existing player records and saves are preserved without backfill.
+
 ## 2.8.2 — 1 Oct 2026 · Ghosts keep hunting
 
 * Ghosts stay after their first touch: they recoil, pulse their orange warning ring for two seconds, and chase again. Each touch still deals 12 HP, and running away remains the escape.

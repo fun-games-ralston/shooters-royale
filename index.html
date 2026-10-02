@@ -458,7 +458,7 @@ canvas{display:block}
 .lbempty{padding:26px 10px;color:var(--dim);font-family:var(--mono);font-size:12px;line-height:2}
 .lbhead.t,.lbrow.t{grid-template-columns:44px 1fr 86px 60px 60px 60px 70px}
 .lbrow.t .tier{font-size:10px;letter-spacing:.1em}
-.lbhead.s,.lbrow.s{grid-template-columns:44px 1fr 92px 68px 78px 70px}
+.lbhead.s,.lbrow.s{grid-template-columns:30px minmax(105px,1fr) 90px 45px 45px 65px 45px;min-width:560px}
 .lbrow.s .tier{font-size:10px;letter-spacing:.1em}
 .lbrule{margin-top:14px;padding-top:12px;border-top:1px solid #2c2439;font-family:var(--mono);
   font-size:11px;line-height:1.9;color:var(--text2);letter-spacing:.02em}
@@ -658,11 +658,13 @@ canvas{display:block}
       <div class="brieftier" id="briefTier">Rookie run</div>
       <div class="briefscore" id="briefScore">0 / 6</div>
       <div class="briefscorelabel">Qualifying wins</div>
+      <div class="brieftarget" id="briefMap"></div>
       <div class="briefrequirement" id="briefRequirement">Win with 3 eliminations</div>
       <div class="brieftarget" id="briefTarget">One good win at a time.</div>
       <div class="briefcount" id="briefCount">Deploying in 6</div>
       <div class="briefbar"><i id="briefBar"></i></div>
       <div class="orow" style="justify-content:center">
+        <button class="btn hidden" id="btnBriefRetry">Try again</button>
         <button class="btn ghost briefback" id="btnBriefBack">Back</button>
       </div>
     </div>
@@ -1004,11 +1006,19 @@ function renderSeasonBanner(){
 /* ---- the account lives in its own storage key, separate from the game save,
        because the game save is the thing we upload ---- */
 const ACC_KEY='sr_account_v1';
-let ACC=null;
+let ACC=null, ACCOUNT_STATS=null, pendingPlayMode=null, guestCustomAllowed=false, statsRequestToken=0, statsAuthBlocked=null;
+async function refreshAccountStats(){
+  const owner=ACC, token=++statsRequestToken; if(!owner||owner===statsAuthBlocked||!NET.on()) return null;
+  const r=await NET.call('sr_account_stats',{p_handle:owner.handle,p_pin:owner.pin});
+  if(owner!==ACC||token!==statsRequestToken) return null;
+  if(r&&r.ok){ ACCOUNT_STATS=r; renderPlayerCard(); }
+  else if(r&&['BAD_PIN','LOCKED','NO_SUCH_PLAYER'].includes(r.error)) statsAuthBlocked=owner;
+  return r;
+}
 function loadAcc(){ try{ ACC=JSON.parse(localStorage.getItem(ACC_KEY)||'null'); }catch(e){ ACC=null; } }
 function storeAcc(a){
   clearTimeout(cloudPushT);
-  ACC=a;
+  ACC=a; ACCOUNT_STATS=null; statsAuthBlocked=null;
   queueMicrotask(()=>{if(scoreReady) SCORES.resume();});
   try{ a ? localStorage.setItem(ACC_KEY,JSON.stringify(a)) : localStorage.removeItem(ACC_KEY); }catch(e){}
 }
@@ -1035,9 +1045,16 @@ const SCORES=BlockRoyaleScores.create({
   onChange:renderScoreStatus,
   onAccepted:async (result,entry)=>{
     miniBoardT=0;
+    const owner=ACC;
+    await refreshAccountStats();
+    if(owner!==ACC||!ACC||ACC.handle!==entry.handle) return;
     if(entry.version===2&&entry.payload.p_mode==='challenge'){
       const current=await seasonProgress();
       if(ACC&&ACC.handle===entry.handle) reconcileChallengeProgress(current);
+      if(G.scoreId===entry.id&&$('#resChallenge')) $('#resChallenge').innerHTML=row('Challenge',
+        result.challenge_ineligible_reason?'WIN RECORDED · NO TIER PROGRESS':
+        result.challenge_clear?'TIER COMPLETE · NEXT: '+String(result.next_skill||'nightmare').toUpperCase():
+        result.qualifying_win?'QUALIFYING WIN · '+result.tier_wins+'/6':'NO QUALIFYING WIN');
     }
     if(!$('#scr-title').classList.contains('hidden')) renderMiniBoard(true);
     if(!$('#scr-board').classList.contains('hidden')) renderBoard();
@@ -1052,7 +1069,7 @@ function renderScoreStatus(status){
     if(['BAD_PIN','LOCKED','NO_SUCH_PLAYER'].includes(status.error)) text+=' Sign in again to resume.';
     else if(status.error==='HTTP_404'||status.error==='SERVER_UPGRADE_REQUIRED') text+=' Leaderboard syncing is temporarily unavailable.';
     else text+=' Retrying automatically.';
-  }else if(status.last&&status.last.state==='sent') text='Result recorded on the leaderboard.';
+  }else if(status.last&&status.last.state==='sent') text='Result recorded.';
   if(status.last&&status.last.challengeReason){
     const reasons={NO_ACTIVE_SEASON:'there is no active season',NOT_STANDARD_CHALLENGE:'the match did not use 7 opponents and 3 minutes',BAD_CHALLENGE_TIER:'the opponent tier did not match your current server progress',ELIMINATION_TARGET:'the elimination target was not met'};
     text+=' Lifetime win recorded; Challenge did not advance because '+(reasons[status.last.challengeReason]||'its requirements were not met')+'.';
@@ -1073,7 +1090,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden) retryScor
 function cloudSubmit(res,arenaId,durationS,rules){
   if(!ACC||!NET.on()){renderScoreStatus();return;}
   rules=rules||matchRules();
-  SCORES.enqueue(2,{
+  return SCORES.enqueue(2,{
     p_arena:arenaId,p_skill:rules.skill,p_bots:rules.bots,
     p_kills:res.kills,p_headshots:res.hs,p_damage:res.dmg,
     p_won:res.win,p_duration:Math.round(durationS),p_time_limit:rules.time,p_mode:rules.mode
@@ -1624,7 +1641,7 @@ async function saveState(){
   const raw = JSON.stringify(S);
   memStore.sr = raw;
   try{ if(window.storage&&window.storage.set) await window.storage.set(SAVE_KEY, raw); }catch(e){}
-  try{ localStorage.setItem(SAVE_KEY, raw); }catch(e){}
+  try{ localStorage.setItem(SAVE_KEY, raw); if(ACC) localStorage.setItem('sr_save_owner_v1',ACC.handle); }catch(e){}
   cloudPush();
 }
 function wipeSave(){
@@ -1733,12 +1750,23 @@ function reconcileChallengeProgress(data){
   saveState();
   return true;
 }
+let challengeArena='foundry', challengeMapBag=[], lastChallengeArena=null;
+function nextChallengeArena(commit){
+  if(!challengeMapBag.length){
+    challengeMapBag=ARENAS.map(a=>a.id);
+    for(let i=challengeMapBag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[challengeMapBag[i],challengeMapBag[j]]=[challengeMapBag[j],challengeMapBag[i]];}
+    if(challengeMapBag.length>1&&challengeMapBag[0]===lastChallengeArena){[challengeMapBag[0],challengeMapBag[1]]=[challengeMapBag[1],challengeMapBag[0]];}
+  }
+  const arena=challengeMapBag[0];
+  if(commit){challengeMapBag.shift();lastChallengeArena=arena;}
+  return arena;
+}
 function matchRules(cfg){
   cfg=cfg||S.cfg;
   const mode=normalizeMode(cfg.mode);
   return {
     mode:mode,
-    arena:cfg.arena,
+    arena:mode==='challenge'?challengeArena:cfg.arena,
     skill:mode==='challenge'?challengeTargetSkill():cfg.skill,
     bots:mode==='challenge'?CHALLENGE_RULES.bots:clamp(Math.round(cfg.bots||5),1,11),
     time:mode==='challenge'?CHALLENGE_RULES.time:clamp(Math.round(cfg.time||3),1,6),
@@ -4439,9 +4467,9 @@ function endMatch(win,draw=false){
     row('Arena',arena.name)+row('Mode',rules.mode==='challenge'?'Challenge':rules.mode==='custom'?'Custom Battle':'Training Range')+
     row('Placement',draw?'Time limit · '+place+' survivors':'#'+place+' of '+(rules.bots+1))+
     row('Survived',fmtTime(rules.time*60-G.left))+
-    (rules.mode==='challenge'?row('Challenge',clearedChallenge?'TIER CLEAR · 6/6 · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase():
+    (rules.mode==='challenge'?'<section id="resChallenge">'+row('Challenge',clearedChallenge?'TIER CLEAR · 6/6 · NEXT: '+SKILLS[challengeTargetSkill()].name.toUpperCase():
       challengeOutcome.qualifying?'QUALIFYING WIN · '+challengeOutcome.after+'/'+challengeOutcome.winsRequired:
-      'NO QUALIFYING WIN · NEED '+challengeOutcome.requiredKills+' ELIMINATIONS'):
+      'NO QUALIFYING WIN · NEED '+challengeOutcome.requiredKills+' ELIMINATIONS')+'</section>':
       rules.mode==='custom'?row('Leaderboard','CUSTOM DOES NOT COUNT'):'')+
     (res.petKills?row('Companion kills',res.petKills):'')+
     (earned.length?'<div class="medals">'+earned.map(m=>'<span class="md">\u2726 '+m.name+
@@ -4471,7 +4499,7 @@ function endMatch(win,draw=false){
     '<div class="xpbar"><i style="width:'+rBarPct+'%"></i></div>'+
     '<div class="rankrow sub"><span>'+(nextR?(nextR.xp-S.xp)+' XP to '+nextR.name:'Maximum level')+'</span></div>'+
     stepUpHint(challengeOutcome);
-  cloudSubmit(res, arena.id, rules.time*60-G.left, rules);
+  G.scoreId=cloudSubmit(res, arena.id, rules.time*60-G.left, rules);
   miniBoardT=0;
   refreshCoins();
   startOutro(win,challengeOutcome,rules);
@@ -4801,10 +4829,6 @@ function renderChallengeBriefRules(rules){
 }
 function updateChallengeStanding(rows){
   const me=ACC&&rows&&rows.find(r=>r.handle===ACC.handle);
-  if(me&&Number.isFinite(Number(me.best_tier))){
-    const progress=challengeProgress();
-    progress.bestTier=Math.max(progress.bestTier,clamp(Number(me.best_tier),0,CHALLENGE_TIERS.length));
-  }
   const rules=matchRules();
   renderChallengeBriefRules(rules);
   const progress=challengeProgress();
@@ -4828,14 +4852,46 @@ function deployChallengeBrief(token,capture){
   cancelChallengeBriefing();
   startMatch(capture!==false);
 }
+function requestPlaySignIn(mode){
+  if(!NET.on()||ACC||(mode==='custom'&&guestCustomAllowed)) return false;
+  pendingPlayMode=mode; accMode='back'; show('scr-account'); return true;
+}
+function challengeBriefFailure(message){
+  $('#briefCount').textContent=message;
+  $('#btnBriefRetry').classList.remove('hidden');
+}
 async function showChallengeBriefing(){
   cancelChallengeBriefing();
-  if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
-  S.cfg.mode='challenge'; saveState();
-  const token=challengeBriefToken;
+  if(requestPlaySignIn('challenge')) return;
+  S.cfg.mode='challenge';
+  challengeArena=nextChallengeArena(false);
+  const token=challengeBriefToken, owner=ACC;
   show('scr-challenge');
   $('#briefSeason').textContent=challengeBriefSeason();
+  $('#briefMap').textContent=AR[challengeArena].name.toUpperCase();
+  $('#btnBriefRetry').classList.add('hidden');
+  $('#briefBar').style.transform='scaleX(0)';
+  $('#briefCount').textContent='LOADING YOUR RUN';
   updateChallengeStanding(null);
+  // Standings are informational and must never delay authoritative progress.
+  if(NET.on()) void seasonBoard(100,'').then(board=>{
+    if(token===challengeBriefToken&&board&&board.ok) updateChallengeStanding(board.rows||[]);
+  });
+  if(owner&&NET.on()){
+    await loadSeasonStatus();
+    if(token!==challengeBriefToken||owner!==ACC) return;
+    $('#briefSeason').textContent=challengeBriefSeason();
+    await SCORES.flush();
+    if(token!==challengeBriefToken||owner!==ACC) return;
+    const queue=SCORES.status();
+    if(queue.pending) return challengeBriefFailure('YOUR LAST RESULT NEEDS TO SYNC. TRY AGAIN.');
+    const progress=await seasonProgress();
+    if(token!==challengeBriefToken||owner!==ACC) return;
+    if(!progress||!progress.ok) return challengeBriefFailure('COULD NOT LOAD YOUR RUN. TRY AGAIN.');
+    if(!reconcileChallengeProgress(progress)) return challengeBriefFailure('SEASON CHANGED. REOPEN THE CHALLENGE.');
+    updateChallengeStanding(null);
+  }
+  saveState();
   challengeBriefDeadline=Date.now()+CHALLENGE_BRIEF_MS;
   const tick=()=>{
     if(token!==challengeBriefToken) return;
@@ -4845,19 +4901,15 @@ async function showChallengeBriefing(){
     if(left<=0) deployChallengeBrief(token,false);
   };
   tick(); challengeBriefTimer=setInterval(tick,100);
-  if(!NET.on()) return;
-  const [board,progress]=await Promise.all([seasonBoard(100,''),seasonProgress()]);
-  if(token!==challengeBriefToken) return;
-  if(progress&&progress.ok) reconcileChallengeProgress(progress);
-  if(board&&board.ok) updateChallengeStanding(board.rows||[]);
-  else updateChallengeStanding(null);
 }
+
 function deployCustomBrief(token){
   if(token!==undefined&&token!==customBriefToken) return;
   cancelCustomBriefing();
   startMatch(false);
 }
 function showCustomBriefing(){
+  if(normalizeMode(S.cfg.mode)==='custom'&&requestPlaySignIn('custom')) return;
   cancelCustomBriefing();
   const rules=matchRules(), training=rules.mode==='training', token=customBriefToken;
   saveState();
@@ -4951,6 +5003,7 @@ function renderPlayerCard(){
   const r=rankOf(S.xp||0), lvl=r.tier+1;
   const pct = r.next ? clamp((S.xp-RANKS[r.tier].xp)/(r.next.xp-RANKS[r.tier].xp),0,1)*100 : 100;
   const named = !!ACC;
+  const stats=named?(ACCOUNT_STATS||{matches:'…',wins:'…',kills:'…',best:'…'}):S.stats;
   const name = named ? ACC.handle : (NET.on()?'NOT SIGNED IN':'GUEST');
   el.className='playercard blk'+(NET.on()?'':' flat');
   el.innerHTML=
@@ -4964,34 +5017,29 @@ function renderPlayerCard(){
     '</div>'+
     '<div class="pc-xp"><i style="width:'+pct+'%"></i></div>'+
     '<div class="pc-sub">'+(r.next?((r.next.xp-S.xp).toLocaleString()+' XP TO LEVEL '+(lvl+1)):'MAX LEVEL')+'</div>'+
+    '<div class="pc-sub">'+(named?'RECORDED LIFETIME · CHALLENGE + CUSTOM':'ON THIS DEVICE · GUEST')+'</div>'+
     '<div class="pc-stats">'+
-      '<span>MATCHES<br><b>'+S.stats.matches+'</b></span>'+
-      '<span>WINS<br><b>'+S.stats.wins+'</b></span>'+
-      '<span>KILLS<br><b>'+S.stats.kills+'</b></span>'+
-      '<span>BEST<br><b>'+S.stats.best+'</b></span>'+
+      '<span>MATCHES<br><b>'+stats.matches+'</b></span>'+
+      '<span>WINS<br><b>'+stats.wins+'</b></span>'+
+      '<span>KILLS<br><b>'+stats.kills+'</b></span>'+
+      '<span>BEST<br><b>'+stats.best+'</b></span>'+
     '</div>'+
     (named?'':'<div class="pc-cta">'+(NET.on()?'▸ TAP TO JOIN THE CLUB':'▫ LEADERBOARD NOT SET UP')+'</div>');
 }
 
 /* Compact standings rail: the top five, then you, wherever you actually are. */
-let miniBoardT=0;
+let miniBoardT=0, miniBoardRequest=0;
 async function seasonBoard(limit,seasonSlug){
-  let r=await NET.call('sr_board_v2',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
-  if(r&&r.error==='HTTP_404'){
-    r=await NET.call('sr_board',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit});
-    if(r) r.legacy=true;
-  }
-  return r;
+  return NET.call('sr_board_v3',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
 }
 async function seasonProgress(){
   if(!ACC||!NET.on()) return null;
   return NET.call('sr_challenge_progress_v1',{p_handle:ACC.handle,p_pin:ACC.pin});
 }
 async function seasonRecent(limit,seasonSlug){
-  let r=await NET.call('sr_recent_v2',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
-  if(r&&r.error==='HTTP_404') r=await NET.call('sr_recent',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit});
-  return r;
+  return NET.call('sr_recent_v3',{p_club:(ACC&&ACC.club)||CLOUD.club,p_limit:limit,p_season:seasonSlug||''});
 }
+
 async function renderMiniBoard(force){
   const el=$('#miniBoard'); if(!el) return;
   const club=(ACC&&ACC.club)||CLOUD.club;
@@ -5008,34 +5056,36 @@ async function renderMiniBoard(force){
   const active=(SEASON_STATUS&&SEASON_STATUS.current)||localSeasonStatus().current;
   const seasonName=active?active.name:'Challenge';
   if(el.dataset.filled!=='1') el.innerHTML='<h5>'+esc(seasonName.toUpperCase())+' <em>'+esc(club.toUpperCase())+'</em></h5><div class="tp-note">Loading…</div>';
+  const owner=ACC, request=++miniBoardRequest;
   const b=await seasonBoard(100,'');
+  if(owner!==ACC||request!==miniBoardRequest) return;
   miniBoardT=Date.now();
   const head='<h5>'+esc(seasonName.toUpperCase())+' <em>'+esc(club.toUpperCase())+'</em></h5>';
   if(!b||!b.ok){ el.innerHTML=head+'<div class="tp-note">'+esc(netMsg(b?b.error:'NO_NETWORK'))+'</div>'; return; }
   const rows=b.rows||[];
   if(!rows.length){
-    el.innerHTML=head+'<div class="tp-note">No Challenge tiers cleared yet.<br>Be first to earn 6 qualifying wins.</div>';
+    el.innerHTML=head+'<div class="tp-note">No Challenge runs yet.<br>Sign in and play to join.</div>';
     el.dataset.filled='1'; return;
   }
   const me=ACC?ACC.handle:null;
-  const tiered=rows.some(r=>r.best_tier_name!==undefined);
+  const tiered=rows.some(r=>r.current_tier_name!==undefined);
   const seasonal=!b.legacy&&rows.some(r=>r.season_slug!==undefined);
   const line=r=>'<div class="mb-row'+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
-      '<span class="n"'+(tiered?' style="color:'+tierCol(r.best_tier_name)+'"':'')+'>'+esc(r.handle)+'</span>'+
-      '<span class="v">'+(seasonal?r.best_kills:(tiered&&r.tier_wins!==undefined?r.tier_wins:r.wins))+'</span></div>';
-  let html=head+(tiered?'<div class="mb-legend">HARDEST BEATEN '+
+      '<span class="n"'+(tiered?' style="color:'+tierCol(r.current_tier_name)+'"':'')+'>'+esc(r.handle)+'<small style="display:block;font-size:8px;color:var(--dim)">'+esc(r.current_tier_name||'')+'</small></span>'+
+      '<span class="v">'+(seasonal?r.season_wins:(tiered&&r.tier_wins!==undefined?r.tier_wins:r.wins))+'</span></div>';
+  let html=head+(tiered?'<div class="mb-legend">CURRENT TIER '+
       ['NIGHTMARE','ELITE','VETERAN','REGULAR','ROOKIE'].map(t=>'<i style="background:'+tierCol(t)+'"></i>').join('')+
       '</div>':'')+
     '<div class="mb-row" style="color:var(--dim);font-size:9px;letter-spacing:.14em;padding-bottom:2px">'+
-    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">'+(seasonal?'BEST':'WINS')+'</span></div>';
+    '<span></span><span class="n">FIGHTER</span><span class="v" style="color:var(--dim)">'+'WINS'+'</span></div>';
   html+=rows.slice(0,5).map(line).join('');
   const mine=me?rows.find(r=>r.handle===me):null;
   if(mine && mine.rank>5){ html+='<div class="mb-gap">···</div>'+line(mine); }
   // has to fit one line inside a 278px rail, so this stays short
   html+='<div class="tp-foot">'+(me
-      ? (mine?('#'+mine.rank+' OF '+rows.length+(mine.best_tier_name?' · '+mine.best_tier_name:'')+' · FULL BOARD ▸')
-             :'EARN 6 QUALIFYING WINS TO JOIN')
+      ? (mine?('#'+mine.rank+' OF '+rows.length+(mine.current_tier_name?' · '+mine.current_tier_name:'')+' · FULL BOARD ▸')
+             :'PLAY A CHALLENGE TO JOIN')
       : 'JOIN THE CLUB TO COMPETE')+'</div>';
   el.innerHTML=html;
   el.dataset.filled='1';
@@ -5059,12 +5109,13 @@ function renderAccount(){
       '<div class="accrow"><button class="btn" id="accBoard">See the leaderboard</button>'+
       '<button class="btn ghost" id="accOut">Sign out</button></div>'+ accPrivacy();
     $('#accBoard').onclick=()=>{AU.ui();show('scr-board');};
-    $('#accOut').onclick=()=>{ storeAcc(null); AU.ui(); toast('Signed out — this computer is offline now');
+    $('#accOut').onclick=()=>{ storeAcc(null); AU.ui(); toast('Signed out. Guest games stay on this device.');
       miniBoardT=0; renderAccount(); refreshCoins(); };
     return;
   }
   const joining = accMode==='join';
   b.innerHTML=
+    (pendingPlayMode?'<div class="note" style="margin-bottom:16px">Sign in with your fighter name and PIN to save your wins.'+(pendingPlayMode==='challenge'?' Seasonal Challenge needs a signed-in fighter.':' Custom games stay off the seasonal board.')+'</div>':'')+
     '<div class="fld"><label>Fighter name</label>'+
       '<input id="accH" maxlength="14" autocomplete="off" spellcheck="false" placeholder="SLAGKING">'+
       '<div class="note">3 to 14 letters or numbers. Everyone sees this, so pick something you would say out loud in class.</div></div>'+
@@ -5078,8 +5129,9 @@ function renderAccount(){
     '<div class="accmsg" id="accMsg"></div>'+
     '<div class="accrow"><button class="btn primary" id="accGo">'+(joining?'Create fighter':'Sign in')+'</button>'+
     '<button class="btn ghost" id="accSwap">'+(joining?'Sign in instead':'Create one instead')+'</button></div>'+
-    accPrivacy();
+    (pendingPlayMode==='custom'?'<button class="btn ghost" id="accGuest">Play Custom as guest</button>':'')+accPrivacy();
 
+  const guest=$('#accGuest'); if(guest) guest.onclick=()=>{guestCustomAllowed=true;pendingPlayMode=null;showCustomBriefing();};
   $('#accSwap').onclick=()=>{ accMode = joining?'back':'join'; AU.ui(); renderAccount(); };
   $('#accGo').onclick=()=>accSubmit(joining);
   b.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{ if(e.key==='Enter') accSubmit(joining); }));
@@ -5111,25 +5163,31 @@ async function accSubmit(joining){
   if(!r||!r.ok) return accMsg(netMsg(r?r.error:'NO_NETWORK'));
 
   // A brand new fighter on the server starts empty, so keep whatever is on this
-  // computer. An existing fighter wins only if the server has played more.
+  // computer. Existing fighters start from their own save; same-fighter local
+  // progress can remain ahead while a debounced cloud save is still pending.
   const remote=r.save||{};
+  let localOwner=null; try{localOwner=localStorage.getItem('sr_save_owner_v1');}catch(e){}
   const localMatches=(S.stats&&S.stats.matches)||0;
   const remoteMatches=(remote.stats&&remote.stats.matches)||0;
   let took='this computer';
-  if(remoteMatches>localMatches){ adoptSave(remote); took='the server'; }
+  if((joining&&localOwner&&localOwner!==r.handle)||(!joining&&(localOwner!==r.handle||remoteMatches>localMatches))){ adoptSave(remote); took='the server'; }
 
   storeAcc({handle:r.handle, pin:pin, club:r.club||club.toLowerCase()});
+  await refreshAccountStats();
   await saveState();
   if(!NET.on()) return;
   NET.call('sr_save',{p_handle:ACC.handle,p_pin:ACC.pin,p_save:S});
 
   AU.ding(); miniBoardT=0; refreshCoins(); buildMenuScene();
   toast(joining ? ('Welcome, '+r.handle) : ('Signed in as '+r.handle+' — progress from '+took));
-  show('scr-board');
+  const intent=pendingPlayMode; pendingPlayMode=null;
+  if(intent==='challenge') showChallengeBriefing();
+  else if(intent==='custom') showCustomBriefing();
+  else show('scr-board');
 }
 
 /* ---- leaderboard ---- */
-let BOARD_SEASON='';
+let BOARD_SEASON='', boardRenderToken=0;
 function previousSeason(status){
   const active=status&&status.current;
   if(!active||active.slug==='preseason') return null;
@@ -5150,6 +5208,7 @@ function challengeProgressPanel(requested){
       'Qualifying wins need '+needed+' eliminations. Losses do not erase progress.')+'</span></div>';
 }
 async function renderBoard(){
+  const token=++boardRenderToken, owner=ACC;
   const body=$('#boardBody'), sub=$('#boardSub');
   const club=(ACC&&ACC.club)||CLOUD.club;
   const status=SEASON_STATUS||localSeasonStatus();
@@ -5163,8 +5222,9 @@ async function renderBoard(){
       'Everything else works — your progress is saved on this computer.</div>';
     return;
   }
-  body.innerHTML='<div class="lbempty">Loading the board…</div>';
-  const [b,f,p]=await Promise.all([seasonBoard(50,requested),seasonRecent(8,requested),requested?null:seasonProgress()]);
+  if(!body.dataset.loaded) body.innerHTML='<div class="lbempty">Loading the board…</div>';
+  const [b,f,p]=await Promise.all([seasonBoard(100,requested),seasonRecent(20,requested),requested?null:seasonProgress()]);
+  if(token!==boardRenderToken||owner!==ACC||requested!==(BOARD_SEASON||'')) return;
   if(p&&p.ok) reconcileChallengeProgress(p);
   if(!b||!b.ok){
     body.innerHTML='<div class="lbempty">'+netMsg(b?b.error:'NO_NETWORK')+'</div>'; return;
@@ -5172,57 +5232,39 @@ async function renderBoard(){
   const rows=b.rows||[];
   if(!rows.length){
     body.innerHTML=seasonPicker(status,requested)+challengeProgressPanel(requested)+
-      '<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has cleared a Challenge tier in '+esc(shownName)+' yet.<br><br>'+
-      'Earn six qualifying wins at Rookie. Each win needs at least 3 eliminations.</div>';
+      '<div class="lbempty">Nobody in <b>'+club.toUpperCase()+'</b> has played a Challenge in '+esc(shownName)+' yet.<br><br>'+
+      'Sign in and play a Challenge to appear. Six qualifying wins advance your current tier.</div>';
     wireSeasonPicker();
     return;
   }
   const me=ACC?ACC.handle:null;
-  const tiered=rows.some(r=>r.best_tier_name!==undefined);
-  const seasonal=!b.legacy&&rows.some(r=>r.season_slug!==undefined);
   let html=seasonPicker(status,requested)+challengeProgressPanel(requested);
-  if(seasonal) html+='<div class="lbhead s"><span>#</span><span>FIGHTER</span><span>BEAT</span>'+
-    '<span class="v">BEST</span><span class="v">DAMAGE</span><span class="v">RUNS</span></div>';
-  else html+='<div class="lbhead'+(tiered?' t':'')+'"><span>#</span><span>FIGHTER</span>'+
-    (tiered?'<span>BEAT</span><span class="v">WINS</span>':'<span class="v">WINS</span>')+
-    '<span class="v">KILLS</span><span class="v">BEST</span><span class="v">MATCHES</span></div>';
+  html+='<div class="lbhead s"><span>#</span><span>FIGHTER</span><span>CURRENT TIER</span>'+
+    '<span class="v">WINS</span><span class="v">MAX<br>KILLS</span><span class="v">MAX<br>DAMAGE</span><span class="v">RUNS</span></div>';
   rows.forEach(r=>{
-    const tn=r.best_tier_name;
-    if(seasonal){
-      html+='<div class="lbrow s'+(r.handle===me?' me':'')+'">'+
-        '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
-        '<span class="n">'+esc(r.handle)+'</span>'+
-        '<span class="tier" style="color:'+tierCol(tn)+'">'+esc(tn||'UNRANKED')+'</span>'+
-        '<span class="v k">'+r.best_kills+'</span>'+
-        '<span class="v">'+Number(r.best_damage||0).toLocaleString()+'</span>'+
-        '<span class="v">'+r.season_matches+'</span></div>';
-      return;
-    }
-    html+='<div class="lbrow'+(tiered?' t':'')+(r.handle===me?' me':'')+'">'+
+    html+='<div class="lbrow s'+(r.handle===me?' me':'')+'">'+
       '<span class="r'+(r.rank<=3?' top':'')+'">'+r.rank+'</span>'+
       '<span class="n">'+esc(r.handle)+'</span>'+
-      (tiered?'<span class="tier" style="color:'+tierCol(tn)+'">'+esc(tn||'UNRANKED')+'</span>'+
-              '<span class="v k">'+(r.tier_wins!==undefined?r.tier_wins:r.wins)+'</span>'
-             :'<span class="v k">'+r.wins+'</span>')+
-      '<span class="v">'+r.kills+'</span>'+
+      '<span class="tier" style="color:'+tierCol(r.current_tier_name)+'">'+esc(r.current_tier_name)+'</span>'+
+      '<span class="v k">'+r.season_wins+'</span>'+
       '<span class="v">'+r.best_kills+'</span>'+
-      '<span class="v">'+r.matches+'</span></div>';
+      '<span class="v">'+Number(r.best_damage||0).toLocaleString()+'</span>'+
+      '<span class="v">'+r.season_matches+'</span></div>';
   });
-  if(requested==='preseason') html+='<div class="lbrule">Preseason history uses the old rule: hardest difficulty beaten, then wins at that level. '+
-    'Season 1 started fresh at Rookie without removing any fighter progress.</div>';
-  else if(seasonal) html+='<div class="lbrule"><b style="color:var(--gold)">Challenge counts. Custom does not.</b> '+
-    'Six qualifying wins clear a tier. Rookie and Regular wins need 3 eliminations; Veteran and harder wins need 2. Your hardest clear sets your Challenge Tier; '+
-    'ties use eliminations, then damage. Your coins, gear, Fighter Level and mastery never reset.</div>';
+  html+='<div class="lbrule"><b style="color:var(--gold)">Rank: current tier → season wins → max kills → max damage.</b><br>'+
+    'Wins and completed runs count Challenge only. Max kills and damage are separate single-game highs at your current tier. '+
+    'Six qualifying wins advance your tier. Lifetime Stats also include Custom.'+
+    (requested==='preseason'?' Preseason includes old-version matches.':'')+'</div>';
   if(f&&f.ok&&f.rows&&f.rows.length){
-    html+='<div class="feed"><h5>'+(requested?'FINAL RESULTS':'JUST NOW')+'</h5>'+f.rows.map(m=>
+    html+='<div class="feed"><h5>'+(requested?'FINAL CHALLENGES':'RECENT CHALLENGES')+'</h5>'+f.rows.map(m=>
       '<div><b>'+esc(m.handle)+'</b> '+(requested==='preseason'?(m.won?'<span class="w">won</span>':'went down'):
-        m.challenge_clear?'<span class="w">cleared</span>':m.won?'<span class="w">won</span>':'went down')+' in '+
+        m.challenge_clear?'<span class="w">completed '+esc(m.skill||'a tier')+'</span>':m.won?'<span class="w">won</span>':'went down')+' in '+
       esc((AR[m.arena]&&AR[m.arena].name)||m.arena||'the arena')+
-      ' · '+m.kills+' elimination'+(m.kills===1?'':'s')+'</div>').join('')+'</div>';
+      ' · '+m.kills+' elimination'+(m.kills===1?'':'s')+' · '+esc(m.skill||'')+' · '+esc(matchTimestamp(m.played_at))+'</div>').join('')+'</div>';
   }
   if(!ACC) html+='<div class="lbempty">You are not on the board yet. '+
     '<b style="color:var(--gold);cursor:pointer" id="lbJoin">Join the club</b> and your next Challenge can count.</div>';
-  body.innerHTML=html;
+  body.innerHTML=html; body.dataset.loaded='1';
   const j=$('#lbJoin'); if(j) j.onclick=()=>{AU.ui();show('scr-account');};
   wireSeasonPicker();
 }
@@ -5240,6 +5282,10 @@ function wireSeasonPicker(){
   });
 }
 function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function matchTimestamp(iso){
+  const date=new Date(iso);
+  return Number.isFinite(date.getTime())?date.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+}
 /* The board banks into colour groups by difficulty, so the ladder is visible
    before you read a single number. An undefined tier means the ranking SQL has
    not been run yet, in which case everything renders exactly as it did before. */
@@ -5772,7 +5818,8 @@ function captureMouse(soft){
 function startMatch(capture){
   // A reminder is informational; choosing another match never imposes a cooldown.
   if(!$('#ovBreak').classList.contains('hidden')) dismissBreakReminder(false);
-  if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
+  if(normalizeMode(S.cfg.mode)==='challenge') challengeArena=nextChallengeArena(true);
+  else if(S.own.arena.indexOf(S.cfg.arena)<0) S.cfg.arena='foundry';
   G.rules=matchRules();
   G.training = (G.rules.mode==='training');
   AU.init();
@@ -5816,6 +5863,7 @@ function wireUI(){
     AU.ui();shopSelection.weapons=b.dataset.seasonWeapon;shopTab='weapons';show('scr-shop');
     const selected=$('.weapon-card.selected');if(selected){armoryDetailTrigger=selected;selected.scrollIntoView({block:'center'});openArmoryDetails();}
   });
+  $('#btnBriefRetry').onclick=()=>showChallengeBriefing();
   $('#btnBriefBack').onclick=()=>{AU.ui();G.softCapture=false;document.exitPointerLock&&document.exitPointerLock();show('scr-title');};
   $('#btnCustomBriefBack').onclick=()=>{AU.ui();show('scr-setup');};
   $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
@@ -5829,10 +5877,10 @@ function wireUI(){
     toast('This computer reset to 1,500 coins. Your online fighter is untouched — sign back in to get it.');
   };
   $('#btnDeploy2').onclick=()=>{AU.ui();showCustomBriefing();};
-  $$('[data-back]').forEach(b=>b.onclick=()=>{AU.ui();refreshCoins();show('scr-title');});
+  $$('[data-back]').forEach(b=>b.onclick=()=>{pendingPlayMode=null;AU.ui();refreshCoins();show('scr-title');});
   $('#btnResume').onclick=()=>{ captureMouse(); };
   $('#btnQuit').onclick=()=>quitMatch();
-  $('#btnAgain').onclick=()=>{ $('#ovResult').classList.add('hidden'); startMatch(); };
+  $('#btnAgain').onclick=()=>{ $('#ovResult').classList.add('hidden'); if(G.rules&&G.rules.mode==='challenge') showChallengeBriefing(); else showCustomBriefing(); };
   $('#btnToShop').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-shop'); };
   $('#btnToBoard').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-board'); };
   $('#btnToMenu').onclick=()=>{ $('#ovResult').classList.add('hidden'); buildMenuScene(); show('scr-title'); };
@@ -5885,7 +5933,8 @@ async function boot(){
     const r=await NET.call('sr_login',{p_handle:ACC.handle,p_pin:ACC.pin});
     if(r&&r.ok){
       const remote=r.save||{};
-      if(((remote.stats&&remote.stats.matches)||0) > ((S.stats&&S.stats.matches)||0)){
+      let owner=null; try{owner=localStorage.getItem('sr_save_owner_v1');}catch(e){}
+      if((owner&&owner!==ACC.handle)||((remote.stats&&remote.stats.matches)||0) > ((S.stats&&S.stats.matches)||0)){
         adoptSave(remote); await saveState();
       }
     } else if(r&&(r.error==='BAD_PIN'||r.error==='NO_SUCH_PLAYER')){
@@ -5901,6 +5950,12 @@ async function boot(){
   $('#loading').classList.add('hidden');
   scoreReady=true; SCORES.resume();
   setInterval(retryScores,5000);
+  void refreshAccountStats();
+  setInterval(()=>{
+    if(document.hidden||G.on&&!G.over) return;
+    if(!$('#scr-title').classList.contains('hidden')){renderMiniBoard(true);void refreshAccountStats();}
+    if(!$('#scr-board').classList.contains('hidden')) renderBoard();
+  },15000);
   animate();
 }
 if(window.THREE) boot();

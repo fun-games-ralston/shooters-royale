@@ -19,7 +19,7 @@ Mouse and keyboard, desktop browser. Click the arena once to lock the cursor.
   magazine, a bipod you have to plant, a charge-up, shell-by-shell reloading,
   backstab, lifesteal, knockback, a confirmed homing lock, and a multi-target flame cone. Each has a strength and a drawback printed
   on its shop card.
-- **10 procedural arenas** with ice, lava, low gravity and killable drops.
+- **11 procedural arenas** with ice, lava, low gravity and killable drops.
 - **7 pets** that fight alongside you and can be shot down.
 - **Daily challenges, Fighter Levels, weapon mastery, medals and multi-kill banners.**
 - A **training range** where you can test-fire every weapon in the game for
@@ -69,3 +69,23 @@ python3 -m http.server 8123
 
 Opening `index.html` by double-clicking works too, but a local server is closer
 to how it behaves when published.
+
+## Challenge record consistency candidate
+
+The pending 2.9 update uses current tier, total season Challenge wins, and
+separate single-game kill/damage highs at that tier. Custom results count toward
+recorded lifetime Stats. Challenge maps rotate through shuffled cycles; Custom
+settings apply only to Custom. Challenge requires a fighter name and PIN.
+
+See [definitions and rollout](docs/season-record-consistency.md). Install
+[the migration](supabase/migrations/20261002060000_season_record_consistency.sql)
+before deploying this client. No backfill is required.
+
+```bash
+node --test scripts/*.test.js pvp-real/*.test.js
+bash supabase/tests/run-local.sh
+```
+
+The backend runner uses a disposable local PostgreSQL cluster and synthetic
+fighters. It never connects to production. PostgreSQL 17+ and Python 3 are
+required; set `POSTGRES_BIN` if PostgreSQL is installed elsewhere.

@@ -18,6 +18,7 @@ function functionSource(name) {
 function rulesContext() {
   const context = {
     result: null,
+    challengeArena:'foundry',
     S: { challenge: { season: 'preseason', bestTier: 2, tierWins: 0 } },
     SEASON_STATUS: { current: { slug: 'preseason' } },
     localSeasonStatus: () => ({ current: { slug: 'preseason' } }),
@@ -113,7 +114,7 @@ test('six cumulative qualifying wins clear a tier without losses erasing progres
 });
 
 test('calendar seasons begin October 1 at Pacific midnight and follow month boundaries', () => {
-  const context = { result: null };
+  const context = { challengeArena:'foundry', result: null };
   vm.runInNewContext(
     "const SEASON_TIME_ZONE='America/Los_Angeles';\n" +
       "const SEASON_FALLBACK=Object.freeze({current:{slug:'preseason',name:'Preseason',starts_at:'2000-01-01T00:00:00Z',ends_at:'2026-10-01T07:00:00Z'},next:{slug:'season-1',name:'Season 1',starts_at:'2026-10-01T07:00:00Z',ends_at:'2026-11-01T07:00:00Z'}});\n" +
@@ -133,7 +134,7 @@ test('calendar seasons begin October 1 at Pacific midnight and follow month boun
 });
 
 test('the full leaderboard keeps the immediately previous season available', () => {
-  const context = { result: null, esc: value => String(value) };
+  const context = { challengeArena:'foundry', result: null, esc: value => String(value) };
   vm.runInNewContext(
     functionSource('previousSeason') + '\n' + functionSource('seasonPicker'),
     context
@@ -149,12 +150,12 @@ test('the full leaderboard keeps the immediately previous season available', () 
   assert.deepEqual(JSON.parse(JSON.stringify(context.result)), { slug: 'season-1', name: 'Season 1' });
   vm.runInNewContext("result=seasonPicker({current:{slug:'season-2',name:'Season 2'}},'season-1')", context);
   assert.match(context.result, /Season 1 results/);
-  assert.match(functionSource('renderBoard'), /requested\?'FINAL RESULTS':'JUST NOW'/);
+  assert.match(functionSource('renderBoard'), /requested\?'FINAL CHALLENGES':'RECENT CHALLENGES'/);
   assert.match(functionSource('challengeProgressPanel'), /if\(requested\|\|!ACC\) return ''/);
 });
 
 test('season lifecycle messages appear on launch, checkpoints, and the final two days', () => {
-  const context = { result: null };
+  const context = { challengeArena:'foundry', result: null };
   vm.runInNewContext(
     "const SEASON_TIME_ZONE='America/Los_Angeles';\n" +
       "const CHALLENGE_RULES=Object.freeze({bots:7,time:3,winsPerTier:6});\n" +
@@ -198,7 +199,7 @@ test('main menu uses a read-only Challenge briefing and Custom owns Match Setup'
   assert.match(source, /btnSetup'\)\.onclick=.*mode='custom'.*renderSetup\(\).*scr-setup/);
   const brief = source.slice(source.indexOf('id="scr-challenge"'), source.indexOf('<!-- SETUP -->'));
   assert.doesNotMatch(brief, />Change</);
-  assert.match(source, /btnAgain'\)\.onclick=.*startMatch\(\)/);
+  assert.match(source, /btnAgain'\)\.onclick=.*showChallengeBriefing\(\).*showCustomBriefing\(\)/);
   assert.match(source, /CHALLENGE CLEAR \\u2014 NEXT TARGET/);
   assert.doesNotMatch(functionSource('stepUpHint'), /Match setup/);
   assert.match(source, /const CHALLENGE_BRIEF_MS=6000/);
