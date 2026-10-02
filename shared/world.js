@@ -1,8 +1,9 @@
 (function(root,factory){
-  const api=factory(typeof module==='object'&&module.exports?require('./pve-content.generated.js'):root.BlockRoyaleContent);
+  const api=factory(typeof module==='object'&&module.exports?require('./pve-content.generated.js'):root.BlockRoyaleContent,
+    typeof module==='object'&&module.exports?require('./halloween.js'):root.BlockRoyaleHalloween);
   if(typeof module==='object'&&module.exports) module.exports=api;
   else root.BlockRoyaleWorld=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(Content){
+})(typeof globalThis!=='undefined'?globalThis:this,function(Content,Halloween){
   'use strict';
 
   if(!Content) throw new Error('Block Royale content must load before the shared world builder');
@@ -116,6 +117,12 @@
     const def=Content.ARENAS.find(item=>item.id===arenaId)||Content.ARENAS[0];
     const visuals=[],boxes=[],spawns=[],hazards=[],R=mulberry32(def.seed),H=def.size/2;
     const add=(x,y,z,w,h,d,color,emissive=0,solid=true)=>{visuals.push({x,y,z,w,h,d,color,emissive,solid});if(solid)boxes.push({x0:x-w/2,x1:x+w/2,y0:y-h/2,y1:y+h/2,z0:z-d/2,z1:z+d/2});};
+    if(def.id==='ghosttown'){
+      const layout=Halloween.build(add,def);
+      const world={id:def.id,def,size:def.size,H,boxes,visuals,spawns:layout.spawns,hazards,
+        colors:{sky:def.sky,fog:def.fog,ground:def.ground,accent:def.accent,wall:def.wall,light:def.light}};
+      world.duelSpawns=findDuelSpawns(world);return world;
+    }
     if(def.void){for(const [x,z,w,d] of [[0,0,34,34],[-24,-24,20,20],[26,-22,18,22],[-26,24,22,18],[24,26,20,20],[0,-32,16,12],[0,32,14,14]]){add(x,-1,z,w,2,d,def.ground);add(x,-2.6,z,w*.86,1.4,d*.86,shadeHex(def.ground,.7));}}
     else{add(0,-1,0,def.size,2,def.size,def.ground);for(let i=0;i<26;i++){const w=4+R()*10,d=4+R()*10;add((R()-.5)*def.size*.85,.02,(R()-.5)*def.size*.85,w,.05,d,shadeHex(def.ground,1.16),0,false);}}
     if(!def.void){for(const [x,z,w,d] of [[0,-H,def.size,1],[0,H,def.size,1],[-H,0,1,def.size],[H,0,1,def.size]]){add(x,5.5,z,w,11,d,def.wall);add(x,11.3,z,w+.4,.6,d+.4,shadeHex(def.wall,1.4));}for(let i=0;i<10;i++){const t=(i/9-.5)*def.size*.94;add(t,4,-H+1.1,1.2,8,.5,shadeHex(def.wall,1.25));add(t,4,H-1.1,1.2,8,.5,shadeHex(def.wall,1.25));}}

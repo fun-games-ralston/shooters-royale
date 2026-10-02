@@ -1,6 +1,8 @@
 # Block Royale — Build Status
 
-**Version:** 2.7 · **Date:** 1 October 2026 · **Release branch:** `codex/challenge-seasons`
+**Version:** 2.8 · **Date:** 1 October 2026 · **Production branch:** `main`
+
+**Halloween update:** Ghostlight Playground is free for every fighter and shares its cover, stairs, and clear spawn positions between solo and Friends PvP. The season banner opens a highlights page with a live 3D map preview and links to the map, both new weapons, and the leaderboard. The release passed all 96 JavaScript and PvP tests, plus browser checks of the highlights page, Training, narrow-screen layout, and both clients in a Friends room.
 
 ---
 

@@ -80,6 +80,7 @@
   let renderer = null;
   let scene = null;
   let camera = null;
+  let halloweenAtmosphere = null;
   let viewModel = null;
   let viewWeapon = '';
   const fighterModels = new Map();
@@ -430,6 +431,7 @@
       snapshotAccum -= SNAPSHOT_MS;
     }
     updateScene(now);
+    if(halloweenAtmosphere) halloweenAtmosphere.step(now/1000);
     if(now-lastHudAt>=50){updateHud();lastHudAt=now;}
     if(now-lastTelemetryAt>=250){updateTelemetry();lastTelemetryAt=now;}
     renderer.render(scene, camera);
@@ -740,6 +742,7 @@
   }
 
   function initThree() {
+    halloweenAtmosphere=null;
     if(!renderer){
       renderer = new THREE.WebGLRenderer({canvas:els.arena,antialias:true,powerPreference:'high-performance'});
       renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
@@ -764,6 +767,7 @@
       scene.add(mesh);
     }
     addArenaAtmosphere();
+    if(world.id==='ghosttown') halloweenAtmosphere=BlockRoyaleHalloween.atmosphere(THREE,scene);
     resizeRenderer();
 
   }
