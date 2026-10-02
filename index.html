@@ -266,6 +266,7 @@ canvas{display:block}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;z-index:8;pointer-events:none;font-family:var(--mono)}
+#ghostHint{position:absolute;top:100px;left:50%;transform:translateX(-50%);padding:8px 14px;background:#29141ee6;border:1px solid #ff743f;color:#ffb07c;text-align:center;font-weight:bold}
 #mapWrap{position:absolute;top:16px;left:16px;padding:8px}
 #minimap{display:block;width:184px;height:184px;background:#0b0812}
 #mapWrap .mapname{font-family:var(--disp);font-size:14px;letter-spacing:.14em;margin-top:7px;color:var(--gold);text-transform:uppercase}
@@ -543,6 +544,7 @@ canvas{display:block}
 
 <!-- ================= HUD ================= -->
 <div id="hud" class="hidden">
+  <div id="ghostHint" class="hidden" role="status">GHOST HUNTING YOU · RUN TO ESCAPE</div>
   <div id="mapWrap" class="blk">
     <canvas id="minimap" width="368" height="368"></canvas>
     <div class="mapname" id="mapName">FOUNDRY</div>
@@ -619,7 +621,7 @@ canvas{display:block}
           <div class="seasonhero-label">New map · Free for everyone</div>
           <div class="seasonhero-copy">
             <h3>Ghostlight Playground</h3>
-            <p>A playground the town forgot. Fight around a giant pumpkin carousel, climb the boarded houses, and slip through the swing yard. Ghosts, bats, glowing lanterns, and moonlight bring Halloween to the arena.</p>
+            <p>A playground the town forgot. Fight around a giant pumpkin carousel, climb the boarded houses, and slip through the swing yard. Orange-ringed ghosts chase fighters through cover and deal 12 HP on contact before fading. Keep running to escape.</p>
             <button class="btn sm primary" id="btnSeasonMap">Try the map</button>
             <span class="seasonfooter">Challenge · Custom Battle · Training · Friends PvP</span>
           </div>
@@ -841,7 +843,7 @@ canvas{display:block}
 <script src="shared/playtime-reminder.js"></script>
 <script src="shared/score-queue.js"></script>
 <script src="shared/weapon-specials.js"></script>
-<script src="shared/halloween.js"></script>
+<script src="shared/halloween.js?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -1545,8 +1547,8 @@ const ARENAS = [
  mod:{grav:0.55},void:true},
 {id:'ghosttown',name:'Ghostlight Playground',cost:0,size:80,seed:173,
  sky:0x171329,fog:0x282338,fogD:0.007,ground:0x343340,accent:0xff963f,wall:0x655078,light:0xe9deff,
- fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground in a ghost town. Pumpkin carousel, rooftop routes, a swing yard, and friendly ghosts. Free for everyone.',
- mod:{}},
+ fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground with roaming ghosts. They glow orange before chasing fighters through cover: 12 HP on contact, then they fade. Outrun them. Free for everyone.',
+ mod:{},haunt:{damage:12,speed:3.6,range:18,leash:24,warning:1.25,chase:10,rest:5,grace:5,cooldown:1.5,radius:1.35}},
 ];
 const AR = {}; ARENAS.forEach(a=>AR[a.id]=a);
 
@@ -2912,6 +2914,9 @@ function spawnMatch(){
   G.cam=S.cfg.cam; G.camD=0; G.recoil=0; G.recoilV=0; G.ads=false; G.adsT=0; G.spinup=0;
   G.kills=0; G.hs=0; G.dmgDone=0; G.lastDamageT=-99; G.lastAttacker=null; G.lastAttackerT=-99;
   G.events=[]; G.lastKiller=null; G.lastPart=null; G.outro=null; scheduleEvent();
+  G.lastHazard=null;
+  G.haunt=def.haunt?BlockRoyaleHalloween.createHaunt(def.haunt):null;
+  $('#ghostHint').classList.add('hidden');
   G.wepKills={}; G.petKills=0; G.meleeKills=0; G.bigKills=0; G.lastKillT=-99; G.mk=0; G.bestStreak=0;
   G.streakCoins=0; G.lowHp=false; G.ate=0; G.swing=0;
   if(G.training) G.left=99999;
@@ -3446,6 +3451,7 @@ function spawnArenaEvent(){
   }
 }
 function updateArenaEvents(dt){
+  updateGhosts(dt);
   if(!G.world||!G.world.def.event) return;
   G.eventT-=dt;
   if(G.eventT<=0 && !G.over){ spawnArenaEvent(); scheduleEvent(); }
@@ -3474,6 +3480,21 @@ function updateArenaEvents(dt){
       E.ring.scale.setScalar(E.ev.r*(1+(E.t-E.warn)*1.6));
     }
   }
+}
+function updateGhosts(dt){
+  if(!G.haunt||G.over)return;
+  const fighters=G.ents.map((e,id)=>({id,x:e.pos.x,y:e.pos.y,z:e.pos.z,alive:e.alive}));
+  for(const ev of BlockRoyaleHalloween.stepHaunt(G.haunt,dt,fighters)){
+    const target=G.ents[ev.targetId];
+    if(ev.type==='ghost_warning'&&target.isPlayer){
+      toast('GHOST HUNTING YOU · RUN TO ESCAPE');AU.tone(300,520,.45,.14,'sine');
+    }
+    if(ev.type==='ghost_hit'&&!G.over){
+      damage(target,ev.damage,'BODY',null,{x:target.pos.x,y:target.pos.y+1,z:target.pos.z},'ghost');
+      if(target.isPlayer&&!G.training)toast('GHOST TOUCH · 12 HP');
+    }
+  }
+  $('#ghostHint').classList.toggle('hidden',G.over||!G.haunt.ghosts.some(g=>g.targetId===G.ents.indexOf(G.pl)&&(g.phase==='warning'||g.phase==='chase')));
 }
 function blowEvent(E){
   E.blown=true;
@@ -3610,7 +3631,7 @@ function kill(t,killer,part,source){
   fxDeath(t, sourceWeapon?W[sourceWeapon].fx:null);
   if(t.tag) t.tag.visible=false;
   AU.kill();
-  const who=petKill&&G.pet?G.pet.def.name.toUpperCase():killer?(killer.isPlayer?'YOU':killer.name):(part||'THE ARENA');
+  const who=source==='ghost'?'GHOST':petKill&&G.pet?G.pet.def.name.toUpperCase():killer?(killer.isPlayer?'YOU':killer.name):(part||'THE ARENA');
   feed(who,t.name,part==='HEAD'&&!petKill,!!(killer&&killer.isPlayer),t.isPlayer);
   if(killer&&killer!==t) killer.kills=(killer.kills||0)+1;
   if(killer&&killer.isPlayer){
@@ -3631,7 +3652,7 @@ function kill(t,killer,part,source){
     else if(SPREE[G.kills]) banner(SPREE[G.kills],G.kills+' kills, still standing',3);
     if(G.mk>=2) G.streakCoins=(G.streakCoins||0)+G.mk*15;
   }
-  if(t.isPlayer){ G.lastKiller=killer||null; G.lastPart=part||null; endMatch(false); return; }
+  if(t.isPlayer){ G.lastKiller=killer||null; G.lastPart=part||null; G.lastHazard=source==='ghost'?'ghost':null; endMatch(false); return; }
   if(G.training){ setTimeout(()=>respawnDummy(t),2200); updateHUD(); return; }
   const alive=G.ents.filter(e=>e.alive);
   if(alive.length===1&&alive[0].isPlayer) endMatch(true);
@@ -4473,6 +4494,7 @@ function startOutro(win,challengeOutcome,rules){
   else if(win) sub='LAST ONE STANDING · '+plural(G.kills,'KILL','KILLS');
   else if(k&&!k.isPlayer) sub=String(k.name||'?').toUpperCase()+' · '+W[k.wep].name.toUpperCase()+(part==='HEAD'?' · HEADSHOT':'');
   else if(k&&k.isPlayer) sub='YOUR OWN BLAST';
+  else if(G.lastHazard==='ghost') sub='CAUGHT BY A GHOST';
   else sub=String(part||'THE ARENA').toUpperCase();
   $('#otTitle').textContent = G.draw?'DRAW':challengeMiss?'SURVIVED':win?'VICTORY':'ELIMINATED';
   $('#otSub').textContent = sub;
@@ -5283,9 +5305,15 @@ function renderSetup(){
   const g=$('#setupGrid'); g.innerHTML='';
   S.cfg.mode=normalizeMode(S.cfg.mode);
   if(S.cfg.mode==='challenge') S.cfg.mode='custom';
-  g.appendChild(chipCard('Arena','Where the battle runs — unlock more in the armory',
-    ARENAS.map(a=>({id:a.id,name:a.name+(a.event?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
-    S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();}));
+  const ghostWarning=document.createElement('div');ghostWarning.className='hint bad';
+  const refreshGhostWarning=()=>{
+    const haunt=AR[S.cfg.arena].haunt;ghostWarning.classList.toggle('hidden',!haunt);
+    ghostWarning.textContent=haunt?(S.cfg.mode==='training'?'Ghosts still chase here. Training prevents damage.':'Ghosts warn before chasing through cover. '+haunt.damage+' HP on touch, then they fade. Run to escape.'):'';
+  };
+  const arenaCard=chipCard('Arena','Where the battle runs — unlock more in the armory',
+    ARENAS.map(a=>({id:a.id,name:a.name+(a.event||a.haunt?' \u26A0':''),locked:S.own.arena.indexOf(a.id)<0,lockMsg:a.name+' costs '+a.cost+' coins in the armory'})),
+    S.cfg.arena,v=>{S.cfg.arena=v;buildMenuScene();summary();refreshGhostWarning();});
+  arenaCard.appendChild(ghostWarning);refreshGhostWarning();g.appendChild(arenaCard);
   g.appendChild(slider('Opponents','Bots in the match, plus you',1,11,1,S.cfg.bots,null,v=>{S.cfg.bots=v;summary();}));
   g.appendChild(chipCard('Opponent skill','Aim, reaction time and movement',
     Object.keys(SKILLS).map(k=>({id:k,name:SKILLS[k].name})),S.cfg.skill,v=>{S.cfg.skill=v;summary();}));
@@ -5706,6 +5734,7 @@ function arenaHazards(a){
   if(a.mod&&a.mod.grav) out.push('Low gravity — '+Math.round(a.mod.grav*100)+'% weight, higher jumps');
   if(a.void) out.push('No floor at the edges. Falling is fatal');
   if(a.hazard) out.push('Lava pools — '+a.hazard.dps+' damage a second');
+  if(a.haunt) out.push('Ghosts chase through cover · '+a.haunt.damage+' HP on touch, then fade · outrun the orange ring');
   if(a.event){
     const nm=a.event.label||(EVENT_LOOK[a.event.type]&&EVENT_LOOK[a.event.type].name)||'HAZARD';
     out.push(nm.charAt(0)+nm.slice(1).toLowerCase()+' every '+a.event.every[0]+'–'+a.event.every[1]+
@@ -5824,7 +5853,7 @@ function animate(){
   PLAYTIME.update(performance.now(),G.on&&!G.paused&&!G.over&&!document.hidden);
   const dt=Math.min(0.05,clock.getDelta());
   if(!$('#scr-season').classList.contains('hidden')) stepSeasonPreview(dt);
-  if(G.world&&G.world.atmosphere&&(!G.on||!G.paused)) G.world.atmosphere.step(G.on?G.t:menuT);
+  if(G.world&&G.world.atmosphere&&(!G.on||!G.paused)) G.world.atmosphere.step(G.on?G.t:menuT,G.on&&G.haunt?G.haunt.ghosts:null);
   if(pvRig&&!$('#scr-shop').classList.contains('hidden')){
     pvRig.rotation.y+=dt*0.55; pvRenderer.render(pvScene,pvCamera);
   }

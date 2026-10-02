@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#09070e">
   <title>Block Royale · PvP</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <main>
@@ -26,6 +26,7 @@
       <label for="hostName">Fighter name</label>
       <input id="hostName" maxlength="16" value="HOST" autocomplete="off">
       <label for="hostArena">Arena</label><select id="hostArena"></select>
+      <p id="arenaDescription"></p>
       <button id="create" class="primary">Create PvP room</button>
     </article>
     <article id="guestSetup">
@@ -73,6 +74,7 @@
         </div>
         <div id="controlHint" class="control-hint">Click the arena to aim and play</div>
         <div id="respawnHint" class="respawn-hint hidden"></div>
+        <div id="ghostHint" class="ghost-hint hidden" role="status">GHOST HUNTING YOU · RUN TO ESCAPE</div>
         <div id="connectionLost" class="round-over hidden"><strong>Host lost</strong><span>Your friend disconnected. Leave the room to start a new game.</span></div>
       </div>
       <div id="weaponBar" class="weapon-bar"></div>
@@ -99,11 +101,11 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="supabase-2.91.1.min.js?v=2.91.1"></script>
-<script src="../shared/pve-content.generated.js?v=8"></script>
-<script src="../shared/halloween.js?v=1"></script>
+<script src="../shared/pve-content.generated.js?v=9"></script>
+<script src="../shared/halloween.js?v=2"></script>
 <script src="../shared/world.js?v=8"></script>
 <script src="transport.js?v=7"></script>
-<script src="sim.js?v=7"></script>
-<script src="app.js?v=8"></script>
+<script src="sim.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

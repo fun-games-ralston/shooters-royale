@@ -14,7 +14,7 @@
     'players', 'rtt', 'messages', 'messageRate', 'viewport', 'arena', 'hp', 'hpFill', 'weaponName',
     'ammo', 'reserve', 'reloadState', 'roundOver', 'roundTitle', 'roundSummary', 'roundSync',
     'connectionLost', 'roomRoster', 'log', 'leaveMatch', 'weaponBar', 'hitMarker',
-    'matchMenu', 'closeMenu', 'hostArena', 'savedKit', 'rematch', 'roundClock', 'scoreLine', 'controlHint', 'respawnHint',
+    'matchMenu', 'closeMenu', 'hostArena', 'arenaDescription', 'savedKit', 'rematch', 'roundClock', 'scoreLine', 'controlHint', 'respawnHint', 'ghostHint',
   ].map(id => [id, document.getElementById(id)]));
 
   const keys = Object.create(null);
@@ -105,6 +105,8 @@
     els.savedKit.textContent = profile.loadout.map((id,index) => `${index+1}: ${id ? PVPRealSim.WEAPONS[id].name : 'Empty'}`).join(' · ') + ' · ' + (profile.pet ? PVPRealSim.PETS[profile.pet].name : 'No companion');
     for (const arena of PVPRealSim.CONTENT.ARENAS) els.hostArena.add(new Option(arena.name, arena.id));
     try { const saved=JSON.parse(localStorage.getItem('sr_save_v1')||'{}');els.hostArena.value=PVPRealSim.ARENAS[saved.cfg?.arena]?saved.cfg.arena:'foundry'; } catch (_) { els.hostArena.value='foundry'; }
+    const describeArena=()=>{els.arenaDescription.textContent=PVPRealSim.ARENAS[els.hostArena.value].blurb;};
+    els.hostArena.addEventListener('change',describeArena);describeArena();
   }
 
   function parseRoom(value) {
@@ -431,7 +433,7 @@
       snapshotAccum -= SNAPSHOT_MS;
     }
     updateScene(now);
-    if(halloweenAtmosphere) halloweenAtmosphere.step(now/1000);
+    if(halloweenAtmosphere) halloweenAtmosphere.step(now/1000,authority?.haunt?.ghosts||latest?.ghosts||[]);
     if(now-lastHudAt>=50){updateHud();lastHudAt=now;}
     if(now-lastTelemetryAt>=250){updateTelemetry();lastTelemetryAt=now;}
     renderer.render(scene, camera);
@@ -525,6 +527,10 @@
       log(`${event.label} incoming`, 'bad');
       return;
     }
+    if (event.type === 'ghost_warning') {
+      log(`Ghost hunting ${shortName(event.targetId)} · run to escape`, 'bad');
+      return;
+    }
     if (event.type === 'arena_impact') {
       addExplosion({ x: event.x, y: PVPRealSim.CONTENT.ARENAS.find(item => item.id === matchArenaId) ? 0.2 : 0, z: event.z });
       return;
@@ -543,7 +549,7 @@
     if (event.type === 'pet_revive') { log(`${PVPRealSim.PETS[event.pet].name} returned`, 'good'); return; }
     if (event.type === 'overheat') { log(`${shortName(event.playerId)} overheated ${PVPRealSim.WEAPONS[event.weapon].name}`, 'bad'); return; }
     if (event.type === 'hit' || event.type === 'death') {
-      const attacker = shortName(event.playerId);
+      const attacker = event.weapon==='ghost'?'Ghost':shortName(event.playerId);
       const target = shortName(event.targetId);
       log(`${attacker} hit ${target} · ${event.part} · ${event.targetHp} HP`, event.type === 'death' ? 'bad' : 'good');
       if (event.playerId === peerId) showHitMarker();
@@ -652,6 +658,8 @@
     els.respawnHint.textContent=`Back in ${Math.ceil(respawn/1000)}…`;
     if(authority&&(local.lifeId||0)!==localLifeId){localLifeId=local.lifeId||0;localYaw=local.yaw;localPitch=local.pitch;activeWeapon=local.weapon;trigger=false;}
     els.controlHint.classList.toggle('hidden',document.pointerLockElement===els.arena||roundEnded||local.alive===false);
+    const haunted=(authority?.haunt?.ghosts||latest?.ghosts||[]).some(g=>g.targetId===peerId&&(g.phase==='warning'||g.phase==='chase'));
+    els.ghostHint.classList.toggle('hidden',!haunted||roundEnded||local.alive===false);
     const equippedWeapon = local.weapon || 'sidearm';
     let ammo = local.ammo;
     let reserve = local.reserve;
