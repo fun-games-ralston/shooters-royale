@@ -72,3 +72,100 @@ test('returning saves receive the free map without charging coins or replacing p
   vm.runInNewContext('adoptSave(S);',context);
   assert.equal(context.S.own.arena.filter(id=>id==='ghosttown').length,1);
 });
+
+const hauntConfig=Content.ARENAS.find(a=>a.id==='ghosttown').haunt;
+function hauntFighter(id='fighter',x=-11,y=0,z=-13){return {id,x,y,z,alive:true};}
+function advanceHaunt(state,seconds,fighters){
+  const events=[];for(let i=0;i<Math.round(seconds/.05);i++)events.push(...Halloween.stepHaunt(state,.05,fighters));return events;
+}
+
+test('ghosts give opening grace and a full warning before a contact hit, then fade',()=>{
+  const state=Halloween.createHaunt(hauntConfig),p=hauntFighter();
+  assert.deepEqual(advanceHaunt(state,4.9,[p]),[]);
+  const warning=advanceHaunt(state,.2,[p]);assert.equal(warning.length,1);assert.equal(warning[0].type,'ghost_warning');
+  assert.equal(state.ghosts[0].phase,'warning');
+  assert.equal(advanceHaunt(state,1.1,[p]).filter(e=>e.type==='ghost_hit').length,0);
+  const hits=advanceHaunt(state,.3,[p]).filter(e=>e.type==='ghost_hit');
+  assert.equal(hits.length,1);assert.equal(hits[0].damage,12);assert.equal(state.ghosts[0].phase,'rest');
+  assert.equal(advanceHaunt(state,4,[p]).filter(e=>e.type==='ghost_hit').length,0);
+});
+
+test('running fighters escape, ghosts time out, and a new target gets a fresh warning',()=>{
+  const state=Halloween.createHaunt(hauntConfig),p=hauntFighter();advanceHaunt(state,6.4,[p]);
+  const events=[];
+  for(let i=0;i<60;i++){p.x+=6*.05;events.push(...Halloween.stepHaunt(state,.05,[p]));}
+  assert.equal(events.filter(e=>e.type==='ghost_hit').length,0);
+  p.alive=false;advanceHaunt(state,.05,[p]);assert.equal(state.ghosts[0].phase,'rest');
+  assert.ok(state.ghosts.every(g=>g.targetId===null));
+  advanceHaunt(state,5.1,[]);const replacement=hauntFighter('bot');
+  const fresh=advanceHaunt(state,.05,[replacement]);assert.equal(fresh[0].type,'ghost_warning');
+  assert.equal(fresh[0].targetId,'bot');assert.equal(state.ghosts[0].phase,'warning');
+  // A nearby but evasive target is not pursued forever.
+  const g=state.ghosts[0];g.phase='chase';g.until=state.time+.1;
+  replacement.x=g.x+10;advanceHaunt(state,.2,[replacement]);assert.equal(g.phase,'rest');
+});
+
+test('ghost faces its target with the eyes on its positive-Z model face',()=>{
+  const state=Halloween.createHaunt(hauntConfig);advanceHaunt(state,5.1,[hauntFighter('fighter',-18,0,-13)]);
+  assert.equal(state.ghosts[0].yaw,-Math.PI/2);
+});
+
+test('ghost contacts use full 3D distance, pursue rooftops and share a victim cooldown',()=>{
+  const state=Halloween.createHaunt(hauntConfig),p=hauntFighter('roof',-11,4.55,-13);
+  advanceHaunt(state,6.4,[p]);assert.equal(state.nextHit.roof,undefined,'cannot hit a roof through the floor');
+  assert.ok(state.ghosts[0].y>1.4,'ghost climbs toward target');
+  assert.equal(advanceHaunt(state,2,[p]).filter(e=>e.type==='ghost_hit').length,1);
+  advanceHaunt(state,1.6,[]);
+  for(const g of state.ghosts)Object.assign(g,{x:p.x,y:p.y+1,z:p.z,phase:'chase',targetId:p.id,until:state.time+10});
+  assert.equal(advanceHaunt(state,.05,[p]).filter(e=>e.type==='ghost_hit').length,1,'stacked ghosts deal one contact hit');
+  for(const g of state.ghosts)Object.assign(g,{phase:'chase',targetId:p.id,until:state.time+10});
+  assert.equal(advanceHaunt(state,.05,[p]).filter(e=>e.type==='ghost_hit').length,0,'cooldown spans all ghosts');
+});
+
+test('solo ghost contacts use actual damage rules and Training remains immune',()=>{
+  for(const training of [false,true]){
+    const player={pos:{x:-11,y:0,z:-13},isPlayer:true,alive:true,hp:200,abs:0};
+    const context={BlockRoyaleHalloween:Halloween,G:{haunt:Halloween.createHaunt(hauntConfig),ents:[player],pl:player,over:false,training,t:0},
+      petPerk:()=>false,fxHit(){},AU:{tone(){},hurt(){}},toast(){},huntedTarget:()=>null,setTimeout(){},
+      $:()=>({classList:{toggle(){}},style:{}})};
+    vm.runInNewContext(fn('damage')+'\n'+fn('updateGhosts'),context);
+    for(let i=0;i<135;i++){context.G.t+=.05;vm.runInNewContext('updateGhosts(.05);',context);}
+    assert.equal(player.hp,training?200:188);
+    const time=context.G.haunt.time;context.G.over=true;vm.runInNewContext('updateGhosts(.05);',context);
+    assert.equal(context.G.haunt.time,time,'completed matches freeze haunt simulation');
+  }
+});
+
+test('Friends host enforces ghost damage and replicates positions, warnings and phases',()=>{
+  const a=new Sim.Authority({world:Sim.makeArenaWorld('ghosttown'),startTimeMs:1000,durationMs:180000});
+  const p=a.addPlayer('host',{x:-11,y:0,z:-13}),other=a.addPlayer('guest',{x:30,y:0,z:0});
+  for(let i=0;i<150;i++)a.step(50,a.serverTimeMs+50);
+  assert.equal(p.hp,200,'no lobby damage');assert.equal(a.haunt.time,0);
+  a.startRound();for(let i=0;i<135;i++)a.step(50,a.serverTimeMs+50);
+  const snap=a.createSnapshot();assert.equal(p.hp,188);assert.equal(other.hp,200);
+  assert.ok(snap.events.some(e=>e.type==='ghost_warning'&&e.targetId==='host'));
+  assert.ok(snap.events.some(e=>e.type==='hit'&&e.weapon==='ghost'&&e.damage===12&&e.playerId===null));
+  assert.equal(snap.ghosts.length,4);assert.equal(snap.ghosts[0].phase,'rest');
+  assert.equal(snap.ghosts[0].x,a.haunt.ghosts[0].x);
+  snap.ghosts[0].x=999;assert.notEqual(a.haunt.ghosts[0].x,999,'snapshot cannot mutate host simulation');
+  assert.equal(other.kills,0);
+});
+
+test('ghosts phase through haunted-house walls to reach a fighter inside',()=>{
+  const a=new Sim.Authority({world:Sim.makeArenaWorld('ghosttown'),startTimeMs:1000,durationMs:180000});
+  const p=a.addPlayer('host',{x:-24,y:0,z:-24});a.addPlayer('guest',{x:30,y:0,z:0});a.startRound();
+  for(let i=0;i<230;i++)a.step(50,a.serverTimeMs+50);
+  assert.equal(p.hp,188);assert.equal(a.metrics.hazardHits,1);
+});
+
+test('ghost deaths award no kill, respect respawn protection and stop after round end',()=>{
+  const a=new Sim.Authority({world:Sim.makeArenaWorld('ghosttown'),startTimeMs:1000,durationMs:180000});
+  const p=a.addPlayer('host',{x:-11,y:0,z:-13}),other=a.addPlayer('guest',{x:30,y:0,z:0});p.hp=12;a.startRound();
+  for(let i=0;i<135;i++)a.step(50,a.serverTimeMs+50);
+  assert.equal(p.alive,false);assert.equal(p.deaths,1);assert.equal(other.kills,0);
+  for(let i=0;i<65;i++)a.step(50,a.serverTimeMs+50);
+  assert.equal(p.alive,true);assert.equal(p.hp,200);
+  for(const g of a.haunt.ghosts)Object.assign(g,{phase:'chase',targetId:p.id,x:p.x,y:p.y+1,z:p.z,until:a.haunt.time+10});
+  a.step(50,a.serverTimeMs+50);assert.equal(p.hp,200);assert.ok(a.haunt.ghosts.every(g=>g.targetId!==p.id));
+  a.roundEnded=true;const before=JSON.stringify(a.haunt);a.step(50,a.serverTimeMs+50);assert.equal(JSON.stringify(a.haunt),before);
+});

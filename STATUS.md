@@ -4,6 +4,8 @@
 
 **Halloween update:** Ghostlight Playground is free for every fighter and shares its cover, stairs, and clear spawn positions between solo and Friends PvP. The season banner opens a highlights page with a live 3D map preview and links to the map, both new weapons, and the leaderboard. The release passed all 96 JavaScript and PvP tests, plus browser checks of the highlights page, Training, narrow-screen layout, and both clients in a Friends room.
 
+**2.8.1 candidate:** `codex/halloween-ghost-hazards` turns the four ghosts into shared solo/Friends hazards. Hunts have five seconds of opening grace, a 1.25-second warning, speed 3.6 m/s, a ten-second chase timeout, 12 HP contact damage, five seconds of rest, and a shared 1.5-second victim cooldown. Host snapshots replicate the ghost poses and phases; Training and protected Friends respawns remain immune. The candidate passed 104 JavaScript/PvP tests. A local browser demo using the real host authority and Halloween renderer verified the warning and a 200-to-188 HP contact; pointer-lock gameplay still needs physical playtesting. No migration or player-data changes. Production remains 2.8.
+
 ---
 
 > Player-facing history lives in **[RELEASE-LOG.md](RELEASE-LOG.md)** — one line per change, plain

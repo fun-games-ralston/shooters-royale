@@ -1,11 +1,12 @@
 (function(root,factory){
   const api=factory(
     typeof module==='object'&&module.exports?require('../shared/pve-content.generated.js'):root.BlockRoyaleContent,
-    typeof module==='object'&&module.exports?require('../shared/world.js'):root.BlockRoyaleWorld
+    typeof module==='object'&&module.exports?require('../shared/world.js'):root.BlockRoyaleWorld,
+    typeof module==='object'&&module.exports?require('../shared/halloween.js'):root.BlockRoyaleHalloween
   );
   if(typeof module==='object'&&module.exports) module.exports=api;
   else root.PVPRealSim=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(Content,SharedWorld){
+})(typeof globalThis!=='undefined'?globalThis:this,function(Content,SharedWorld,Halloween){
   'use strict';
 
   if(!Content||!SharedWorld) throw new Error('Shared PvE content and world modules must load before PvP simulation');
@@ -283,6 +284,7 @@
       this.roundId=String(options.roundId||'');this.durationMs=Math.max(0,finite(options.durationMs,0));this.endsAtMs=Infinity;this.respawnMs=3000;
       this.roundActive=false;this.roundEnded=false;this.roundEndSeq=0;this.winnerId=null;
       this.random=mulberry32((this.world.def&&this.world.def.seed||11)^0x51ed270b);this.nextArenaEventAt=Infinity;this.arenaEvents=[];
+      this.haunt=this.world.def?.haunt?Halloween.createHaunt(this.world.def.haunt):null;
       this.metrics={acceptedInputs:0,droppedInputs:0,shots:0,hits:0,rockets:0,petHits:0,hazardHits:0};
     }
 
@@ -329,7 +331,7 @@
         player.nowMs=this.serverTimeMs;this._weaponInput(player);this._tickStatus(player,dt);integrateMovement(player,player.input,this.world,dt);this._applyWorldRules(player,dt);this._record(player,this.serverTimeMs);
         this._tryFire(player);
       }
-      this._stepPets(dt);this._stepArenaEvents();this._stepProjectiles(dt);for(const player of this.players.values())this._record(player,this.serverTimeMs);
+      this._stepPets(dt);this._stepGhosts(dt);this._stepArenaEvents();this._stepProjectiles(dt);for(const player of this.players.values())this._record(player,this.serverTimeMs);
       this._checkRoundEnd('last_alive');
     }
 
@@ -395,6 +397,18 @@
           if(tactic.retreat)pet.retreatUntil=this.serverTimeMs+tactic.retreat*1000;
           this._event('pet_attack',{playerId:owner.id,targetId:target.id,petId:pet.id,pet:def.id,damage:def.dmg,targetHp:Math.round(target.hp)});
         }
+      }
+    }
+
+    _stepGhosts(dt){
+      if(!this.haunt||!this.roundActive||this.roundEnded)return;
+      const fighters=[...this.players.values()].map(p=>({id:p.id,x:p.x,y:p.y,z:p.z,alive:p.alive,protected:this.serverTimeMs<(p.protectedUntil||0)}));
+      for(const event of Halloween.stepHaunt(this.haunt,dt,fighters)){
+        if(this.roundEnded)break;
+        if(event.type==='ghost_hit'){
+          const p=this.players.get(event.targetId);this.metrics.hazardHits++;
+          this._damage(p,event.damage,null,'BODY',{x:p.x,y:p.y+1,z:p.z},'ghost');
+        }else this._event(event.type,event);
       }
     }
 
@@ -601,6 +615,7 @@
       return {protocol:3,roundId:this.roundId,remainingMs:this.durationMs?Math.max(0,this.endsAtMs-this.serverTimeMs):null,roundReason:this.roundReason,contentVersion:Content.CONTENT_VERSION,world:this.world.id,seq:++this.snapshotSeq,serverTimeMs:this.serverTimeMs,roundEnded:this.roundEnded,roundEndSeq:this.roundEndSeq,winnerId:this.winnerId,events,
         players:[...this.players.values()].map(p=>{const ammo=p.inventory[p.weapon];return{id:p.id,name:p.name,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,yaw:p.yaw,pitch:p.pitch,hp:p.hp,alive:p.alive,onGround:p.onGround,jumpLatch:p.jumpLatch,kills:p.kills,deaths:p.deaths||0,lifeId:p.lifeId||0,respawnMs:Math.max(0,(p.respawnAt||0)-this.serverTimeMs),protectedMs:Math.max(0,(p.protectedUntil||0)-this.serverTimeMs),weapon:p.weapon,loadout:p.loadout,profile:p.profile,heat:p.heat,ammo:ammo.ammo,reserve:ammo.reserve,reloadMs:Math.max(0,p.reloadUntil-this.serverTimeMs),lastProcessedInput:p.lastInputSeq};}),
         pets:[...this.pets.values()].map(p=>({id:p.id,ownerId:p.ownerId,defId:p.defId,x:p.x,y:p.y,z:p.z,yaw:p.yaw,hp:p.hp,maxHp:p.maxHp,alive:p.alive,targetId:p.targetId})),
+        ghosts:this.haunt?this.haunt.ghosts.map(g=>({id:g.id,x:g.x,y:g.y,z:g.z,yaw:g.yaw||0,phase:g.phase,fade:g.fade,targetId:g.targetId})):[],
         arenaEvents:this.arenaEvents.map(event=>({...event})),projectiles:this.projectiles.map(p=>({id:p.id,ownerId:p.ownerId,weapon:p.weapon,x:p.x,y:p.y,z:p.z,vx:p.vx,vy:p.vy,vz:p.vz,life:p.life}))};
     }
   }

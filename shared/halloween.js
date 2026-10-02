@@ -6,7 +6,7 @@
   'use strict';
 
   // Both solo and Friends use this layout, including the exact cover and stairs.
-  // Moving ghosts, bats and swing seats are scenery and never enter collision.
+  // Ghosts phase through cover; bats and swing seats never enter collision.
   function build(add,def){
     const H=def.size/2,wood=0x655078,roof=0x353046,orange=0xff8a32,mint=0xa5f5ce;
     const decks=[];
@@ -114,6 +114,59 @@
     add(x,y+s*.28,z+s*.51,s*.38,s*.12,.04,0xffd784,.95,false);
   }
 
+  const HOMES=[[-11,-13],[13,13],[-25,17],[24,-19]];
+
+  // One simulation powers solo and the Friends host. Positions are ghost body
+  // centres; fighters supply feet coordinates. No renderer decides damage.
+  function createHaunt(config){
+    return {config,time:0,nextHit:Object.create(null),ghosts:HOMES.map(([x,z],id)=>({id,x,y:1.4,z,
+      homeX:x,homeZ:z,phase:'idle',targetId:null,fade:1,until:config.grace}))};
+  }
+  function stepHaunt(state,dt,fighters){
+    dt=Math.max(0,Math.min(dt,.05));
+    const c=state.config,events=[];state.time+=dt;
+    const t=state.time,alive=fighters.filter(p=>p.alive&&!p.protected);
+    const distance=(g,p)=>Math.hypot(g.x-p.x,g.y-(p.y+1),g.z-p.z);
+    for(const g of state.ghosts){
+      if(g.phase==='rest'){
+        g.fade=Math.max(0,g.fade-dt*3);
+        if(t<g.until)continue;
+        g.x=g.homeX;g.y=1.4;g.z=g.homeZ;g.phase='idle';g.fade=1;
+      }
+      const rest=()=>{g.phase='rest';g.targetId=null;g.fade=1;g.until=t+c.rest;};
+      let target=alive.find(p=>p.id===g.targetId);
+      if(g.phase==='idle'){
+        if(t<g.until)continue;
+        const claimed=new Set(state.ghosts.filter(h=>h!==g&&h.targetId!==null).map(h=>h.targetId));
+        target=alive.filter(p=>!claimed.has(p.id)&&distance(g,p)<=c.range)
+          .sort((a,b)=>distance(g,a)-distance(g,b))[0];
+        if(!target)continue;
+        g.targetId=target.id;g.phase='warning';g.until=t+c.warning;
+        events.push({type:'ghost_warning',ghostId:g.id,targetId:target.id});
+      }
+      if(!target||distance(g,target)>c.leash){rest();continue;}
+      g.yaw=Math.atan2(target.x-g.x,target.z-g.z);
+      if(g.phase==='warning'){
+        if(t<g.until)continue;
+        g.phase='chase';g.until=t+c.chase;
+      }
+      if(g.phase==='chase'){
+        if(t>=g.until){rest();continue;}
+        const d=distance(g,target),move=Math.min(d,c.speed*dt),f=move/(d||1);
+        g.x+=(target.x-g.x)*f;g.y+=(target.y+1-g.y)*f;g.z+=(target.z-g.z)*f;
+        if(distance(g,target)<=c.radius){
+          // Shared victim cooldown prevents several ghosts stacking one hit.
+          if(t>=(state.nextHit[target.id]||0)){
+            state.nextHit[target.id]=t+c.cooldown;
+            events.push({type:'ghost_hit',ghostId:g.id,targetId:target.id,damage:c.damage});
+          }
+          rest();
+        }
+      }
+    }
+    return events;
+  }
+
   function atmosphere(THREE,group){
     const movers=[],geometry=new THREE.BoxGeometry(1,1,1);
     const materials={};
@@ -130,7 +183,10 @@
       for(const x of [-.44,0,.44]) part(ghost,x,-.85,0,.35,.35,.65,0xd4ffe8,.68);
       for(const x of [-.28,.28]) part(ghost,x,.25,.42,.18,.25,.05,0x204b48);
       part(ghost,0,-.15,.42,.18,.22,.05,0x204b48);
-      movers.push({mesh:ghost,x:p[0],y:p[1],z:p[2],phase:i*1.7,type:'ghost'});
+      const body=ghost.children.map(m=>{m.material=m.material.clone();m.material.transparent=true;m.material.depthWrite=false;return {mesh:m,opacity:m.material.opacity};});
+      const halo=new THREE.Mesh(new THREE.RingGeometry(1.35,1.55,32),new THREE.MeshBasicMaterial({color:0xff5a2a,side:THREE.DoubleSide,transparent:true,opacity:.8,depthWrite:false}));
+      halo.rotation.x=-Math.PI/2;halo.position.y=-.9;ghost.add(halo);halo.visible=false;
+      movers.push({mesh:ghost,halo,body,id:i,x:p[0],y:p[1],z:p[2],phase:i*1.7,type:'ghost'});
     }
     for(const z of [-2.5,2.5]){
       const swing=new THREE.Group();swing.position.set(-17,4.85,z);group.add(swing);
@@ -156,11 +212,21 @@
     }
     // A few translucent patches stay at ankle height and off the central lanes.
     for(const [x,z] of [[-25,-12],[25,12],[-12,25],[12,-25]]) part(group,x,.15,z,9,.14,5,0xa5d4cd,.12);
-    function step(t){
+    function step(t,ghosts){
       for(const m of movers){
         if(m.type==='ghost'){
-          m.mesh.position.set(m.x+Math.sin(t*.35+m.phase)*1.2,m.y+Math.sin(t*.8+m.phase)*.55,m.z+Math.cos(t*.3+m.phase)*.8);
-          m.mesh.rotation.y=Math.sin(t*.3+m.phase)*.5;
+          const g=ghosts&&ghosts.find(g=>g.id===m.id);
+          const fade=g&&g.phase==='rest'?g.fade:1;
+          m.mesh.visible=fade>0;m.halo.visible=!!g&&(g.phase==='warning'||g.phase==='chase');
+          m.mesh.scale.setScalar(.6+fade*.4);for(const b of m.body)b.mesh.material.opacity=b.opacity*fade;
+          if(g){
+            m.mesh.position.set(g.x,g.y+Math.sin(t*4+m.phase)*.12,g.z);m.mesh.rotation.y=g.yaw||0;
+            m.halo.material.opacity=g.phase==='warning'?.5+Math.sin(t*14)*.3:.8;
+            m.halo.scale.setScalar(g.phase==='warning'?1.1+Math.sin(t*10)*.12:1);
+          }else{
+            m.mesh.position.set(m.x+Math.sin(t*.35+m.phase)*1.2,m.y+Math.sin(t*.8+m.phase)*.55,m.z+Math.cos(t*.3+m.phase)*.8);
+            m.mesh.rotation.y=Math.sin(t*.3+m.phase)*.5;
+          }
         }else if(m.type==='swing') m.mesh.rotation.z=Math.sin(t*.9+m.phase)*.24;
         else{
           const a=t*.18+m.phase;m.mesh.position.set(Math.cos(a)*24,13+Math.sin(a*3)*1.5,Math.sin(a)*24);
@@ -170,5 +236,5 @@
     }
     step(0);return {step};
   }
-  return {build,atmosphere};
+  return {build,atmosphere,createHaunt,stepHaunt};
 });
