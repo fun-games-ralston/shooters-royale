@@ -2,6 +2,8 @@
 
 **Version:** 2.7 · **Date:** 1 October 2026 · **Release branch:** `codex/challenge-seasons`
 
+**Next update:** 2.8 preview on `codex/halloween-playground`. Ghostlight Playground is free for every fighter and shares its cover, stairs, and clear spawn positions between solo and Friends PvP. The season banner opens a highlights page with a live 3D map preview and links to the map, both new weapons, and the leaderboard. This preview is not deployed to production.
+
 ---
 
 > Player-facing history lives in **[RELEASE-LOG.md](RELEASE-LOG.md)** — one line per change, plain

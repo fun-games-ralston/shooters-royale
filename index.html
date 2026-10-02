@@ -65,6 +65,26 @@ canvas{display:block}
   box-shadow:inset 0 0 0 2px var(--gold),0 0 24px rgba(242,177,52,.2)}
 .seasonbar.lifecycle b{display:block;color:var(--gold);font-family:var(--disp);font-size:16px;letter-spacing:.14em}
 .seasonbar.lifecycle span{display:block;margin-top:2px;letter-spacing:.07em}
+.seasonbar{border:0;cursor:pointer;width:100%}
+.seasonbar:hover{background:#33223e;box-shadow:inset 0 0 0 2px var(--gold),0 0 24px rgba(242,177,52,.2)}
+.seasonbar:focus-visible{outline:3px solid var(--bone);outline-offset:4px}
+.seasonbar .seasoncue{display:block;color:var(--gold);font-size:10px;letter-spacing:.16em;margin-top:5px}
+.seasonpage{max-width:920px}
+.pagebody.seasoncontent{display:block;overflow:auto;padding:20px}
+.seasonhero{position:relative;border:1px solid #685075;background:#120f1a;overflow:hidden}
+.seasonhero canvas{width:100%;height:250px}
+.seasonhero .seasonhero-label{position:absolute;left:20px;top:18px;font-family:var(--mono);font-size:10px;color:#ffcb89;letter-spacing:.16em;text-transform:uppercase;padding:7px 10px;background:#20182ce8}
+.seasonhero-copy{padding:18px 20px;background:linear-gradient(120deg,#30213c,#201b2d)}
+.seasonhero h3{font-family:var(--disp);font-size:34px;letter-spacing:.06em;text-transform:uppercase;color:#ffd09e}
+.seasonhero p,.seasonfeature p{color:var(--text2);font-size:12px;line-height:1.75;margin:7px 0 14px}
+.seasonfeatures{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.seasonfeature{background:#211a2e;padding:16px;border:1px solid var(--edge)}
+.seasonfeature canvas{width:100%;height:85px;object-fit:contain;background:#14101e}
+.seasonfeature .seasonkicker,.seasonfooter{font-family:var(--mono);font-size:10px;line-height:1.7;color:var(--dim);letter-spacing:.04em}
+.seasonfeature .seasonkicker{color:var(--ench);margin:12px 0 5px;text-transform:uppercase}
+.seasonfeature h3{font-family:var(--disp);font-size:23px;letter-spacing:.06em;text-transform:uppercase}
+.seasonfooter{padding:15px 0 0;display:flex;align-items:center;justify-content:space-between;gap:14px}
+@media(max-width:600px){.seasoncontent{padding:12px}.seasonfeatures{grid-template-columns:1fr}.seasonhero canvas{height:200px}.seasonhero h3{font-size:27px}.seasonfooter{align-items:start;flex-direction:column}}
 .briefcard{width:min(540px,92vw);padding:26px 30px 22px;text-align:center;background:rgba(21,16,32,.96)}
 .briefseason{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
 .brieftitle{font-family:var(--disp);font-size:clamp(30px,5vw,44px);letter-spacing:.1em;text-transform:uppercase;margin:8px 0 20px}
@@ -573,7 +593,7 @@ canvas{display:block}
       <div class="titlecenter">
         <h1 class="gametitle">Block<span>Royale</span></h1>
         <div class="tagline">One life · Last block standing</div>
-        <div class="seasonbar hidden" id="seasonBanner"></div>
+        <button class="seasonbar hidden" id="seasonBanner" type="button" aria-controls="scr-season"></button>
         <div class="menu-col">
           <button class="btn primary" id="btnPlay">Seasonal challenge</button>
           <button class="btn" id="btnSetup">Custom battle</button>
@@ -583,6 +603,48 @@ canvas{display:block}
         </div>
       </div>
       <aside class="tpanel blk rrail" id="dailyBox"></aside>
+    </div>
+  </div>
+
+  <!-- SEASON HIGHLIGHTS -->
+  <div class="screen hidden" id="scr-season">
+    <div class="page blk seasonpage">
+      <div class="pagehead">
+        <div><h2>What's new</h2><div class="sub" id="seasonHighlightsSub">October update · Halloween</div></div>
+        <button class="btn sm ghost" data-back>Back</button>
+      </div>
+      <div class="pagebody seasoncontent">
+        <article class="seasonhero">
+          <canvas id="seasonMapPreview" role="img" aria-label="Ghostlight Playground: pumpkin carousel, haunted houses and swing yard"></canvas>
+          <div class="seasonhero-label">New map · Free for everyone</div>
+          <div class="seasonhero-copy">
+            <h3>Ghostlight Playground</h3>
+            <p>A playground the town forgot. Fight around a giant pumpkin carousel, climb the boarded houses, and slip through the swing yard. Ghosts, bats, glowing lanterns, and moonlight bring Halloween to the arena.</p>
+            <button class="btn sm primary" id="btnSeasonMap">Try the map</button>
+            <span class="seasonfooter">Challenge · Custom Battle · Training · Friends PvP</span>
+          </div>
+        </article>
+        <div class="seasonfeatures">
+          <article class="seasonfeature">
+            <canvas id="seasonLockjaw" width="480" height="160" role="img" aria-label="Lockjaw Launcher"></canvas>
+            <div class="seasonkicker">New weapon · Solo &amp; Training</div>
+            <h3>Lockjaw Launcher</h3>
+            <p>Hold aim to confirm a lock. Fire a missile that hunts your target around cover. Four missiles, 60 damage each.</p>
+            <button class="btn sm ghost" data-season-weapon="lockjaw">View Lockjaw</button>
+          </article>
+          <article class="seasonfeature">
+            <canvas id="seasonDragonfire" width="480" height="160" role="img" aria-label="Dragonfire flamethrower"></canvas>
+            <div class="seasonkicker">New weapon · Solo &amp; Training</div>
+            <h3>Dragonfire</h3>
+            <p>Sweep a cone of flame across several enemies. Up to six seconds per burst, with 30 seconds of fuel. Walls stop the fire.</p>
+            <button class="btn sm ghost" data-season-weapon="dragonfire">View Dragonfire</button>
+          </article>
+        </div>
+        <div class="seasonfooter">
+          <span>Six qualifying wins clear each Challenge tier. Keep climbing, and revisit completed-season results from the leaderboard.</span>
+          <button class="btn sm ghost" id="btnSeasonBoard">Leaderboard</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -779,6 +841,7 @@ canvas{display:block}
 <script src="shared/playtime-reminder.js"></script>
 <script src="shared/score-queue.js"></script>
 <script src="shared/weapon-specials.js"></script>
+<script src="shared/halloween.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
@@ -917,7 +980,8 @@ function renderSeasonBanner(){
   const reminder=seasonLifecycleReminder(st,challengeProgress());
   let txt='';
   if(reminder){
-    el.innerHTML='<b>'+esc(reminder.title)+'</b><span>'+esc(reminder.body)+'</span>';
+    el.innerHTML='<b>'+esc(reminder.title)+'</b><span>'+esc(reminder.body)+'</span><span class="seasoncue">What\'s new →</span>';
+    el.setAttribute('aria-label',(cur?cur.name:'Season update')+': see what\'s new');
     el.classList.add('lifecycle');
     el.classList.remove('hidden');
     return;
@@ -929,7 +993,8 @@ function renderSeasonBanner(){
     const days=seasonDaysUntil(cur.ends_at);
     txt=cur.name+' · '+days+' day'+(days===1?'':'s')+' left';
   }
-  el.textContent=txt;
+  el.innerHTML=esc(txt)+'<span class="seasoncue">What\'s new →</span>';
+  el.setAttribute('aria-label',(cur?cur.name:'Season update')+': see what\'s new');
   el.classList.remove('lifecycle');
   el.classList.toggle('hidden',!txt);
 }
@@ -1478,6 +1543,10 @@ const ARENAS = [
  sky:0x08040f,fog:0x0d0618,fogD:0.018,ground:0x1a1030,accent:0xa97bff,wall:0x140a26,light:0xc9a8ff,
  fx:{type:'rift',n:280,c:0xa97bff},blurb:'Broken reality. Low gravity, floating obsidian, and no horizon at all.',
  mod:{grav:0.55},void:true},
+{id:'ghosttown',name:'Ghostlight Playground',cost:0,size:80,seed:173,
+ sky:0x171329,fog:0x282338,fogD:0.007,ground:0x343340,accent:0xff963f,wall:0x655078,light:0xe9deff,
+ fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground in a ghost town. Pumpkin carousel, rooftop routes, a swing yard, and friendly ghosts. Free for everyone.',
+ mod:{}},
 ];
 const AR = {}; ARENAS.forEach(a=>AR[a.id]=a);
 
@@ -1509,7 +1578,7 @@ const BOT_NAMES = ['Grit','Hollow','Mox','Vex','Piston','Cinder','Rook','Juno','
    ===================================================================== */
 const DEFAULT_STATE = {
   coins: 250,
-  own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry'] },
+  own:{ weapons:['knife','sidearm'], hair:['crop'], outfit:['recruit'], acc:['none'], pet:[], arena:['foundry','ghosttown'] },
   eq:{ primary:'sidearm', secondary:null, melee:'knife', hair:'crop', outfit:'recruit', acc:'none', pet:null },
   food:{ bread:2, steak:1 },
   cfg:{ arena:'foundry', bots:5, skill:'rookie', time:3, sens:150, sound:true, nametags:true, cam:'first', mode:'challenge', hunted:false },
@@ -1579,6 +1648,9 @@ function adoptSave(p){
   if(!p||typeof p!=='object') return false;
   S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), p);
   S.own = Object.assign({}, DEFAULT_STATE.own, p.own||{});
+  // Free maps also belong to returning fighters whose saves predate the release.
+  S.own.arena=Array.isArray(S.own.arena)?S.own.arena.slice():[];
+  ARENAS.filter(a=>a.cost===0).forEach(a=>{if(!S.own.arena.includes(a.id)) S.own.arena.push(a.id);});
   S.eq  = Object.assign({}, DEFAULT_STATE.eq,  p.eq||{});
   S.cfg = Object.assign({}, DEFAULT_STATE.cfg, p.cfg||{});
   // Saves written before 1.5 carry a field-of-view setting that no longer exists
@@ -1873,6 +1945,22 @@ function paintArena(cv,a){
   const g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,hex(a.sky)); g.addColorStop(1,hex(a.fog));
   ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
   ctx.fillStyle=hex(a.ground); ctx.fillRect(0,h*0.62,w,h*0.38);
+  if(a.id==='ghosttown'){
+    ctx.fillStyle='#e5dab3';ctx.beginPath();ctx.arc(w*.8,h*.2,h*.1,0,Math.PI*2);ctx.fill();
+    for(const x of [w*.08,w*.72]){
+      ctx.fillStyle='#655078';ctx.fillRect(x,h*.36,w*.2,h*.31);
+      ctx.fillStyle='#353046';ctx.fillRect(x-w*.02,h*.31,w*.24,h*.06);
+      ctx.fillStyle='#a5f5ce';for(const dx of [.03,.13])ctx.fillRect(x+w*dx,h*.44,w*.04,h*.07);
+    }
+    ctx.fillStyle='#353046';ctx.fillRect(w*.31,h*.46,w*.38,h*.07);
+    ctx.fillStyle='#8f749f';for(const x of [.34,.64])ctx.fillRect(w*x,h*.5,w*.02,h*.25);
+    ctx.fillStyle='#d76622';ctx.fillRect(w*.4,h*.25,w*.2,h*.18);
+    ctx.fillStyle='#ffdc93';for(const x of [.44,.53])ctx.fillRect(w*x,h*.29,w*.03,h*.03);
+    ctx.fillRect(w*.45,h*.37,w*.1,h*.025);
+    ctx.fillStyle='#a5f5ce';ctx.fillRect(w*.22,h*.22,w*.04,h*.09);
+    ctx.fillStyle='#d76622';for(const x of [.1,.25,.72,.88])ctx.fillRect(w*x,h*.73,w*.04,h*.07);
+    return;
+  }
   const r=mulberry32(a.seed);
   for(let i=0;i<16;i++){
     const bw=6+r()*26, bh=8+r()*46, x=r()*w, y=h*0.62-bh+r()*10;
@@ -2025,6 +2113,11 @@ function makeWorld(def){
     const m=boxMesh(w,h,d,color,emi||0); m.position.set(cx,cy,cz); group.add(m);
     if(solid!==false) boxes.push({x0:cx-w/2,x1:cx+w/2,y0:cy-h/2,y1:cy+h/2,z0:cz-d/2,z1:cz+d/2});
     return m;
+  }
+  if(def.id==='ghosttown'){
+    const layout=BlockRoyaleHalloween.build(add,def);
+    const atmosphere=BlockRoyaleHalloween.atmosphere(THREE,group);
+    return {group,boxes,spawns:layout.spawns,hazards,decks:layout.decks,def,size:def.size,H,atmosphere};
   }
   // ---- floor ----
   if(def.void){
@@ -4770,10 +4863,41 @@ function show(id){
   $('#coinbar').classList.toggle('hidden',!el);
   if(id==='scr-setup') renderSetup();
   if(id==='scr-shop') renderShop(shopTab);
+  if(id==='scr-season') renderSeasonHighlights();
   if(id==='scr-board') renderBoard();
   if(id==='scr-account') renderAccount();
   if(id==='scr-title') renderMiniBoard();
   if(id==='scr-title') showBreakReminder();
+}
+let seasonPreview=null;
+function renderSeasonHighlights(){
+  const status=SEASON_STATUS||localSeasonStatus();
+  $('#seasonHighlightsSub').textContent=(status.current?status.current.name+' · ':'')+'October content update';
+  paintGun($('#seasonLockjaw'),W.lockjaw);
+  paintGun($('#seasonDragonfire'),W.dragonfire);
+  if(!seasonPreview){
+    const cv=$('#seasonMapPreview'), r=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+    r.setPixelRatio(Math.min(devicePixelRatio,1.5));
+    const s=new THREE.Scene(), def=AR.ghosttown, world=makeWorld(def);
+    s.background=new THREE.Color(def.sky);s.fog=new THREE.FogExp2(def.fog,.004);
+    s.add(new THREE.AmbientLight(def.light,.9));
+    const light=new THREE.DirectionalLight(0xffdfba,.85);light.position.set(20,50,30);s.add(light);
+    s.add(world.group);
+    const cam=new THREE.PerspectiveCamera(48,2.8,.1,250);
+    seasonPreview={renderer:r,scene:s,camera:cam,world,t:0};
+  }
+  stepSeasonPreview(0);
+}
+function stepSeasonPreview(dt){
+  if(!seasonPreview) return;
+  const p=seasonPreview, cv=$('#seasonMapPreview');p.t+=dt;
+  if(cv.width!==Math.round(cv.clientWidth*p.renderer.getPixelRatio())||cv.height!==Math.round(cv.clientHeight*p.renderer.getPixelRatio())){
+    p.renderer.setSize(cv.clientWidth,cv.clientHeight,false);
+    p.camera.aspect=cv.clientWidth/cv.clientHeight;p.camera.updateProjectionMatrix();
+  }
+  const a=.68+Math.sin(p.t*.08)*.1;
+  p.camera.position.set(Math.cos(a)*63,33,Math.sin(a)*63);p.camera.lookAt(0,2,0);
+  p.world.atmosphere.step(p.t);p.renderer.render(p.scene,p.camera);
 }
 function refreshCoins(){
   $('#coinval').textContent=S.coins.toLocaleString();
@@ -5654,6 +5778,15 @@ function wireUI(){
   $('#btnShop').onclick=()=>{AU.ui();show('scr-shop');};
   $('#btnSetup').onclick=()=>{AU.ui();S.cfg.mode='custom';renderSetup();show('scr-setup');};
   $('#btnHelp').onclick=()=>{AU.ui();show('scr-help');};
+  $('#seasonBanner').onclick=()=>{AU.ui();show('scr-season');};
+  $('#btnSeasonMap').onclick=()=>{
+    AU.ui();S.cfg.arena='ghosttown';S.cfg.mode='custom';saveState();buildMenuScene();show('scr-setup');
+  };
+  $('#btnSeasonBoard').onclick=()=>{AU.ui();BOARD_SEASON='';show('scr-board');};
+  $$('[data-season-weapon]').forEach(b=>b.onclick=()=>{
+    AU.ui();shopSelection.weapons=b.dataset.seasonWeapon;shopTab='weapons';show('scr-shop');
+    const selected=$('.weapon-card.selected');if(selected){armoryDetailTrigger=selected;selected.scrollIntoView({block:'center'});openArmoryDetails();}
+  });
   $('#btnBriefBack').onclick=()=>{AU.ui();G.softCapture=false;document.exitPointerLock&&document.exitPointerLock();show('scr-title');};
   $('#btnCustomBriefBack').onclick=()=>{AU.ui();show('scr-setup');};
   $('#pvClose').onclick=()=>{AU.ui();closeArmoryDetails(true);};
@@ -5690,6 +5823,8 @@ function animate(){
   requestAnimationFrame(animate);
   PLAYTIME.update(performance.now(),G.on&&!G.paused&&!G.over&&!document.hidden);
   const dt=Math.min(0.05,clock.getDelta());
+  if(!$('#scr-season').classList.contains('hidden')) stepSeasonPreview(dt);
+  if(G.world&&G.world.atmosphere&&(!G.on||!G.paused)) G.world.atmosphere.step(G.on?G.t:menuT);
   if(pvRig&&!$('#scr-shop').classList.contains('hidden')){
     pvRig.rotation.y+=dt*0.55; pvRenderer.render(pvScene,pvCamera);
   }

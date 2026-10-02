@@ -361,7 +361,11 @@
  sky:0x08040f,fog:0x0d0618,fogD:0.018,ground:0x1a1030,accent:0xa97bff,wall:0x140a26,light:0xc9a8ff,
  fx:{type:'rift',n:280,c:0xa97bff},blurb:'Broken reality. Low gravity, floating obsidian, and no horizon at all.',
  mod:{grav:0.55},void:true},
+{id:'ghosttown',name:'Ghostlight Playground',cost:0,size:80,seed:173,
+ sky:0x171329,fog:0x282338,fogD:0.007,ground:0x343340,accent:0xff963f,wall:0x655078,light:0xe9deff,
+ fx:{type:'spark',n:100,c:0xb8ffdb},blurb:'A haunted playground in a ghost town. Pumpkin carousel, rooftop routes, a swing yard, and friendly ghosts. Free for everyone.',
+ mod:{}},
 ];
 
-  return {CONTENT_VERSION:'5b946811bf27b2c9',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
+  return {CONTENT_VERSION:'48a24bdd6f926ac1',WEAPONS,FOODS,HAIRS,OUTFITS,ACCS,PETS,PET_TACTICS,ARENAS};
 });
