@@ -7,7 +7,7 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 
 ---
 
-## 2.9 candidate · Challenge records and map rotation
+## 2.9 · 1 Oct 2026 · Challenge records and map rotation
 
 * Lockjaw Launcher now deals **90 damage** per missile, up from 60. Its 1.2-second visible lock and four-missile supply stay the same. Two hits leave an unarmored 200-HP fighter with 20 HP.
 
@@ -15,7 +15,7 @@ Newest first. Each entry is one change: a feature that made the game better, or 
 * Recent Challenges show timestamps and actual tier completions. Custom games affect recorded lifetime Stats and never seasonal totals, ranking, or recent Challenges. Signed-in Stats read recorded server counters instead of browser-save totals.
 * Challenge starts and rematches wait for pending results and server progress before the countdown. Connection failures offer Try again; a slow leaderboard cannot start a match at the wrong tier. Legitimate damage and headshot totals are no longer silently clipped.
 * Seasonal Challenge asks unsigned players to sign in with a fighter name and PIN. Custom offers a simple guest option. Challenge maps rotate in shuffled cycles through every arena; Custom settings stay in Custom.
-* Requires `20261002060000_season_record_consistency.sql` before publishing the client. Candidate only; production has not been migrated or deployed. Existing player records and saves are preserved without backfill.
+* Released on the official site after the production migration was applied and the new leaderboard endpoints were verified. Existing player records and saves are preserved without backfill.
 
 ## 2.8.2 — 1 Oct 2026 · Ghosts keep hunting
 

@@ -1,7 +1,7 @@
-# Challenge record consistency candidate
+# Challenge record consistency
 
-Production remains 2.8.2. This candidate requires its database migration before
-client deployment. No historical rows, receipts, player totals, inventory, or
+Release 2.9 is deployed on the official site. The user applied its database
+migration before client deployment, and public v3 reads were verified. No historical rows, receipts, player totals, inventory, or
 cloud saves are rewritten. Missing historical submissions are not backfilled.
 
 ## What the numbers mean
@@ -82,9 +82,23 @@ test, not a certification of physical pointer-lock combat.
 
 1. Run `supabase/migrations/20261002060000_season_record_consistency.sql` in the production Supabase SQL Editor. It is transactional and safe to rerun against the existing migration chain.
 2. Run `supabase/manual/verify-season-record-consistency.sql`. All function installation, old-cap removal, and club-scope checks should return true. Inspect the public board/feed for the named players.
-3. Deploy the candidate client only after the new RPCs are installed. Cached 2.8 clients retain their compatible v2 responses, with corrected Challenge-only run counts and feed labels.
+3. Deploy the client only after the new RPCs are installed. Cached 2.8 clients retain their compatible v2 responses, with corrected Challenge-only run counts and feed labels.
 4. Complete one signed-in Challenge and one Custom game on the official site. Confirm only Challenge changes season wins/runs/recent history, while both change recorded lifetime Stats exactly once. A loss changes runs only; a qualifying win also changes the six-win progress.
 
-Production write access was unavailable to the connected Supabase account during
-this investigation. Production migration and browser acceptance are outstanding;
-local tests do not establish that the deployed database is already fixed.
+The user applied the production migration. Public v3 reads on October 1,
+11:45 PM Pacific returned STINGRAY at Regular with ten wins, fourteen runs,
+four qualifying Regular wins, five max Regular kills, and 852 max Regular damage.
+CAPYBARA had Regular, nine wins, ten runs, one qualifying Regular win, four max
+Regular kills, and 638 max Regular damage. The latest forty-entry Challenge feed
+contained all twenty-four games and agreed with both totals; the shorter
+player-facing twenty-entry feed intentionally shows only recent games. All three
+new RPCs are installed, including authenticated Stats (verified with an empty
+nonexistent handle, without guessing any player's PIN).
+
+PR #4 merged as `ab05a003`; GitHub Pages built it, and published HTML/shared
+content match main byte for byte. Production browser checks confirmed the new
+columns, player totals, recent timestamps, and Challenge sign-in prompt.
+Local synthetic completion tests cover actual
+scoring and acknowledgement; no production account or match was created for
+verification. A real player's next completed game remains the production write
+acceptance check.

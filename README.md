@@ -70,16 +70,16 @@ python3 -m http.server 8123
 Opening `index.html` by double-clicking works too, but a local server is closer
 to how it behaves when published.
 
-## Challenge record consistency candidate
+## Challenge record consistency
 
-The pending 2.9 update uses current tier, total season Challenge wins, and
+The 2.9 release uses current tier, total season Challenge wins, and
 separate single-game kill/damage highs at that tier. Custom results count toward
 recorded lifetime Stats. Challenge maps rotate through shuffled cycles; Custom
 settings apply only to Custom. Challenge requires a fighter name and PIN.
 
 See [definitions and rollout](docs/season-record-consistency.md). Install
 [the migration](supabase/migrations/20261002060000_season_record_consistency.sql)
-before deploying this client. No backfill is required.
+before deploying this client to a new database. The production migration is installed. No backfill is required.
 
 ```bash
 node --test scripts/*.test.js pvp-real/*.test.js
